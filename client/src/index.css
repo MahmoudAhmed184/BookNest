@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply z-10;
+}
+
+body {
+  @apply font-montserrat;
+}
+
+nav,
+footer {
+  @apply z-20;
+}
+
+.btn-primary-v,
+.bg-primary-v {
+  @apply bg-primary-black-vertical duration-300;
+}
+
+.btn-primary-h,
+.bg-primary-h {
+  @apply bg-primary-black-horizontal duration-300;
+}
+
+.text-accent-h,
+.btn-accent-h {
+  @apply bg-accent-horizontal duration-300;
+}
+
+.text-accent-v,
+.btn-accent-v {
+  @apply bg-accent-vertical duration-300;
+}
+
+.btn-accent-v:hover,
+.btn-accent-h:hover,
+.btn-primary-v:hover,
+.btn-primary-h:hover {
+  @apply brightness-110;
+}
+
+.btn-accent-v:focus,
+.btn-accent-h:focus,
+.btn-primary-v:focus,
+.btn-primary-h:focus {
+  @apply brightness-75;
+}
+
+.field {
+  @apply bg-secondary-black text-primary-gray rounded-lg py-sm px-md outline-none placeholder-primary-gray;
+}
+
+.btn {
+  @apply px-8 py-2 rounded-xl text-primary-white font-semibold;
+}
+
+p {
+  @apply leading-relaxed;
+}
+
+.swiper-button-prev,
+.swiper-button-next {
+  color: #cfc8b8 !important;
+  z-index: 20 !important;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 20px !important;
+}
+.swiper-pagination-bullet {
+  background: #cfc8b8 !important;
+  opacity: 0.4;
+}
+.swiper-pagination-bullet-active {
+  opacity: 1;
+  background: #cfc8b8 !important;
+}
+.swiper-pagination {
+  position: relative !important;
+  bottom: 10px !important;
+  padding-top: 36px !important;
+}
+
+.blob {
+  @apply w-[300px] h-[300px] bg-accent rounded-full blur-[250px] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+}
+
+.spinner {
+  width: 30px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(farthest-side, #cfc8b8 94%, #0000) top/8px 8px
+      no-repeat,
+    conic-gradient(#0000 30%, #cfc8b8);
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 8px), #000 0);
+  animation: l13 1s infinite linear;
+}
+@keyframes l13 {
+  100% {
+    transform: rotate(1turn);
+  }
+}
