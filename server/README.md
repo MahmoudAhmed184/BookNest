@@ -26,7 +26,7 @@ BookNest is a Django REST Framework application that serves as an alternative to
 
 3. **Build and run with Docker Compose**
    ```bash
-   # Basic setup (Django + PostgreSQL)
+   # Basic setup (Django + PostgreSQL + Redis)
    docker-compose up --build
    ```
 <!--    
@@ -43,7 +43,6 @@ BookNest is a Django REST Framework application that serves as an alternative to
 4. **Access the application**
    - Django API: http://localhost:8000
    - API Documentation: http://localhost:8000/swagger/
-   - pgAdmin (if enabled): http://localhost:5050
 
 
 ### Available Services
@@ -52,7 +51,6 @@ BookNest is a Django REST Framework application that serves as an alternative to
 |---------|------|-------------|
 | Django Web | 8000 | Main application |
 | PostgreSQL | 5432 | Database |
-| pgAdmin | 5050 | Database management (optional) |
 | Redis | 6379 | Caching (optional) |
 
 ### Docker Commands
@@ -186,8 +184,3 @@ The application provides a comprehensive REST API. Visit http://localhost:8000/s
 - **API Documentation**: drf-spectacular
 - **Containerization**: Docker & Docker Compose -->
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JinxX404/BookNest)
