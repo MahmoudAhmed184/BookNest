@@ -1,8 +1,10 @@
-import React from "react";
+import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
 import Logo from "/logo.svg";
 
-export default function Footer() {
+export interface FooterProps {}
+
+export default function Footer({}: FooterProps): ReactElement {
   return (
     <footer>
       <div className="bg-secondary-black text-primary-white py-sm">

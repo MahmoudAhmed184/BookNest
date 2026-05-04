@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import Logo from "/logo.svg";
-import ProfileImage from "/user_profile.png";
 
 import { useAuth } from "../context/AuthContext";
 
@@ -10,8 +9,14 @@ import { getMyProfile } from "../services/userService";
 
 import { useQuery } from "@tanstack/react-query";
 
-export default function Navbar() {
-  const { data: profile } = useQuery({
+interface NavbarProps {}
+
+interface NavbarProfile {
+  profile_pic?: string | null;
+}
+
+export default function Navbar({}: NavbarProps): ReactElement {
+  const { data: profile } = useQuery<NavbarProfile | null>({
     queryKey: ["user"],
     queryFn: getMyProfile,
   });
