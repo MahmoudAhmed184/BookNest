@@ -5,7 +5,7 @@ from rest_framework.throttling import UserRateThrottle
 from django.core.cache import cache
 from django.conf import settings
 from books.models import Book
-from books.utils.search_service import PostgreSQLSearchService
+from books.utils.search_service import DatabaseSearchService
 from books.utils.external_api_clients import search_external_apis
 from books.utils.book_normalizer import BookNormalizer
 from books.logging_config import logger
@@ -84,7 +84,7 @@ class CacheManager:
         """Warm up the cache with common search queries."""
         for query in common_queries:
             try:
-                books, total_count = PostgreSQLSearchService.search_books(
+                books, total_count = DatabaseSearchService.search_books(
                     query=query,
                     page=1,
                     page_size=10
@@ -117,7 +117,7 @@ class SearchRateThrottle(UserRateThrottle):
 
 class BookSearchAPIView(APIView):
     """
-    API view for searching books using PostgreSQL full-text search.
+    API view for searching books using database full-text search.
     Supports filtering, pagination, and fallback to external APIs.
     """
     throttle_classes = [SearchRateThrottle]
@@ -339,7 +339,7 @@ class BookSearchAPIView(APIView):
             else:
             # Search using the service
                 try:
-                    books, total_count = PostgreSQLSearchService.search_books(
+                    books, total_count = DatabaseSearchService.search_books(
                         query=params['query'],
                         page=params['page'],
                         page_size=params['page_size'],

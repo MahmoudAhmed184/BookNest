@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
 from books.models import Book, Author
-from books.utils.search_service import PostgreSQLSearchService
+from books.utils.search_service import DatabaseSearchService
 from books.utils.external_api_clients import search_external_apis
 from books.utils.book_normalizer import BookNormalizer
 from books.logging_config import logger
@@ -12,7 +12,7 @@ from books.logging_config import logger
 
 class BookSuggestionAPIView(APIView):
     """
-    API view for getting book title suggestions using PostgreSQL.
+    API view for getting book title suggestions using database.
     Provides real-time suggestions based on partial queries.
     """
     
@@ -43,7 +43,7 @@ class BookSuggestionAPIView(APIView):
                 )
             
             # Get suggestions
-            suggestions = PostgreSQLSearchService.get_suggestions(query, limit)
+            suggestions = DatabaseSearchService.get_suggestions(query, limit)
             
             # Normalize suggestions
             normalized_suggestions = []
@@ -248,7 +248,7 @@ class RelatedBookSuggestionAPIView(APIView):
             suggestions = suggestions[:limit]
             
             # Convert to dictionaries
-            return [PostgreSQLSearchService._book_to_dict(book) for book in suggestions]
+            return [DatabaseSearchService._book_to_dict(book) for book in suggestions]
             
         except Exception as e:
             logger.error(f"Error getting local suggestions: {e}")

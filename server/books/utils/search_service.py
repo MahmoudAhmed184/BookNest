@@ -1,10 +1,8 @@
 from typing import List, Dict, Any, Optional, Tuple
-from django.db import models
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.core.paginator import Paginator, EmptyPage
 from django.core.cache import cache
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from books.models import Book, Author, Genre
 from books.utils.external_api_clients import OpenLibraryClient, GoogleBooksClient, search_external_apis , merge_book_results
 from books.utils.book_service import save_external_book
@@ -21,9 +19,9 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 
-class PostgreSQLSearchService:
+class DatabaseSearchService:
     """
-    PostgreSQL-based search service using full-text search capabilities.
+    Database-backed search service.
     Provides search functionality with filtering, pagination, and external API fallback.
     """
     
@@ -58,7 +56,7 @@ class PostgreSQLSearchService:
     def search_books(query: str, page: int = 1, page_size: int = 10, 
                     filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
         """
-        Search for books using PostgreSQL full-text search with fallback to external APIs.
+        Search for books using portable database filtering with fallback to external APIs.
         Includes caching and parallel processing.
         """
         logger.info(f"Starting book search for query: {query}, page: {page}, page_size: {page_size}")
@@ -73,20 +71,20 @@ class PostgreSQLSearchService:
             page_size = 10
         
         # First try local database search
-        books, total_count = PostgreSQLSearchService._search_local_database(query, page, page_size, filters)
+        books, total_count = DatabaseSearchService._search_local_database(query, page, page_size, filters)
         logger.info(f"Found {len(books)} books in local database for query: {query}")
         
         if books:
             return books, total_count
         
         logger.info(f"No local results for query: {query}, searching external APIs")
-        return PostgreSQLSearchService._search_external_apis_parallel(query, page, page_size)
+        return DatabaseSearchService._search_external_apis_parallel(query, page, page_size)
         # If no local results, check if we should fetch from external APIs
-        # should_fetch_external = PostgreSQLSearchService._should_fetch_external(query)
+        # should_fetch_external = DatabaseSearchService._should_fetch_external(query)
         
         # if should_fetch_external:
         #     logger.info(f"No local results for query: {query}, searching external APIs")
-        #     return PostgreSQLSearchService._search_external_apis_parallel(query, page, page_size)
+        #     return DatabaseSearchService._search_external_apis_parallel(query, page, page_size)
         # else:
         #     logger.info(f"No local results for query: {query}, skipping external API search")
         #     return [], 0
@@ -133,40 +131,41 @@ class PostgreSQLSearchService:
     def _search_local_database(query: str, page: int, page_size: int, 
                               filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
         """
-        Search books in the local PostgreSQL database using full-text search.
-        Optimized with GIN indexes and materialized views.
+        Search books in the local database using portable ORM lookups.
         """
         try:
             logger.debug(f"Searching local database with query: {query}")
-            
-            # Create search vectors for different fields with different weights
-            search_vector = (
-                SearchVector('title', weight='A') +  # Highest weight for title
-                SearchVector('description', weight='B') +  # Medium weight for description
-                SearchVector('authors__name', weight='A') +  # High weight for author names
-                SearchVector('genres__name', weight='B') +  # Medium weight for genres
-                SearchVector('number_of_pages', weight='C')  # Lower weight for number of pages
-            )
-            
-            # Create search query with ranking
-            search_query = SearchQuery(query)
 
-
-            # Base queryset with search and ranking
-            queryset = Book.objects.annotate(
-                search=search_vector,
-                rank=SearchRank(search_vector, search_query)
-            ).filter(
-                search=search_query
-            ).select_related().prefetch_related('authors', 'genres')
+            queryset = Book.objects.prefetch_related('authors', 'genres')
+            if query:
+                queryset = queryset.filter(
+                    Q(title__icontains=query)
+                    | Q(description__icontains=query)
+                    | Q(authors__name__icontains=query)
+                    | Q(genres__name__icontains=query)
+                    | Q(isbn13__icontains=query)
+                    | Q(isbn__icontains=query)
+                ).annotate(
+                    title_priority=Case(
+                        When(title__iexact=query, then=Value(3)),
+                        When(title__istartswith=query, then=Value(2)),
+                        When(title__icontains=query, then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    ),
+                    author_priority=Case(
+                        When(authors__name__icontains=query, then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    ),
+                ).distinct()
             
             # Apply additional filters
             # if not filters:
             logger.debug(f"Applying filters: {filters}")
-            queryset = PostgreSQLSearchService._apply_filters(queryset, filters)
+            queryset = DatabaseSearchService._apply_filters(queryset, filters)
             
-            # Order by relevance (rank) and then by title
-            queryset = queryset.order_by('-rank', 'title')
+            queryset = queryset.order_by('-title_priority', '-author_priority', 'title')
             
             # Get total count
             total_count = queryset.count()
@@ -177,7 +176,7 @@ class PostgreSQLSearchService:
             try:
                 page_obj = paginator.get_page(page)
                 # Convert to list of dictionaries
-                books = [PostgreSQLSearchService._book_to_dict(book) for book in page_obj.object_list]
+                books = [DatabaseSearchService._book_to_dict(book) for book in page_obj.object_list]
                 return books, total_count
             except EmptyPage:
                 logger.warning(f"Page {page} is out of range, returning empty result")
@@ -262,12 +261,12 @@ class PostgreSQLSearchService:
         """
         try:
             logger.debug("Getting all books with filters")
-            queryset = Book.objects.select_related().prefetch_related('authors', 'genres')
+            queryset = Book.objects.prefetch_related('authors', 'genres')
             
             # Apply filters
             if filters:
                 logger.debug(f"Applying filters: {filters}")
-                queryset = PostgreSQLSearchService._apply_filters(queryset, filters)
+                queryset = DatabaseSearchService._apply_filters(queryset, filters)
             
             # Order by average rating and title
             queryset = queryset.order_by('-average_rate', 'title')
@@ -281,7 +280,7 @@ class PostgreSQLSearchService:
             page_obj = paginator.get_page(page)
             
             # Convert to list of dictionaries
-            books = [PostgreSQLSearchService._book_to_dict(book) for book in page_obj.object_list]
+            books = [DatabaseSearchService._book_to_dict(book) for book in page_obj.object_list]
             
             return books, total_count
             
@@ -377,7 +376,7 @@ class PostgreSQLSearchService:
             # Search for books with titles that start with the query
             books = Book.objects.filter(
                 title__istartswith=query
-            ).select_related().prefetch_related('authors')[:limit]
+            ).prefetch_related('authors')[:limit]
             
             suggestions = []
             for book in books:
