@@ -118,7 +118,7 @@ export async function searchBooks(
 ): Promise<BookSearchResponse> {
   const params = new URLSearchParams({
     q: query,
-    page_size: "100",
+    page_size: "24",
   });
 
   try {

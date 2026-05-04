@@ -19,6 +19,7 @@ export function useSearchBooks(searchTerm: string): UseSearchBooksResult {
     queryKey: catalogKeys.books(trimmedSearch),
     queryFn: () => searchBooks(trimmedSearch),
     enabled: trimmedSearch.length > 0,
+    staleTime: 60_000,
   });
 
   return {
