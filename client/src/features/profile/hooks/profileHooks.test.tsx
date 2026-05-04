@@ -24,6 +24,7 @@ vi.mock("../../collections/services/collectionService", () => ({
 
 vi.mock("../../notifications/services/notificationService", () => ({
   getNotifications: vi.fn(),
+  markAllNotificationsRead: vi.fn(),
 }));
 
 vi.mock("../../catalog/services/bookService", () => ({

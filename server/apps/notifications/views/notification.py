@@ -56,3 +56,35 @@ class NotificationUnreadCountAPIView(APIView):
     def get(self, request):
         count = NotificationService.get_unread_count(request.user)
         return Response({'count': count})
+
+
+class NotificationMarkAllReadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        updated = NotificationService.mark_all_as_read(request.user)
+        return Response({'updated': updated})
+
+
+class NotificationMarkReadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        notification = NotificationService.mark_as_read(
+            notification_id=id,
+            user=request.user,
+        )
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)
+
+
+class NotificationMarkUnreadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        notification = NotificationService.mark_as_unread(
+            notification_id=id,
+            user=request.user,
+        )
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)

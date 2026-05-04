@@ -39,12 +39,12 @@ class NotificationAPITests(APITestCase):
             notification_type=self.type1
         )
 
-        self.list_create_url = reverse('notification-list') # GET for list, POST for create (though create might be separate)
-        self.detail_url = lambda id: reverse('notification-detail', kwargs={'id': id})
+        self.list_create_url = reverse('notification-collection')
+        self.detail_url = lambda id: reverse('notification-resource', kwargs={'id': id})
         self.mark_read_url = lambda id: reverse('notification-mark-read', kwargs={'id': id})
         self.mark_unread_url = lambda id: reverse('notification-mark-unread', kwargs={'id': id})
         self.mark_all_read_url = reverse('notification-mark-all-read')
-        self.unread_count_url = reverse('notification-unread-count')
+        self.unread_count_url = reverse('unread-notification-count')
         self.type_list_url = reverse('notification-type-list')
         self.type_detail_url = lambda id: reverse('notification-type-detail', kwargs={'id': id})
         # Assuming create, update, delete for notifications might be restricted or handled by signals
@@ -78,8 +78,9 @@ class NotificationAPITests(APITestCase):
     def test_mark_notification_as_read(self):
         self.client.force_authenticate(user=self.user1)
         self.assertFalse(Notification.objects.get(id=self.notification1.id).read)
-        response = self.client.post(self.mark_read_url(self.notification1.id)) # Assuming POST or PATCH
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.client.post(self.mark_read_url(self.notification1.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['read'])
         self.notification1.refresh_from_db()
         self.assertTrue(self.notification1.read)
 
@@ -87,7 +88,8 @@ class NotificationAPITests(APITestCase):
         self.client.force_authenticate(user=self.user1)
         self.assertTrue(Notification.objects.get(id=self.notification2.id).read)
         response = self.client.post(self.mark_unread_url(self.notification2.id))
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['read'])
         self.notification2.refresh_from_db()
         self.assertFalse(self.notification2.read)
 
@@ -96,7 +98,8 @@ class NotificationAPITests(APITestCase):
         # user1 has one unread notification (notification1)
         self.assertEqual(Notification.objects.filter(recipient=self.user1, read=False).count(), 1)
         response = self.client.post(self.mark_all_read_url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['updated'], 1)
         self.assertEqual(Notification.objects.filter(recipient=self.user1, read=False).count(), 0)
 
     def test_get_unread_notification_count(self):

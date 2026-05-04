@@ -1,5 +1,5 @@
-import { useState, type ReactElement } from "react";
-import { EmptyState, ErrorState } from "../../../components/ui";
+import type { ReactElement } from "react";
+import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
 import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import { routePaths } from "../../../routes/paths";
 import { useNotifications } from "../hooks/useNotifications";
@@ -21,17 +21,18 @@ function NotificationsSkeleton(): ReactElement {
 
 export default function Notifications(): ReactElement {
   const { token } = useOptionalAuth();
-  const [readIds, setReadIds] = useState<ReadonlySet<number>>(new Set());
   const {
     notifications,
     isLoading,
     isFetching,
     isError,
+    isMarkingAllAsRead,
+    markAllAsRead,
     refetch,
   } = useNotifications(token, Boolean(token));
 
   const unreadNotifications =
-    notifications.filter((notification) => notification.read === false && !readIds.has(notification.id));
+    notifications.filter((notification) => notification.read === false);
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
@@ -69,9 +70,11 @@ export default function Notifications(): ReactElement {
         <div className="sticky top-24 z-30 flex justify-end">
           <button
             type="button"
-            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm shadow-md"
-            onClick={() => setReadIds(new Set(unreadNotifications.map((notification) => notification.id)))}
+            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm shadow-md"
+            disabled={isMarkingAllAsRead}
+            onClick={markAllAsRead}
           >
+            {isMarkingAllAsRead ? <InlineSpinner /> : null}
             Mark all as read
           </button>
         </div>
