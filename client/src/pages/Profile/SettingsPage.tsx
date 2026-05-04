@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile, updateUser, updateBio } from "../../services/userService";
+import { API_BASE_URL } from "../../config";
 import toast from "react-hot-toast";
 
 export default function Settings() {
@@ -63,7 +64,7 @@ export default function Settings() {
       formData.append("profile_pic", file);
 
       const res = await fetch(
-        `http://localhost:8000/api/users/profile/upload_picture/`,
+        `${API_BASE_URL}/api/users/profile/upload_picture/`,
         {
           method: "POST",
           headers: {

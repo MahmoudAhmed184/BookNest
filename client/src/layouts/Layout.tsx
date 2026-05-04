@@ -1,8 +1,9 @@
+import type { ReactElement } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-function Layout() {
+function Layout(): ReactElement {
   return (
     <div className="min-h-screen flex flex-col gap-md bg-primary-black text-primary-white">
       <Navbar />

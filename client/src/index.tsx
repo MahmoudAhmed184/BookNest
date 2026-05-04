@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App";
+import "./styles/index.css";
+import App from "./app";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 
@@ -17,7 +17,13 @@ import "swiper/css/pagination";
 const queryClient = new QueryClient();
 import { AuthProvider } from "./store/AuthContext";
 
-createRoot(document.getElementById("root")).render(
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+createRoot(rootElement).render(
   <AuthProvider>
     <QueryClientProvider client={queryClient}>
       <Toaster />

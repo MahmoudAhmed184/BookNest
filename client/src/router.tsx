@@ -52,7 +52,7 @@ const routes = {
   notFound: "*",
 } as const satisfies Record<string, AppRoutePath>;
 
-function App(): ReactElement {
+function AppRouter(): ReactElement {
   return (
     <Router>
       <Routes>
@@ -80,4 +80,4 @@ function App(): ReactElement {
   );
 }
 
-export default App;
+export default AppRouter;
