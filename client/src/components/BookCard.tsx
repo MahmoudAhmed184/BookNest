@@ -4,9 +4,10 @@ import { Link } from "react-router-dom";
 interface BookCardProps {
   to: string;
   title: string;
-  author?: string | null;
-  coverSrc?: string | null;
-  rating?: number | string | null;
+  author?: string | null | undefined;
+  coverSrc?: string | null | undefined;
+  rating?: number | string | null | undefined;
+  showAuthor?: boolean;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export default function BookCard({
   author,
   coverSrc,
   rating,
+  showAuthor = true,
   className = "",
 }: BookCardProps): ReactElement {
   const [hasImageError, setHasImageError] = useState(false);
@@ -72,7 +74,7 @@ export default function BookCard({
           >
             {title}
           </h3>
-          {author ? (
+          {showAuthor && author ? (
             <p
               className="line-clamp-1 text-sm text-primary-gray sm:text-base"
               title={author}

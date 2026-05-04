@@ -1,16 +1,20 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y, Autoplay } from "swiper/modules";
 import { Link } from "react-router-dom";
 import { getBooks, getRecommendedBooks } from "../../services/bookService";
+import BookCard from "../../components/BookCard";
+import BookCardSkeleton from "../../components/BookCardSkeleton";
+import EmptyState from "../../components/EmptyState";
+import ErrorState from "../../components/ErrorState";
 
 export default function Explore() {
   const {
     data: booksData,
     isLoading: isBooksLoading,
+    isFetching: isBooksFetching,
     isError: isBooksError,
-    error: booksError,
+    refetch: refetchBooks,
   } = useQuery({
     queryKey: ["books", "python"],
     queryFn: () => getBooks("python"),
@@ -19,8 +23,9 @@ export default function Explore() {
   const {
     data: recommendationsData,
     isLoading: isRecommendationsLoading,
+    isFetching: isRecommendationsFetching,
     isError: isRecommendationsError,
-    error: recommendationsError,
+    refetch: refetchRecommendations,
   } = useQuery({
     queryKey: ["recommendations"],
     queryFn: getRecommendedBooks,
@@ -28,25 +33,6 @@ export default function Explore() {
 
   const books = booksData?.results || [];
   const recommendations = recommendationsData || [];
-
-  if (isBooksLoading || isRecommendationsLoading) {
-    return (
-      <div className="grow flex justify-center items-center">
-        <div className="spinner"></div>
-      </div>
-    );
-  }
-
-  if (isBooksError || isRecommendationsError) {
-    return (
-      <div className="error">
-        {isBooksError && <p>Error fetching books: {booksError.message}</p>}
-        {isRecommendationsError && (
-          <p>Error fetching recommendations: {recommendationsError.message}</p>
-        )}
-      </div>
-    );
-  }
 
   const popularBooks: Array<{
     title: string;
@@ -298,225 +284,217 @@ export default function Explore() {
     { id: 15, title: "Classics" },
   ];
 
+  const uniqueBooks = books.filter(
+    (book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
+  );
+
+  const sectionHeadingClass =
+    "text-xl sm:text-2xl font-semibold text-primary-white text-balance";
+
+  const skeletonRow = (
+    <div
+      className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
+      role="status"
+      aria-live="polite"
+    >
+      {Array.from({ length: 4 }).map((_, index) => (
+        <BookCardSkeleton key={index} />
+      ))}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-md py-md">
-      <h2 className="text-md sm:text-xl font-semibold">Popular Genres</h2>
-      <Swiper
-        modules={[Navigation, A11y, Autoplay]}
-        spaceBetween={20}
-        slidesPerView={1}
-        navigation={{
-          prevEl: ".swiper-button-prev",
-          nextEl: ".swiper-button-next",
-        }}
-        pagination={{ clickable: true }}
-        autoplay={{ delay: 3000, disableOnInteraction: false }}
-        breakpoints={{
-          640: { slidesPerView: 2, spaceBetween: 20 },
-          1024: { slidesPerView: 3, spaceBetween: 30 },
-          1280: { slidesPerView: 4, spaceBetween: 40 },
-        }}
-        className="w-full relative"
-      >
-        {categories.map((category) => (
-          <SwiperSlide key={Math.random()}>
-            <Link
-              key={category?.id}
-              to={`/search/${category?.title}`}
-              className="bg-[#2D2D2D] hover:bg-[#3C3C3C] transition-colors duration-200 rounded-2xl p-4 flex items-center justify-center text-center"
-            >
-              <span className="text-[#F5F5F5] text-base font-medium">
-                {category?.title}
-              </span>
-            </Link>
-          </SwiperSlide>
-        ))}
-        <div className="swiper-button-prev"></div>
-        <div className="swiper-button-next"></div>
-      </Swiper>
-      <h2 className="text-md sm:text-xl font-semibold">Recommended For You</h2>
-      {recommendations?.length === 0 ? (
-        <p className="text-base text-primary-gray">
-          We need a bit more info to recommend books you'll love! Rate at least
-          10 books to unlock personalized recommendations.
+    <div className="flex flex-col gap-12 py-12 animate-fade-up">
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+          Explore
+        </h1>
+        <p className="max-w-2xl text-sm text-primary-gray leading-relaxed">
+          Browse new paths into BookNest, from popular genres to books readers
+          are discovering right now.
         </p>
-      ) : (
-        <>
+      </header>
+
+      <section className="flex flex-col gap-5" aria-labelledby="popular-genres">
+        <h2 id="popular-genres" className={sectionHeadingClass}>
+          Popular Genres
+        </h2>
+        <Swiper
+          modules={[Navigation, A11y, Autoplay]}
+          spaceBetween={16}
+          slidesPerView={1}
+          navigation={{
+            prevEl: ".explore-genres-prev",
+            nextEl: ".explore-genres-next",
+          }}
+          autoplay={{ delay: 3000, disableOnInteraction: false }}
+          breakpoints={{
+            640: { slidesPerView: 2, spaceBetween: 16 },
+            1024: { slidesPerView: 3, spaceBetween: 20 },
+            1280: { slidesPerView: 4, spaceBetween: 24 },
+          }}
+          className="w-full relative"
+        >
+          {categories.map((category) => (
+            <SwiperSlide key={category.id}>
+              <Link
+                to={`/search/${category.title}`}
+                title={`Browse ${category.title} books`}
+                className="flex min-h-[56px] items-center justify-center rounded-full bg-secondary-black px-4 py-2 text-center text-base font-medium text-primary-white shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:bg-secondary-gray hover:shadow-lg focus-visible:outline-accent"
+              >
+                {category.title}
+              </Link>
+            </SwiperSlide>
+          ))}
+          <div className="swiper-button-prev explore-genres-prev"></div>
+          <div className="swiper-button-next explore-genres-next"></div>
+        </Swiper>
+      </section>
+
+      <section className="flex flex-col gap-5" aria-labelledby="recommended-books">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="recommended-books" className={sectionHeadingClass}>
+            Recommended For You
+          </h2>
+          {isRecommendationsFetching && recommendations.length > 0 ? (
+            <p className="text-xs text-primary-gray" role="status">
+              Updating recommendations...
+            </p>
+          ) : null}
+        </div>
+        {isRecommendationsLoading ? skeletonRow : null}
+        {isRecommendationsError ? (
+          <ErrorState
+            title="Recommendations are unavailable"
+            message="We could not load your recommendations right now."
+            onRetry={() => void refetchRecommendations()}
+            isRetrying={isRecommendationsFetching}
+          />
+        ) : null}
+        {!isRecommendationsLoading &&
+        !isRecommendationsError &&
+        recommendations.length === 0 ? (
+          <EmptyState
+            title="Recommendations are warming up"
+            description="Rate more books to unlock personalized recommendations that match your reading taste."
+            actionLabel="Browse books"
+            actionTo="/search"
+          />
+        ) : null}
+        {!isRecommendationsLoading &&
+        !isRecommendationsError &&
+        recommendations.length > 0 ? (
           <Swiper
             modules={[Navigation, Pagination, A11y, Autoplay]}
             spaceBetween={20}
             slidesPerView={1}
             navigation={{
-              prevEl: ".swiper-button-prev",
-              nextEl: ".swiper-button-next",
+              prevEl: ".explore-recommendations-prev",
+              nextEl: ".explore-recommendations-next",
             }}
             pagination={{ clickable: true }}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
             breakpoints={{
               640: { slidesPerView: 2, spaceBetween: 20 },
-              1024: { slidesPerView: 3, spaceBetween: 30 },
-              1280: { slidesPerView: 4, spaceBetween: 40 },
+              1024: { slidesPerView: 3, spaceBetween: 24 },
+              1280: { slidesPerView: 4, spaceBetween: 28 },
             }}
             className="w-full relative"
           >
-            {recommendations?.map((book) => (
-              <SwiperSlide key={Math.random()}>
-                <Link
-                  to={`/book/${book?.book}`}
-                  className="group rounded-2xl shadow-md overflow-hidden relative block"
-                >
-                  <div
-                    className="absolute inset-0 bg-secondary-black transition-opacity duration-300 opacity-100 group-hover:opacity-0 z-0"
-                    aria-hidden="true"
-                  />
-                  <img
-                    src={
-                      book?.book_cover ||
-                      `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-                    }
-                    className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
-                    aria-hidden="true"
-                    draggable={false}
-                  />
-                  <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
-                    <div className="book-cover h-[256px] sm:h-[280px] relative">
-                      <img
-                        src={
-                          book?.book_cover ||
-                          `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-                        }
-                        alt={book?.book_title}
-                        className="w-[180px] h-[280px] object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
-                      />
-                    </div>
-                    <figcaption className="flex flex-col justify-center items-center gap-2 sm:gap-3">
-                      <h4 className="text-base sm:text-lg text-primary-white font-semibold text-center line-clamp-1">
-                        {book?.book_title}
-                      </h4>
-                      {/* Optional additional info here */}
-                    </figcaption>
-                  </figure>
-                </Link>
+            {recommendations.map((book) => (
+              <SwiperSlide key={book.book}>
+                <BookCard
+                  to={`/book/${book.book}`}
+                  title={book.book_title}
+                  coverSrc={book.book_cover}
+                  showAuthor={false}
+                />
               </SwiperSlide>
             ))}
-            <div className="swiper-button-prev"></div>
-            <div className="swiper-button-next"></div>
+            <div className="swiper-button-prev explore-recommendations-prev"></div>
+            <div className="swiper-button-next explore-recommendations-next"></div>
           </Swiper>
-        </>
-      )}
+        ) : null}
+      </section>
 
-      <h2 className="text-md sm:text-xl font-semibold">Explore Books</h2>
-      <Swiper
-        modules={[Navigation, Pagination, A11y, Autoplay]}
-        spaceBetween={20}
-        slidesPerView={1}
-        navigation={{
-          prevEl: ".swiper-button-prev",
-          nextEl: ".swiper-button-next",
-        }}
-        pagination={{ clickable: true }}
-        autoplay={{ delay: 3000, disableOnInteraction: false }}
-        breakpoints={{
-          640: { slidesPerView: 2, spaceBetween: 20 },
-          1024: { slidesPerView: 3, spaceBetween: 30 },
-          1280: { slidesPerView: 4, spaceBetween: 40 },
-        }}
-        className="w-full relative"
-      >
-        {books
-          ?.filter((book, i) => books[i]?.isbn13 !== books[i - 1]?.isbn13)
-          .map((book) => (
-            <SwiperSlide key={book.isbn13}>
-              <Link
-                to={`/book/${book?.isbn13}`}
-                className="group rounded-2xl shadow-md overflow-hidden relative block"
-              >
-                <div
-                  className="absolute inset-0 bg-secondary-black transition-opacity duration-300 opacity-100 group-hover:opacity-0 z-0"
-                  aria-hidden="true"
-                />
-                <img
-                  src={book?.cover_img || undefined}
-                  className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
-                  aria-hidden="true"
-                  draggable={false}
-                />
-                <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
-                  <div className="book-cover h-[256px] sm:h-[280px] relative">
-                    <img
-                      src={book?.cover_img || undefined}
-                      alt={book?.title}
-                      className="w-[180px] h-[280px] object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
-                    />
-                  </div>
-                  <figcaption className="flex flex-col justify-center items-center gap-2 sm:gap-3">
-                    <h4 className="text-base sm:text-lg text-primary-white font-semibold text-center line-clamp-1">
-                      {book?.title}
-                    </h4>
-                    <h5 className="text-sm sm:text-base text-primary-gray text-center">
-                      {book?.author}
-                    </h5>
-                    {/* <div className="flex items-center">
-                    <span className="text-yellow-400 text-sm sm:text-base">
-                      {"★".repeat(Math.floor(book.rating))}
-                      {book.rating % 1 !== 0 && "☆"}
-                    </span>
-                    <span className="text-primary-gray text-sm ml-2">
-                      ({book.rating})
-                    </span>
-                  </div> */}
-                  </figcaption>
-                </figure>
-              </Link>
-            </SwiperSlide>
-          ))}
-        <div className="swiper-button-prev"></div>
-        <div className="swiper-button-next"></div>
-      </Swiper>
-      <h2 className="text-md sm:text-xl font-semibold">Popular Books</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-        {popularBooks.map((book) => (
-          <Link
-            key={book?.isbn13}
-            to={`/book/${book?.isbn13}`}
-            className="group rounded-2xl shadow-md overflow-hidden relative block"
+      <section className="flex flex-col gap-5" aria-labelledby="explore-books">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="explore-books" className={sectionHeadingClass}>
+            Explore Books
+          </h2>
+          {isBooksFetching && uniqueBooks.length > 0 ? (
+            <p className="text-xs text-primary-gray" role="status">
+              Updating books...
+            </p>
+          ) : null}
+        </div>
+        {isBooksLoading ? skeletonRow : null}
+        {isBooksError ? (
+          <ErrorState
+            title="Books could not be loaded"
+            message="We could not load this book shelf. Please try again."
+            onRetry={() => void refetchBooks()}
+            isRetrying={isBooksFetching}
+          />
+        ) : null}
+        {!isBooksLoading && !isBooksError && uniqueBooks.length === 0 ? (
+          <EmptyState
+            title="No books found yet"
+            description="Try searching for a genre, author, or title to keep exploring."
+            actionLabel="Search books"
+            actionTo="/search"
+          />
+        ) : null}
+        {!isBooksLoading && !isBooksError && uniqueBooks.length > 0 ? (
+          <Swiper
+            modules={[Navigation, Pagination, A11y, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1}
+            navigation={{
+              prevEl: ".explore-books-prev",
+              nextEl: ".explore-books-next",
+            }}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            breakpoints={{
+              640: { slidesPerView: 2, spaceBetween: 20 },
+              1024: { slidesPerView: 3, spaceBetween: 24 },
+              1280: { slidesPerView: 4, spaceBetween: 28 },
+            }}
+            className="w-full relative"
           >
-            <div
-              className="absolute inset-0 bg-secondary-black transition-opacity duration-300 opacity-100 group-hover:opacity-0 z-0"
-              aria-hidden="true"
-            />
-            <img
-              src={
-                book?.cover_img ||
-                `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-              }
-              className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
-              aria-hidden="true"
-              draggable={false}
-            />
-            <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
-              <div className="book-cover h-[256px] sm:h-[280px] relative">
-                <img
-                  src={
-                    book?.cover_img ||
-                    `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-                  }
-                  alt={book?.title}
-                  className="w-[180px] h-[280px] object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
+            {uniqueBooks.map((book) => (
+              <SwiperSlide key={book.isbn13}>
+                <BookCard
+                  to={`/book/${book.isbn13}`}
+                  title={book.title}
+                  author={book.author}
+                  coverSrc={book.cover_img}
                 />
-              </div>
-              <figcaption className="flex flex-col justify-center items-center gap-2 sm:gap-3">
-                <h4 className="text-base sm:text-lg text-primary-white font-semibold text-center line-clamp-1">
-                  {book?.title}
-                </h4>
-                <h5 className="text-sm sm:text-base text-primary-gray text-center">
-                  {book?.author}
-                </h5>
-              </figcaption>
-            </figure>
-          </Link>
-        ))}
-      </div>
+              </SwiperSlide>
+            ))}
+            <div className="swiper-button-prev explore-books-prev"></div>
+            <div className="swiper-button-next explore-books-next"></div>
+          </Swiper>
+        ) : null}
+      </section>
+
+      <section className="flex flex-col gap-5" aria-labelledby="popular-books">
+        <h2 id="popular-books" className={sectionHeadingClass}>
+          Popular Books
+        </h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {popularBooks.map((book) => (
+            <BookCard
+              key={book.isbn13}
+              to={`/book/${book.isbn13}`}
+              title={book.title}
+              author={book.authors.join(", ")}
+              coverSrc={book.cover_img}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
