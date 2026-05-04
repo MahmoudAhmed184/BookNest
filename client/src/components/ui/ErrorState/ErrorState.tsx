@@ -18,11 +18,11 @@ export function ErrorState({
 }: ErrorStateProps): ReactElement {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-4 rounded-xl bg-secondary-black p-6 py-12 text-center animate-fade-up ${className}`}
+      className={`flex flex-col items-center justify-center gap-4 rounded-xl border border-[var(--color-error-border)] bg-[var(--color-error-surface)] p-6 py-12 text-center shadow-md animate-fade-up ${className}`}
       role="alert"
       {...divProps}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-black text-accent">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-black text-accent shadow-md">
         <svg
           className="h-6 w-6"
           viewBox="0 0 24 24"
@@ -50,11 +50,14 @@ export function ErrorState({
           onClick={onRetry}
           disabled={isRetrying}
           className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm"
+          aria-busy={isRetrying}
         >
           {isRetrying ? <InlineSpinner /> : null}
-          Try again
+          {isRetrying ? "Trying again..." : "Try again"}
         </button>
       ) : null}
     </div>
   );
 }
+
+export type { ErrorStateProps };

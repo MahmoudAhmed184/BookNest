@@ -11,16 +11,18 @@ export function BookCardSkeleton({
 }: BookCardSkeletonProps): ReactElement {
   return (
     <div
-      className={`rounded-xl bg-secondary-black shadow-md overflow-hidden p-4 sm:p-6 ${className}`}
-      aria-hidden="true"
+      className={`glass-card h-full min-h-[360px] overflow-hidden p-4 sm:p-6 ${className}`}
+      aria-busy="true"
+      aria-label="Loading book"
+      role="status"
       {...divProps}
     >
-      <div className="flex flex-col items-center gap-4 sm:gap-5">
-        <div className="w-[180px] aspect-[2/3] rounded-xl animate-shimmer" />
-        <div className="flex w-full flex-col items-center gap-2 sm:gap-3">
+      <div className="flex h-full flex-col items-center justify-center gap-4 sm:gap-5">
+        <div className="aspect-[2/3] w-full max-w-[210px] rounded-xl animate-shimmer" />
+        <div className="glass-card w-full px-4 py-3">
           <div className="h-5 w-3/4 rounded-full animate-shimmer" />
           {showAuthor ? (
-            <div className="h-4 w-1/2 rounded-full animate-shimmer" />
+            <div className="mt-3 h-4 w-1/2 rounded-full animate-shimmer" />
           ) : null}
         </div>
       </div>
