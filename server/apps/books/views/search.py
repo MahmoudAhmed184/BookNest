@@ -263,7 +263,7 @@ class BookSearchAPIView(APIView):
                 'page': page,
                 'page_size': page_size,
                 'filters': filters,
-                'include_external': request.GET.get('include_external', 'false').lower() == 'true'
+                'include_external': request.GET.get('include_external', 'true').lower() == 'true'
             }, None
             
         except Exception as e:
@@ -316,7 +316,7 @@ class BookSearchAPIView(APIView):
         - pub_date_to: Publication date to (YYYY-MM-DD)
         - authors: Comma-separated list of author names to filter by
         - num_pages: Minimum number of pages
-        - include_external: Whether to include results from external APIs (default: false)
+        - include_external: Whether to queue external catalog enrichment on local misses (default: true)
         
         Example request:
         /api/v1/books/search-results/?q=python&genres=Fiction,Mystery&authors=John Smith,Jane Doe&min_rating=4.0
@@ -337,17 +337,19 @@ class BookSearchAPIView(APIView):
             if cached_results:
                 books, total_count = cached_results
             else:
-            # Search using the service
+                # Search using the service
                 try:
                     books, total_count = DatabaseSearchService.search_books(
                         query=params['query'],
                         page=params['page'],
                         page_size=params['page_size'],
-                        filters=params['filters']
-                            )
+                        filters=params['filters'],
+                        include_external=params['include_external'],
+                    )
                     
                     # Cache the results
-                    CacheManager.set_cached_results(cache_key, books, total_count)
+                    if books:
+                        CacheManager.set_cached_results(cache_key, books, total_count)
                     
                 except Exception as e:
                     logger.error(f"Search service error: {e}", exc_info=True)

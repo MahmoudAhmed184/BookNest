@@ -2,18 +2,18 @@ from typing import List, Dict, Any, Optional, Tuple
 from django.core.paginator import Paginator, EmptyPage
 from django.core.cache import cache
 from django.conf import settings
-from django.db.models import Case, IntegerField, Q, Value, When
-from apps.books.models import Book, Author, Genre
-from apps.books.utils.external_api_clients import OpenLibraryClient, GoogleBooksClient, search_external_apis , merge_book_results
+from django.db import DatabaseError, connection
+from django.db.models import Case, FloatField, IntegerField, Q, Value, When
+from django.db.models.expressions import RawSQL
+from apps.books.models import Book, BookSearchIndex
+from apps.books.utils.external_api_clients import OpenLibraryClient, GoogleBooksClient, merge_book_results
 from apps.books.utils.book_service import save_external_book
 import logging
 import asyncio
-import aiohttp
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
-import json
-from datetime import datetime, timedelta
+import re
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -53,11 +53,12 @@ class DatabaseSearchService:
     #         logger.error(f"Error updating recent searches: {e}", exc_info=True)
     
     @staticmethod
-    def search_books(query: str, page: int = 1, page_size: int = 10, 
-                    filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
+    def search_books(query: str, page: int = 1, page_size: int = 10,
+                    filters: Optional[Dict[str, Any]] = None,
+                    include_external: bool = True) -> Tuple[List[Dict[str, Any]], int]:
         """
-        Search for books using portable database filtering with fallback to external APIs.
-        Includes caching and parallel processing.
+        Search for books using the local full-text index.
+        External catalog enrichment is queued asynchronously when requested.
         """
         logger.info(f"Starting book search for query: {query}, page: {page}, page_size: {page_size}")
         
@@ -70,24 +71,18 @@ class DatabaseSearchService:
             page = 1
             page_size = 10
         
-        # First try local database search
+        filters = filters or {}
+
         books, total_count = DatabaseSearchService._search_local_database(query, page, page_size, filters)
         logger.info(f"Found {len(books)} books in local database for query: {query}")
         
         if books:
             return books, total_count
-        
-        logger.info(f"No local results for query: {query}, searching external APIs")
-        return DatabaseSearchService._search_external_apis_parallel(query, page, page_size)
-        # If no local results, check if we should fetch from external APIs
-        # should_fetch_external = DatabaseSearchService._should_fetch_external(query)
-        
-        # if should_fetch_external:
-        #     logger.info(f"No local results for query: {query}, searching external APIs")
-        #     return DatabaseSearchService._search_external_apis_parallel(query, page, page_size)
-        # else:
-        #     logger.info(f"No local results for query: {query}, skipping external API search")
-        #     return [], 0
+
+        if include_external:
+            DatabaseSearchService._enqueue_external_enrichment(query, page_size)
+
+        return [], total_count
     
     # @staticmethod
     # def _should_fetch_external(query: str) -> bool:
@@ -130,11 +125,191 @@ class DatabaseSearchService:
     @staticmethod
     def _search_local_database(query: str, page: int, page_size: int, 
                               filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
+        full_text_results = DatabaseSearchService._search_full_text_index(query, page, page_size, filters or {})
+        if full_text_results is not None:
+            return full_text_results
+
+        return DatabaseSearchService._search_local_database_fallback(query, page, page_size, filters)
+
+    @staticmethod
+    def _search_full_text_index(query: str, page: int, page_size: int,
+                                filters: Dict[str, Any]) -> Optional[Tuple[List[Dict[str, Any]], int]]:
+        if connection.vendor != 'mysql':
+            return None
+
+        boolean_query = DatabaseSearchService._to_boolean_full_text_query(query)
+        if not boolean_query:
+            return DatabaseSearchService._search_prefix_index(query, page, page_size, filters)
+
+        try:
+            score = RawSQL(
+                'MATCH(document) AGAINST (%s IN BOOLEAN MODE)',
+                [boolean_query],
+                output_field=FloatField(),
+            )
+            queryset = (
+                BookSearchIndex.objects
+                .select_related('book')
+                .prefetch_related('book__authors', 'book__genres')
+                .annotate(score=score)
+                .filter(score__gt=0)
+            )
+            queryset = DatabaseSearchService._apply_search_index_filters(queryset, filters)
+            queryset = queryset.annotate(
+                isbn_priority=Case(
+                    When(isbn__iexact=query, then=Value(3)),
+                    When(isbn__istartswith=query, then=Value(2)),
+                    When(isbn__icontains=query, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                title_priority=Case(
+                    When(title__iexact=query, then=Value(3)),
+                    When(title__istartswith=query, then=Value(2)),
+                    When(title__icontains=query, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                author_priority=Case(
+                    When(authors__icontains=query, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+            ).distinct().order_by(
+                '-isbn_priority',
+                '-title_priority',
+                '-author_priority',
+                '-score',
+                'title',
+            )
+
+            total_count = queryset.count()
+            offset = (page - 1) * page_size
+            page_items = queryset[offset:offset + page_size]
+            books = [
+                DatabaseSearchService._book_to_dict(search_index.book)
+                for search_index in page_items
+            ]
+            return books, total_count
+        except DatabaseError as exc:
+            logger.warning("Full-text search failed; using ORM fallback: %s", exc)
+            return None
+
+    @staticmethod
+    def _search_prefix_index(query: str, page: int, page_size: int,
+                             filters: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int]:
+        try:
+            queryset = (
+                BookSearchIndex.objects
+                .select_related('book')
+                .prefetch_related('book__authors', 'book__genres')
+                .filter(
+                    Q(title__istartswith=query)
+                    | Q(isbn__istartswith=query)
+                    | Q(authors__istartswith=query)
+                    | Q(genres__istartswith=query)
+                )
+            )
+            queryset = DatabaseSearchService._apply_search_index_filters(queryset, filters)
+            queryset = queryset.annotate(
+                isbn_priority=Case(
+                    When(isbn__iexact=query, then=Value(3)),
+                    When(isbn__istartswith=query, then=Value(2)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                title_priority=Case(
+                    When(title__iexact=query, then=Value(3)),
+                    When(title__istartswith=query, then=Value(2)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+            ).distinct().order_by(
+                '-isbn_priority',
+                '-title_priority',
+                'title',
+            )
+
+            total_count = queryset.count()
+            offset = (page - 1) * page_size
+            page_items = queryset[offset:offset + page_size]
+            books = [
+                DatabaseSearchService._book_to_dict(search_index.book)
+                for search_index in page_items
+            ]
+            return books, total_count
+        except DatabaseError as exc:
+            logger.warning("Prefix search failed; using ORM fallback: %s", exc)
+            return DatabaseSearchService._search_local_database_fallback(query, page, page_size, filters)
+
+    @staticmethod
+    def _to_boolean_full_text_query(query: str) -> str:
+        tokens = re.findall(r'[0-9A-Za-z]+', query)
+        searchable_tokens = [token for token in tokens if len(token) >= 3]
+
+        if not searchable_tokens:
+            return ''
+
+        return ' '.join(f'+{token}*' for token in searchable_tokens[:8])
+
+    @staticmethod
+    def _apply_search_index_filters(queryset, filters: Dict[str, Any]):
+        if not filters:
+            return queryset
+
+        if 'genres' in filters:
+            queryset = queryset.filter(book__genres__name__in=filters['genres'])
+
+        if 'min_rating' in filters:
+            queryset = queryset.filter(book__average_rate__gte=filters['min_rating'])
+
+        if 'pub_date_from' in filters:
+            queryset = queryset.filter(book__publication_date__gte=filters['pub_date_from'])
+
+        if 'pub_date_to' in filters:
+            queryset = queryset.filter(book__publication_date__lte=filters['pub_date_to'])
+
+        if 'author' in filters:
+            queryset = queryset.filter(book__authors__name__in=filters['author'])
+
+        if 'num_pages' in filters:
+            queryset = queryset.filter(book__number_of_pages__gte=filters['num_pages'])
+
+        return queryset
+
+    @staticmethod
+    def _enqueue_external_enrichment(query: str, page_size: int) -> bool:
+        query = query.strip()
+        if len(query) < 3:
+            return False
+
+        cache_key = (
+            f"{settings.CACHE_KEY_PREFIX}:external_search_enqueued:"
+            f"{hashlib.md5(query.casefold().encode()).hexdigest()}"
+        )
+        if not cache.add(cache_key, True, timeout=60 * 60 * 6):
+            return False
+
+        try:
+            from apps.books.tasks import enqueue_sync_external_books_for_query
+
+            enqueue_sync_external_books_for_query(query=query, page_size=min(page_size, 40))
+            logger.info("Queued external catalog enrichment for query: %s", query)
+            return True
+        except Exception as exc:
+            cache.delete(cache_key)
+            logger.warning("Could not queue external catalog enrichment for '%s': %s", query, exc)
+            return False
+
+    @staticmethod
+    def _search_local_database_fallback(query: str, page: int, page_size: int,
+                                        filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
         """
         Search books in the local database using portable ORM lookups.
         """
         try:
             logger.debug(f"Searching local database with query: {query}")
+            filters = filters or {}
 
             queryset = Book.objects.prefetch_related('authors', 'genres')
             if query:
@@ -294,6 +469,9 @@ class DatabaseSearchService:
         Apply filters to the queryset.
         """
         try:
+            if not filters:
+                return queryset
+
             if 'genres' in filters:
                 queryset = queryset.filter(genres__name__in=filters['genres'])
                 logger.debug(f"Applied genre filter: {filters['genres']}")
