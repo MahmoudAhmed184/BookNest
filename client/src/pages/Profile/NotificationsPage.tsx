@@ -1,9 +1,10 @@
-import { getNotifications } from "../../services/notificationService";
-import { useQuery } from "@tanstack/react-query";
-import EmptyState from "../../components/EmptyState";
-import ErrorState from "../../components/ErrorState";
+import type { ReactElement } from "react";
+import { EmptyState } from "../../components/EmptyState";
+import { ErrorState } from "../../components/ErrorState";
+import { useNotifications } from "../../features/profile/hooks/useNotifications";
+import { routePaths } from "../../routes";
 
-function NotificationsSkeleton() {
+function NotificationsSkeleton(): ReactElement {
   return (
     <div className="flex flex-col gap-4" role="status" aria-live="polite">
       {Array.from({ length: 3 }).map((_, index) => (
@@ -16,20 +17,17 @@ function NotificationsSkeleton() {
   );
 }
 
-export default function Notifications() {
+export default function Notifications(): ReactElement {
   const {
-    data: notifications,
+    notifications,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => getNotifications(localStorage.getItem("token")),
-  });
+  } = useNotifications(localStorage.getItem("token"));
 
   const unreadNotifications =
-    notifications?.filter((notification) => notification.read === false) || [];
+    notifications.filter((notification) => notification.read === false);
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
@@ -49,7 +47,7 @@ export default function Notifications() {
         <ErrorState
           title="Notifications could not be loaded"
           message="We could not load your notifications right now."
-          onRetry={() => void refetch()}
+          onRetry={refetch}
           isRetrying={isFetching}
         />
       ) : null}
@@ -59,7 +57,7 @@ export default function Notifications() {
           title="Nothing new yet"
           description="You're all caught up. New follows, reading updates, and system messages will appear here."
           actionLabel="Browse books"
-          actionTo="/explore"
+          actionTo={routePaths.explore}
         />
       ) : null}
 

@@ -42,5 +42,10 @@ export interface UpdateBioPayload {
   bio: string;
 }
 
+export interface UploadProfilePictureResponse {
+  profile_pic?: string | null;
+  detail?: string;
+}
+
 export type UserReviewsResponse = BookReview[];
 export type UserRatingsResponse = BookRating[];

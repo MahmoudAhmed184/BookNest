@@ -4,12 +4,15 @@ import {
   getApiError,
   getData,
   patchData,
+  postData,
   throwApiError,
 } from "./apiClient";
+import type { ApiDetailResponse } from "../types/api";
 import type {
   ProfileResponseEnvelope,
   UpdateBioPayload,
   UpdateUserPayload,
+  UploadProfilePictureResponse,
   UserProfile,
   UserRatingsResponse,
   UserReviewsResponse,
@@ -114,6 +117,27 @@ export async function updateBio(
   }
 }
 
+export async function uploadProfilePicture(
+  file: File,
+  tokenOverride?: string | null
+): Promise<UploadProfilePictureResponse> {
+  const formData = new FormData();
+  formData.append("profile_pic", file);
+
+  try {
+    const response = await postData<UploadProfilePictureResponse, FormData>(
+      "/api/users/profile/upload_picture/",
+      formData,
+      {
+        headers: authHeaders(tokenOverride ?? localStorage.getItem("token")),
+      }
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function getUserReviews(
   id: number | string | undefined
 ): Promise<UserReviewsResponse> {
@@ -150,9 +174,9 @@ export async function getUserRatings(
 
 export async function deleteReview(
   id: number | string | undefined
-): Promise<{ detail?: string }> {
+): Promise<ApiDetailResponse> {
   try {
-    const response = await deleteData<{ detail?: string }>(
+    const response = await deleteData<ApiDetailResponse>(
       `/api/books/reviews/${id}/delete/`,
       {
         headers: authHeaders(),
@@ -162,6 +186,6 @@ export async function deleteReview(
     return response;
   } catch (error: unknown) {
     console.error("Error response:", getApiError(error));
-    throw error;
+    throwApiError(error);
   }
 }
