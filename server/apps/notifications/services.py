@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from .models import Notification, NotificationType
+from apps.notifications.selectors import get_notification_for_user, unread_count_for_user
 
 class NotificationService:
     """
@@ -95,7 +96,7 @@ class NotificationService:
         Returns:
             The count of unread notifications
         """
-        return Notification.objects.filter(recipient=user, read=False).count()
+        return unread_count_for_user(user)
     
     @classmethod
     def mark_all_as_read(cls, user):
@@ -109,6 +110,18 @@ class NotificationService:
             The number of notifications marked as read
         """
         return Notification.objects.filter(recipient=user, read=False).update(read=True)
+
+    @classmethod
+    def mark_as_read(cls, *, notification_id, user):
+        notification = get_notification_for_user(notification_id=notification_id, user=user)
+        notification.mark_as_read()
+        return notification
+
+    @classmethod
+    def mark_as_unread(cls, *, notification_id, user):
+        notification = get_notification_for_user(notification_id=notification_id, user=user)
+        notification.mark_as_unread()
+        return notification
     
     @classmethod
     def delete_read_notifications(cls, user, days=30):

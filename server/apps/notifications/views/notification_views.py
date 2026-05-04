@@ -2,10 +2,11 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
 
 from apps.notifications.models import Notification, NotificationType
 from apps.notifications.serializers import NotificationSerializer, NotificationCreateSerializer
+from apps.notifications.selectors import notifications_for_user
+from apps.notifications.services import NotificationService
 
 
 class IsRecipientOrAdmin(IsAuthenticated):
@@ -33,21 +34,13 @@ class NotificationListAPIView(generics.ListAPIView):
         Return notifications for the current user.
         Can be filtered by read/unread status.
         """
-        user = self.request.user
-        queryset = Notification.objects.filter(recipient=user)
-        
-        # Filter by read status if provided
         read = self.request.query_params.get('read')
-        if read is not None:
-            read_bool = read.lower() == 'true'
-            queryset = queryset.filter(read=read_bool)
-        
-        # Filter by notification type if provided
         notification_type = self.request.query_params.get('type')
-        if notification_type:
-            queryset = queryset.filter(notification_type__name=notification_type)
-        
-        return queryset.order_by('-timestamp')
+        return notifications_for_user(
+            self.request.user,
+            read=read.lower() == 'true' if read is not None else None,
+            notification_type=notification_type,
+        )
 
 
 class NotificationDetailAPIView(generics.RetrieveAPIView):
@@ -59,7 +52,7 @@ class NotificationDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'id'
     
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return notifications_for_user(self.request.user)
 
 
 class NotificationCreateAPIView(generics.CreateAPIView):
@@ -83,7 +76,7 @@ class NotificationUpdateAPIView(generics.UpdateAPIView):
     lookup_field = 'id'
     
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return notifications_for_user(self.request.user)
 
 
 class NotificationDeleteAPIView(generics.DestroyAPIView):
@@ -95,7 +88,7 @@ class NotificationDeleteAPIView(generics.DestroyAPIView):
     lookup_field = 'id'
     
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return notifications_for_user(self.request.user)
 
 
 class NotificationMarkAsReadAPIView(APIView):
@@ -105,8 +98,7 @@ class NotificationMarkAsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, id=None):
-        notification = get_object_or_404(Notification, id=id, recipient=request.user)
-        notification.mark_as_read()
+        NotificationService.mark_as_read(notification_id=id, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -117,8 +109,7 @@ class NotificationMarkAsUnreadAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, id=None):
-        notification = get_object_or_404(Notification, id=id, recipient=request.user)
-        notification.mark_as_unread()
+        NotificationService.mark_as_unread(notification_id=id, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -129,7 +120,7 @@ class NotificationMarkAllAsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        Notification.objects.filter(recipient=request.user, read=False).update(read=True)
+        NotificationService.mark_all_as_read(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -140,5 +131,5 @@ class NotificationUnreadCountAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        count = Notification.objects.filter(recipient=request.user, read=False).count()
+        count = NotificationService.get_unread_count(request.user)
         return Response({'count': count})

@@ -2,11 +2,13 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from apps.notifications.managers import NotificationManager, NotificationTypeManager
 
 class NotificationType(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    objects = NotificationTypeManager()
     
     def __str__(self):
         return self.name
@@ -67,6 +69,7 @@ class Notification(models.Model):
     # Status fields
     read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    objects = NotificationManager()
     
     class Meta:
         ordering = ['-timestamp']
