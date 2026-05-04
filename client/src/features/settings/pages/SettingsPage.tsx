@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ErrorState } from "../../../components/ui";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import { routePaths } from "../../../routes/paths";
 import {
   SettingsProfileOverview,
@@ -16,25 +17,13 @@ import {
   SettingsSkeleton,
   type SettingsTab,
 } from "../components/SettingsSections";
+import { settingsTabs } from "../data/settingsTabs";
 import { useSettingsProfile } from "../hooks/useSettingsProfile";
-
-const settingsTabs: Array<{ id: SettingsTab; label: string }> = [
-  { id: "account", label: "Account Settings" },
-  { id: "profile", label: "Profile Settings" },
-  { id: "security", label: "Security Settings" },
-];
-
-function getPasswordUpdateError(
-  newPassword: string,
-  confirmPassword: string
-): string {
-  if (newPassword.length < 8) return "Password must be at least 8 characters";
-  if (newPassword !== confirmPassword) return "Passwords do not match";
-  return "";
-}
+import { getPasswordUpdateError } from "../utils/settingsValidation";
 
 export default function Settings(): ReactElement {
   const navigate = useNavigate();
+  const { token, logout } = useOptionalAuth();
   const {
     user,
     isLoading,
@@ -45,7 +34,7 @@ export default function Settings(): ReactElement {
     refetch,
     updateProfile,
     uploadProfilePicture,
-  } = useSettingsProfile();
+  } = useSettingsProfile(token);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [username, setUsername] = useState("");
@@ -116,9 +105,7 @@ export default function Settings(): ReactElement {
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
-          Settings
-        </h1>
+        <h1 className="display-heading">Settings</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">
           Manage your BookNest account, profile, and security details.
         </p>
@@ -145,7 +132,7 @@ export default function Settings(): ReactElement {
           isSavingProfile={isSavingProfile}
           onTabChange={setActiveTab}
           onLogout={() => {
-            localStorage.removeItem("token");
+            logout();
             navigate(routePaths.login);
           }}
           onUsernameChange={setUsername}
