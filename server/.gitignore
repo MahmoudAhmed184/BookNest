@@ -192,6 +192,7 @@ static/
 .env.development
 
 # Database dumps
+backups/
 *.sql
 *.dump
 *.backup
