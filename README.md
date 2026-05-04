@@ -33,7 +33,7 @@ The repository is organized as a two-application workspace:
 | Routing | React Router DOM 7 |
 | Data fetching | TanStack Query 5, Axios |
 | Forms | Formik, Yup |
-| Styling | Tailwind CSS 3, global CSS, Montserrat font assets |
+| Styling | Tailwind CSS 4, global CSS, Montserrat font assets |
 | Feedback and UI helpers | React Hot Toast, Swiper |
 | Tests | Vitest 4, React Testing Library, jsdom |
 
@@ -83,7 +83,6 @@ BookNest/
 |       |-- celery.py
 |       |-- wsgi.py
 |       `-- settings/
-|-- docs/
 ```
 
 ## Architecture Notes
@@ -116,6 +115,16 @@ Frontend code is TypeScript-first and organized around the current feature-first
 - App configuration lives in `client/src/config/`.
 
 The frontend has strict TypeScript enabled with `strict`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`. No `.js` or `.jsx` files remain under `client/src/`.
+
+The current UI layer includes reusable state and interaction primitives:
+
+- `BookCard` and `BookCardSkeleton` for consistent cover-first discovery grids and carousels.
+- `EmptyState` and `ErrorState` for designed empty, loading, and retryable failure states.
+- `FieldError` and `InlineSpinner` for accessible form feedback and submit progress.
+- `ErrorBoundary` in the shared layout for graceful runtime fallback UI.
+- Global Tailwind v4 utilities in `client/src/styles/index.css` for fade-up entry motion, shimmer skeletons, focus-visible states, and reduced-motion support.
+
+The latest frontend pass keeps the existing palette, routes, API layer, type contracts, and file organization intact while improving skeleton loading, empty/error states, search UX, auth/settings form UX, navigation states, and accessibility.
 
 ## Prerequisites
 
@@ -281,8 +290,9 @@ npm run lint
 Current frontend verification:
 
 - `npx tsc --noEmit` exits 0.
-- `npm run build` exits 0 with no warnings.
+- `npm run lint` exits 0.
 - `npm test` exits 0.
+- No deprecated Tailwind `start-*` or `end-*` utilities are present under `client/src/`.
 - Source files under `client/src/` are TypeScript and TSX only.
 
 ## Production Notes
@@ -300,8 +310,6 @@ Current frontend verification:
 
 - Frontend details: `client/README.md`
 - Backend details: `server/README.md`
-- Frontend structure reference: `docs/frontend_structure.md`
-- Backend structure reference: `docs/backend_structure.md`
 
 ## External References
 

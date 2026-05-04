@@ -12,6 +12,7 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 - [Docker Development](#docker-development)
 - [Database And Seed Data](#database-and-seed-data)
 - [API Documentation](#api-documentation)
+- [Frontend Integration](#frontend-integration)
 - [Testing And Verification](#testing-and-verification)
 - [Logging](#logging)
 - [Background Jobs](#background-jobs)
@@ -273,6 +274,19 @@ Primary API route prefixes:
 /api/notifications/
 /api/recommendation/
 ```
+
+## Frontend Integration
+
+The React client in `../client` is the primary consumer of this API. It expects the backend to be available at `http://localhost:8000` during local development unless `client/src/config/index.ts` is changed.
+
+For local browser testing, make sure `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` include the active Vite origin, usually:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
+```
+
+The current frontend UI uses retryable loading/error states for API-backed books, search results, recommendations, reviews, reading lists, profiles, and notifications. Keeping the seeded data current helps those pages demonstrate their skeleton, empty, error, and populated states cleanly.
 
 ## Testing And Verification
 
