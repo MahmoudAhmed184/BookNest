@@ -94,13 +94,11 @@ export interface FeedActivity {
 }
 
 export interface CreateReviewPayload {
-  user: number;
   book: string | undefined;
   review_text: string;
 }
 
 export interface CreateRatingPayload {
-  user: number;
   book: string | undefined;
   rate: number;
 }

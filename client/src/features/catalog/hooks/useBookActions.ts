@@ -44,7 +44,7 @@ export function useBookActions({
     },
   });
   const reviewMutation = useMutation({
-    mutationFn: () => createReview({ user: 31, book: id, review_text: reviewText }, token),
+    mutationFn: () => createReview({ book: id, review_text: reviewText }, token),
     onSuccess: () => {
       onReviewSubmitted();
       toast.success("Review submitted!");
@@ -55,7 +55,7 @@ export function useBookActions({
     },
   });
   const ratingMutation = useMutation({
-    mutationFn: () => createRating({ book: id, rate: rating, user: 31 }, token),
+    mutationFn: () => createRating({ book: id, rate: rating }, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
       queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });

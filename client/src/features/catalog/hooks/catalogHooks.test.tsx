@@ -1,8 +1,10 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { createQueryWrapper } from "../../../test/renderHookWithClient";
 import {
+  createRating,
+  createReview,
   getBook,
   getBookRatings,
   getBooks,
@@ -103,5 +105,43 @@ describe("catalog hooks", () => {
 
     expect(typeof result.current.addBook).toBe("function");
     expect(typeof result.current.submitReview).toBe("function");
+  });
+
+  it("submits reviews and ratings without a client-supplied user id", async () => {
+    const onReviewSubmitted = vi.fn();
+    vi.mocked(createReview).mockResolvedValue({
+      review_id: 1,
+      review_text: "Great",
+    });
+    vi.mocked(createRating).mockResolvedValue({ rate_id: 1, rate: 5 });
+
+    const { result } = renderHook(
+      () =>
+        useBookActions({
+          id: "9780000000001",
+          listId: 1,
+          rating: 5,
+          reviewText: "Great",
+          token: "token",
+          onReviewSubmitted,
+        }),
+      { wrapper: createQueryWrapper() }
+    );
+
+    act(() => {
+      result.current.submitReview();
+    });
+
+    await waitFor(() => {
+      expect(createReview).toHaveBeenCalledWith(
+        { book: "9780000000001", review_text: "Great" },
+        "token"
+      );
+      expect(createRating).toHaveBeenCalledWith(
+        { book: "9780000000001", rate: 5 },
+        "token"
+      );
+    });
+    await waitFor(() => expect(onReviewSubmitted).toHaveBeenCalled());
   });
 });

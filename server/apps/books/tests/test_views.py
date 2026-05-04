@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
-from apps.books.models import Book, Author
+from apps.books.models import Author, Book, BookRating, BookReview
 from datetime import date
 
 User = get_user_model()
@@ -87,6 +87,40 @@ class BookAPITests(APITestCase):
         response = self.client.delete(self.book_delete_url(self.book1.isbn13))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Book.objects.count(), 1)
+
+    def test_create_review_uses_authenticated_user(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            reverse('review-collection'),
+            {
+                'book': self.book1.isbn13,
+                'review_text': 'Great read',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        review = BookReview.objects.get(book=self.book1)
+        self.assertEqual(review.user, self.user)
+        self.assertEqual(review.review_text, 'Great read')
+        self.assertNotIn('user', response.data)
+
+    def test_create_rating_uses_authenticated_user(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            reverse('rating-collection'),
+            {
+                'book': self.book1.isbn13,
+                'rate': 4,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        rating = BookRating.objects.get(book=self.book1)
+        self.assertEqual(rating.user, self.user)
+        self.assertEqual(float(rating.rate), 4.0)
+        self.assertNotIn('user', response.data)
 
 class AuthorAPITests(APITestCase):
     def setUp(self):

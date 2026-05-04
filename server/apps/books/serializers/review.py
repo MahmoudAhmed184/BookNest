@@ -29,7 +29,7 @@ class BookReviewSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'review_id', 'created_at', 'updated_at', 'upvotes_count', 'downvotes_count',
             'net_votes', 'username', 'book_title', 'has_upvoted', 'has_downvoted', 'user_vote_type',
-            'profile_pic', 'profile_id', 'book_cover'
+            'profile_pic', 'profile_id', 'book_cover', 'user'
         ]
     
     def get_book_title(self, obj):
@@ -176,7 +176,7 @@ class BookRatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookRating
         fields = ['rate_id', 'rate', 'created_at', 'user', 'book', 'username', 'book_title', 'book_average_rate']
-        read_only_fields = ['rate_id', 'created_at', 'username', 'book_title', 'book_average_rate']
+        read_only_fields = ['rate_id', 'created_at', 'username', 'book_title', 'book_average_rate', 'user']
     
     def get_book_title(self, obj):
         return obj.book.title if obj.book else None
