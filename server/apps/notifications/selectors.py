@@ -13,7 +13,10 @@ def notifications_for_user(user, *, read=None, notification_type=None):
 
 
 def get_notification_for_user(*, notification_id, user):
-    return get_object_or_404(Notification.objects.for_recipient(user), id=notification_id)
+    return get_object_or_404(
+        Notification.objects.for_recipient(user).with_related(),
+        id=notification_id,
+    )
 
 
 def unread_count_for_user(user):

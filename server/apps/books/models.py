@@ -12,9 +12,21 @@ from apps.books.managers import (
 
 class Author(models.Model):
 
-    author_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
-    number_of_books = models.SmallIntegerField(default=0)
+    author_id = models.AutoField(
+        primary_key=True,
+        verbose_name='author ID',
+        help_text='Primary identifier for the author.',
+    )
+    name = models.CharField(
+        verbose_name='name',
+        max_length=255,
+        help_text='Display name of the author.',
+    )
+    number_of_books = models.SmallIntegerField(
+        verbose_name='number of books',
+        default=0,
+        help_text='Cached count of books linked to this author.',
+    )
     class Meta:
         db_table = 'author'
         indexes = [
@@ -24,32 +36,103 @@ class Author(models.Model):
         return self.name
 
 class Book(models.Model):
+    class Source(models.TextChoices):
+        DATABASE = 'database', 'Database'
+        OPEN_LIBRARY = 'openlibrary', 'OpenLibrary'
+        GOOGLE_BOOKS = 'googlebooks', 'Google Books'
+        USER = 'user', 'User Added'
 
-    isbn13 = models.CharField(primary_key=True, max_length=13)
-    isbn = models.CharField(max_length=10, null=True, blank=True)
-    cover_img = models.URLField(null=True, blank=True)
-    title = models.CharField(max_length=500)
-    description = models.TextField(null=True, blank=True)
-    publication_date = models.DateField(null=True, blank=True)
-    number_of_pages = models.IntegerField(null=True, blank=True)
-    number_of_ratings = models.IntegerField(default=0)
-    average_rate = models.DecimalField(
-        max_digits=3, decimal_places=2, null=True, blank=True
+    isbn13 = models.CharField(
+        primary_key=True,
+        max_length=13,
+        verbose_name='ISBN-13',
+        help_text='Thirteen-digit ISBN used as the book identifier.',
     )
-    authors = models.ManyToManyField('books.Author', related_name='books', through='BookAuthor')
-    genres = models.ManyToManyField('books.Genre', related_name='books')
-    language = models.CharField(max_length=100, null=True, blank=True, help_text="Comma-separated list of languages")
-    created_at = models.DateTimeField(auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=True)
+    isbn = models.CharField(
+        verbose_name='ISBN-10',
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text='Optional ten-digit ISBN.',
+    )
+    cover_img = models.URLField(
+        verbose_name='cover image',
+        null=True,
+        blank=True,
+        help_text='URL for the book cover image.',
+    )
+    title = models.CharField(
+        verbose_name='title',
+        max_length=500,
+        help_text='Book title.',
+    )
+    description = models.TextField(
+        verbose_name='description',
+        null=True,
+        blank=True,
+        help_text='Optional book description.',
+    )
+    publication_date = models.DateField(
+        verbose_name='publication date',
+        null=True,
+        blank=True,
+        help_text='Date the book was published.',
+    )
+    number_of_pages = models.IntegerField(
+        verbose_name='number of pages',
+        null=True,
+        blank=True,
+        help_text='Total page count when known.',
+    )
+    number_of_ratings = models.IntegerField(
+        verbose_name='number of ratings',
+        default=0,
+        help_text='Cached count of ratings for the book.',
+    )
+    average_rate = models.DecimalField(
+        verbose_name='average rating',
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Cached average rating for the book.',
+    )
+    authors = models.ManyToManyField(
+        'books.Author',
+        related_name='books',
+        through='BookAuthor',
+        verbose_name='authors',
+        help_text='Authors credited for this book.',
+    )
+    genres = models.ManyToManyField(
+        'books.Genre',
+        related_name='books',
+        verbose_name='genres',
+        help_text='Genres associated with this book.',
+    )
+    language = models.CharField(
+        verbose_name='language',
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text='Comma-separated list of languages.',
+    )
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the book record was created.',
+    )
+    last_updated = models.DateTimeField(
+        verbose_name='last updated',
+        auto_now=True,
+        help_text='Timestamp when the book record was last updated.',
+    )
     source = models.CharField(
+        verbose_name='source',
         max_length=20,
-        choices=[
-            ('database', 'Database'),
-            ('openlibrary', 'OpenLibrary'),
-            ('googlebooks', 'Google Books'),
-            ('user', 'User Added')
-        ],
-        default='database'
+        choices=Source.choices,
+        default=Source.DATABASE,
+        help_text='Origin of the book metadata.',
     )
     objects = BookManager()
 
@@ -76,16 +159,24 @@ class Book(models.Model):
 
 
 class BookAuthor(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the book-author relationship.',
+    )
     book = models.ForeignKey(
         'books.Book', 
         on_delete=models.CASCADE,
-        db_column='book_id'
+        db_column='book_id',
+        verbose_name='book',
+        help_text='Book in this authorship relationship.',
     )
     author = models.ForeignKey(
         'books.Author',
         on_delete=models.CASCADE,
-        db_column='author_id'
+        db_column='author_id',
+        verbose_name='author',
+        help_text='Author in this authorship relationship.',
     )
 
     class Meta:
@@ -171,33 +262,55 @@ class BookAuthor(models.Model):
 
 class ReadingList(models.Model):
 
-    LIST_PRIVACY = (
-        ('public', 'Public'),
-        ('private', 'Private'),
+    class Privacy(models.TextChoices):
+        PUBLIC = 'public', 'Public'
+        PRIVATE = 'private', 'Private'
+
+    class ListType(models.TextChoices):
+        TODO = 'todo', 'To Do'
+        DOING = 'doing', 'Doing'
+        DONE = 'done', 'Done'
+        CUSTOM = 'custom', 'Custom'
+
+    list_id = models.AutoField(
+        primary_key=True,
+        verbose_name='list ID',
+        help_text='Primary identifier for the reading list.',
     )
-    LIST_TYPES = (
-        ('todo', 'To Do'),
-        ('doing', 'Doing'),
-        ('done', 'Done'),
-        ('custom', 'Custom'),
+    name = models.TextField(
+        verbose_name='name',
+        help_text='Display name for the reading list.',
     )
-    list_id = models.AutoField(primary_key=True)
-    name = models.TextField()
-    books = models.ManyToManyField('books.Book', through='ReadingListBooks')
+    books = models.ManyToManyField(
+        'books.Book',
+        through='ReadingListBooks',
+        verbose_name='books',
+        help_text='Books included in this reading list.',
+    )
     type = models.CharField(
+        verbose_name='type',
         max_length=10,
-        choices=LIST_TYPES,
+        choices=ListType.choices,
+        help_text='Reading workflow type for the list.',
     )
     privacy = models.CharField(
+        verbose_name='privacy',
         max_length=10,
-        choices=LIST_PRIVACY,
-        default='public'
+        choices=Privacy.choices,
+        default=Privacy.PUBLIC,
+        help_text='Visibility setting for the reading list.',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the reading list was created.',
+    )
     profile = models.ForeignKey(
         'users.Profile',
         on_delete=models.CASCADE,
-        related_name='reading_lists'
+        related_name='reading_lists',
+        verbose_name='profile',
+        help_text='Profile that owns this reading list.',
     )
     objects = ReadingListManager()
 
@@ -208,17 +321,25 @@ class ReadingList(models.Model):
 
 class ReadingListBooks(models.Model):
 
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the reading-list book entry.',
+    )
 
     readinglist = models.ForeignKey(
         'books.ReadingList',
         on_delete=models.CASCADE,
-        related_name='reading_list_books'
+        related_name='reading_list_books',
+        verbose_name='reading list',
+        help_text='Reading list containing the book.',
     )
     book = models.ForeignKey(
         'books.Book',
         on_delete=models.CASCADE,
-        related_name='reading_list_books'
+        related_name='reading_list_books',
+        verbose_name='book',
+        help_text='Book included in the reading list.',
     )
 
     class Meta:
@@ -229,32 +350,48 @@ class ReadingListBooks(models.Model):
 
 class BookRating(models.Model):
 
-    rate_id = models.AutoField(primary_key=True)
+    rate_id = models.AutoField(
+        primary_key=True,
+        verbose_name='rating ID',
+        help_text='Primary identifier for the rating.',
+    )
     average_rate = models.DecimalField(
+        verbose_name='average rating',
         max_digits=3,
         decimal_places=2,
         null=True,
-        blank=True
+        blank=True,
+        help_text='Average book rating at the time this rating was saved.',
     )
     rate = models.DecimalField(
+        verbose_name='rating',
         max_digits=3,
         decimal_places=2,
         validators=[
             MinValueValidator(0),
             MaxValueValidator(5)
-        ]
+        ],
+        help_text='Rating value from 0 to 5.',
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='ratings'
+        related_name='ratings',
+        verbose_name='user',
+        help_text='User who submitted the rating.',
     )
     book = models.ForeignKey(
         'books.Book',
         on_delete=models.CASCADE,
-        related_name='ratings'
+        related_name='ratings',
+        verbose_name='book',
+        help_text='Book being rated.',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the rating was created.',
+    )
     objects = BookRatingManager()
     
     class Meta:
@@ -266,21 +403,48 @@ class BookRating(models.Model):
     
     
 class BookReview(models.Model):
-    review_id = models.AutoField(primary_key=True)
-    review_text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    upvotes_count = models.IntegerField(default=0)
-    downvotes_count = models.IntegerField(default=0)
+    review_id = models.AutoField(
+        primary_key=True,
+        verbose_name='review ID',
+        help_text='Primary identifier for the review.',
+    )
+    review_text = models.TextField(
+        verbose_name='review text',
+        help_text='Body text of the review.',
+    )
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the review was created.',
+    )
+    updated_at = models.DateTimeField(
+        verbose_name='updated at',
+        auto_now=True,
+        help_text='Timestamp when the review was last updated.',
+    )
+    upvotes_count = models.IntegerField(
+        verbose_name='upvotes count',
+        default=0,
+        help_text='Cached count of upvotes on the review.',
+    )
+    downvotes_count = models.IntegerField(
+        verbose_name='downvotes count',
+        default=0,
+        help_text='Cached count of downvotes on the review.',
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        verbose_name='user',
+        help_text='User who wrote the review.',
     )
     book = models.ForeignKey(
         'books.Book',
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        verbose_name='book',
+        help_text='Book being reviewed.',
     )
     objects = BookReviewManager()
 
@@ -303,27 +467,45 @@ class BookReview(models.Model):
 
 
 class ReviewVote(models.Model):
-    VOTE_CHOICES = [
-        ('upvote', 'Upvote'),
-        ('downvote', 'Downvote'),
-    ]
+    class VoteType(models.TextChoices):
+        UPVOTE = 'upvote', 'Upvote'
+        DOWNVOTE = 'downvote', 'Downvote'
     
+    id = models.BigAutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the review vote.',
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='review_votes'
+        related_name='review_votes',
+        verbose_name='user',
+        help_text='User who cast the vote.',
     )
     review = models.ForeignKey(
         'books.BookReview',
         on_delete=models.CASCADE,
-        related_name='votes'
+        related_name='votes',
+        verbose_name='review',
+        help_text='Review receiving the vote.',
     )
     vote_type = models.CharField(
+        verbose_name='vote type',
         max_length=10,
-        choices=VOTE_CHOICES
+        choices=VoteType.choices,
+        help_text='Type of vote cast on the review.',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the vote was created.',
+    )
+    updated_at = models.DateTimeField(
+        verbose_name='updated at',
+        auto_now=True,
+        help_text='Timestamp when the vote was last updated.',
+    )
 
     class Meta:
         db_table = 'Review_Vote'
@@ -385,18 +567,30 @@ class ReviewVote(models.Model):
 # Keep the old ReviewUpvote model for backward compatibility
 class ReviewUpvote(models.Model):
     """Model to track upvotes on reviews"""
-    upvote_id = models.AutoField(primary_key=True)
+    upvote_id = models.AutoField(
+        primary_key=True,
+        verbose_name='upvote ID',
+        help_text='Primary identifier for the upvote.',
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='review_upvotes'
+        related_name='review_upvotes',
+        verbose_name='user',
+        help_text='User who upvoted the review.',
     )
     review = models.ForeignKey(
         'books.BookReview',
         on_delete=models.CASCADE,
-        related_name='upvotes'
+        related_name='upvotes',
+        verbose_name='review',
+        help_text='Review receiving the upvote.',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the upvote was created.',
+    )
 
     class Meta:
         db_table = 'Review_Upvote'
@@ -411,10 +605,33 @@ class ReviewUpvote(models.Model):
         return f'{self.user.username} upvoted review {self.review.review_id}'
 
 class Genre(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    id = models.BigAutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the genre.',
+    )
+    name = models.CharField(
+        verbose_name='name',
+        max_length=100,
+        unique=True,
+        help_text='Unique genre name.',
+    )
+    description = models.TextField(
+        verbose_name='description',
+        blank=True,
+        null=True,
+        help_text='Optional description of the genre.',
+    )
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the genre was created.',
+    )
+    updated_at = models.DateTimeField(
+        verbose_name='updated at',
+        auto_now=True,
+        help_text='Timestamp when the genre was last updated.',
+    )
 
     class Meta:
         indexes = [
@@ -423,6 +640,4 @@ class Genre(models.Model):
 
     def __str__(self):
         return self.name
-
-
 

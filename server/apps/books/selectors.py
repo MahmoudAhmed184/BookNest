@@ -5,7 +5,7 @@ from apps.books.models import Book, BookRating, BookReview, ReadingList
 
 def get_book_by_isbn(isbn13):
     try:
-        return Book.objects.get(isbn13=isbn13)
+        return Book.objects.with_catalog_data().get(isbn13=isbn13)
     except Book.DoesNotExist as exc:
         raise ValidationError({'book': 'Book does not exist'}) from exc
 

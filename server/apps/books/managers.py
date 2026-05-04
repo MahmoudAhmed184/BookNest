@@ -38,7 +38,7 @@ class BookReviewManager(models.Manager.from_queryset(BookReviewQuerySet)):
 
 class BookRatingQuerySet(models.QuerySet):
     def with_related(self):
-        return self.select_related('user', 'book')
+        return self.select_related('user', 'book').prefetch_related('book__authors', 'book__genres')
 
     def for_book(self, book):
         return self.filter(book=book)

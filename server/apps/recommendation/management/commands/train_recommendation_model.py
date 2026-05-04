@@ -1,5 +1,6 @@
 import logging
 from django.core.management.base import BaseCommand
+from apps.recommendation.models import RecommendationModel
 from apps.recommendation.services import RecommendationService
 
 logger = logging.getLogger(__name__)
@@ -11,8 +12,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--model-type',
             type=str,
-            default='svd',
-            choices=['svd', 'knn'],
+            default=RecommendationModel.ModelType.SVD,
+            choices=RecommendationModel.ModelType.values,
             help='Type of recommendation model to train (svd, knn)'
         )
         parser.add_argument(

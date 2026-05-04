@@ -15,14 +15,24 @@ def validate_image_size(value):
 
 
 class Profile(models.Model):
-    # Profile type choices for the Profile_Type field
-    PROFILE_TYPES = [
-        ('REGULAR', 'Regular User'),
-        ('AUTHOR', 'Author'),
-        ('PUBLISHER', 'Publisher'),
-    ]
+    class ProfileType(models.TextChoices):
+        REGULAR = 'REGULAR', 'Regular User'
+        AUTHOR = 'AUTHOR', 'Author'
+        PUBLISHER = 'PUBLISHER', 'Publisher'
+
+    id = models.BigAutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the profile.',
+    )
     # One-to-one relationship with User model
-    user = models.OneToOneField('users.CustomUser', on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(
+        'users.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='profile',
+        verbose_name='user',
+        help_text='User account that owns this profile.',
+    )
     profile_pic = CloudinaryField(
         'image', 
         max_length=500,
@@ -32,13 +42,38 @@ class Profile(models.Model):
         ],
         blank=True, 
         null=True,
-        default=DEFAULT_PROFILE_PIC
+        default=DEFAULT_PROFILE_PIC,
+        help_text='Profile image URL or Cloudinary public identifier.',
     )
-    bio = models.TextField(max_length=500, blank=True, default=DEFAULT_BIO)
-    profile_type = models.CharField(max_length=20, choices=PROFILE_TYPES, default='REGULAR')
-    settings = models.JSONField(default=dict)  # Storing settings as JSON
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    bio = models.TextField(
+        verbose_name='bio',
+        max_length=500,
+        blank=True,
+        default=DEFAULT_BIO,
+        help_text='Short public biography for the profile.',
+    )
+    profile_type = models.CharField(
+        verbose_name='profile type',
+        max_length=20,
+        choices=ProfileType.choices,
+        default=ProfileType.REGULAR,
+        help_text='Role the profile represents in BookNest.',
+    )
+    settings = models.JSONField(
+        verbose_name='settings',
+        default=dict,
+        help_text='User-specific profile preferences stored as JSON.',
+    )
+    created_at = models.DateTimeField(
+        verbose_name='created at',
+        auto_now_add=True,
+        help_text='Timestamp when the profile was created.',
+    )
+    updated_at = models.DateTimeField(
+        verbose_name='updated at',
+        auto_now=True,
+        help_text='Timestamp when the profile was last updated.',
+    )
 
     objects = ProfileManager()
 
@@ -46,8 +81,23 @@ class Profile(models.Model):
         return f"{self.user.username}'s Profile"
 
 class ProfileInterest(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='interests')
-    interest = models.CharField(max_length=100)
+    id = models.BigAutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the profile interest.',
+    )
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='interests',
+        verbose_name='profile',
+        help_text='Profile this interest belongs to.',
+    )
+    interest = models.CharField(
+        verbose_name='interest',
+        max_length=100,
+        help_text='Reading interest shown on the profile.',
+    )
     
     class Meta:
         unique_together = ['profile', 'interest']  # Prevent duplicate interests for same profile
@@ -56,18 +106,36 @@ class ProfileInterest(models.Model):
         return f"{self.profile.user.username} - {self.interest}"
 
 class ProfileSocialLink(models.Model):
-    SOCIAL_PLATFORMS = [
-        ('TWITTER', 'Twitter'),
-        ('FACEBOOK', 'Facebook'),
-        ('INSTAGRAM', 'Instagram'),
-        ('LINKEDIN', 'LinkedIn'),
-        ('GITHUB', 'GitHub'),
-        ('WEBSITE', 'Personal Website'),
-    ]
+    class SocialPlatform(models.TextChoices):
+        TWITTER = 'TWITTER', 'Twitter'
+        FACEBOOK = 'FACEBOOK', 'Facebook'
+        INSTAGRAM = 'INSTAGRAM', 'Instagram'
+        LINKEDIN = 'LINKEDIN', 'LinkedIn'
+        GITHUB = 'GITHUB', 'GitHub'
+        WEBSITE = 'WEBSITE', 'Personal Website'
 
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_links')
-    platform = models.CharField(max_length=20, choices=SOCIAL_PLATFORMS)
-    url = models.URLField()
+    id = models.BigAutoField(
+        primary_key=True,
+        verbose_name='ID',
+        help_text='Primary identifier for the profile social link.',
+    )
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='social_links',
+        verbose_name='profile',
+        help_text='Profile this social link belongs to.',
+    )
+    platform = models.CharField(
+        verbose_name='platform',
+        max_length=20,
+        choices=SocialPlatform.choices,
+        help_text='Social platform for the link.',
+    )
+    url = models.URLField(
+        verbose_name='URL',
+        help_text='Absolute URL to the profile social page.',
+    )
 
     class Meta:
         unique_together = ['profile', 'platform']  # One link per platform per profile

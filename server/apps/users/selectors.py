@@ -18,7 +18,7 @@ def profile_for_user(user):
 
 
 def profile_exists_for_user(user) -> bool:
-    return Profile.objects.filter(user=user).exists()
+    return Profile.objects.select_related('user').filter(user=user).exists()
 
 
 def user_data_queryset():
