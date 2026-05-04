@@ -14,38 +14,36 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+import cloudinary
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Media files configuration
-MEDIA_URL = '/media/'  # This is the URL path where your media will be served from
-MEDIA_ROOT = BASE_DIR / 'media'  # This is where files will be stored on your server
+MEDIA_URL = "/media/"  # This is the URL path where your media will be served from
+MEDIA_ROOT = BASE_DIR / "media"  # This is where files will be stored on your server
 
 # Ensure Django handles large file uploads properly
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB in bytes
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB in bytes
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-
 # Cloudinary Configuration
 cloudinary.config(
-    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-    api_key = os.environ.get('CLOUDINARY_API_KEY', ''),
-    api_secret = os.environ.get('CLOUDINARY_API_SECRET', '')
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
 )
 
 # Media Storage Configuration
 STORAGES = {
-    'default': {
-        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
-    'staticfiles': {
-        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
@@ -53,43 +51,42 @@ STORAGES = {
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-this-in-production")
 
 # SECURITY WARNING: don't run with debug turned on in production.
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "rest_framework.authtoken",
-    "django.contrib.sites",  
+    "django.contrib.sites",
     "allauth",
     "allauth.account",
-    "allauth.socialaccount",  
+    "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
-    'cloudinary_storage',
-    'cloudinary',
+    "cloudinary_storage",
+    "cloudinary",
     "corsheaders",
-    'apps.users',
-    'apps.books',
-    'apps.follows',
-    'apps.notifications',
-    'drf_spectacular',
-    'apps.recommendation.apps.RecommendationsConfig',
-
+    "apps.users",
+    "apps.books",
+    "apps.follows",
+    "apps.notifications",
+    "drf_spectacular",
+    "apps.recommendation.apps.RecommendationsConfig",
 ]
 
 SIMPLE_JWT = {
@@ -98,75 +95,78 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": True,
-    "SIGNING_KEY": os.environ.get('JWT_SIGNING_KEY', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),  # generate a key and replace me
+    "SIGNING_KEY": os.environ.get(
+        "JWT_SIGNING_KEY",
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ),  # generate a key and replace me
     "ALGORITHM": "HS512",
 }
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny', 
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,
-    'REGISTER_SERIALIZER': 'apps.users.serializers.auth_serializer.CustomRegisterSerializer'
+    "REGISTER_SERIALIZER": "apps.users.serializers.auth_serializer.CustomRegisterSerializer",
 }
 
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
-    'apps.users.middleware.ProfileRequiredMiddleware'
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "apps.users.middleware.ProfileRequiredMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'booknest_db'),
-        'USER': os.environ.get('DB_USER', 'booknest'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'booknest'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", "booknest_db"),
+        "USER": os.environ.get("DB_USER", "booknest"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "booknest"),
+        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
@@ -177,19 +177,19 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 12,
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 12,
         },
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -197,165 +197,162 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
 USE_TZ = True
 
 
-
-
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = "users.CustomUser"
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 SITE_ID = 1
 
 
 # Email configuration
-# Gmail SMTP Configuration (FREE - 500 emails/day)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
 # Email settings
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # Frontend URL for password reset links
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-SITE_NAME = os.environ.get('SITE_NAME', 'BookNest')
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+SITE_NAME = os.environ.get("SITE_NAME", "BookNest")
 
 # Password reset timeout (1 hour)
 PASSWORD_RESET_TIMEOUT = 3600
 
 # Email subject prefix
-EMAIL_SUBJECT_PREFIX = f'[{SITE_NAME}] '
+EMAIL_SUBJECT_PREFIX = f"[{SITE_NAME}] "
 
 # Timeout settings
 EMAIL_TIMEOUT = 60
 
-ACCOUNT_ADAPTER = 'apps.users.adapter.CustomAccountAdapter'
-# END EMAIL SERVER CONFIGURATION 
+ACCOUNT_ADAPTER = "apps.users.adapter.CustomAccountAdapter"
+# END EMAIL SERVER CONFIGURATION
 
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["username*", "email*", "password1*", "password2*"]
 AUTHENTICATION_BACKENDS = (
-    'allauth.account.auth_backends.AuthenticationBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    "allauth.account.auth_backends.AuthenticationBackend",
+    "django.contrib.auth.backends.ModelBackend",
 )
 
 # django-allauth uses conditional unique constraints that MariaDB cannot create.
 # BookNest runs on MariaDB by design, so this backend-specific warning is expected.
-SILENCED_SYSTEM_CHECKS = ['models.W036']
+SILENCED_SYSTEM_CHECKS = ["models.W036"]
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {asctime} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'django_debug.log',  # Will be created in your project root
-            'formatter': 'verbose',
-        },
-        'recommendation_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'recommendation.log',  # Will be created in your project root
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': True,
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
-        'recommendation': {
-            'handlers': ['console', 'recommendation_file'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": "django_debug.log",  # Will be created in your project root
+            "formatter": "verbose",
         },
-        'users': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+        "recommendation_file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": "recommendation.log",  # Will be created in your project root
+            "formatter": "verbose",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "recommendation": {
+            "handlers": ["console", "recommendation_file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "users": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 }
 
 CORS_ALLOW_CREDENTIALS = True
 
-    
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'BookNest API',
-    'DESCRIPTION': 'API documentation for BookNest application',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SWAGGER_UI_SETTINGS': {
-        'deepLinking': True,
-        'persistAuthorization': True,
+    "TITLE": "BookNest API",
+    "DESCRIPTION": "API documentation for BookNest application",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
     },
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SERVE_PUBLIC': True,
-    'SCHEMA_PATH_PREFIX': r'/api/v1/',
-    'ENABLE_DJANGO_DEPLOY_CHECK': False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SERVE_PUBLIC": True,
+    "SCHEMA_PATH_PREFIX": r"/api/v1/",
+    "ENABLE_DJANGO_DEPLOY_CHECK": False,
 }
 
 # Cache settings
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://booknest_redis:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'SOCKET_CONNECT_TIMEOUT': 5,
-            'SOCKET_TIMEOUT': 5,
-            'RETRY_ON_TIMEOUT': True,
-            'MAX_CONNECTIONS': 1000,
-            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-        }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://booknest_redis:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "RETRY_ON_TIMEOUT": True,
+            "MAX_CONNECTIONS": 1000,
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+        },
     }
 }
 
@@ -363,4 +360,16 @@ CACHES = {
 CACHE_TTL = 60 * 15
 
 # Cache key prefix
-CACHE_KEY_PREFIX = 'booknest'
+CACHE_KEY_PREFIX = "booknest"
+
+# Celery settings
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = [
+    content.strip()
+    for content in os.environ.get("CELERY_ACCEPT_CONTENT", "json").split(",")
+    if content.strip()
+]
+CELERY_TASK_SERIALIZER = os.environ.get("CELERY_TASK_SERIALIZER", "json")
+CELERY_RESULT_SERIALIZER = os.environ.get("CELERY_RESULT_SERIALIZER", "json")
+CELERY_TIMEZONE = os.environ.get("CELERY_TIMEZONE", TIME_ZONE)
