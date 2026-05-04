@@ -1,9 +1,6 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
 
 from apps.follows.models import Follow
 from apps.follows.serializers import (
@@ -12,7 +9,14 @@ from apps.follows.serializers import (
     FollowerListSerializer,
     FollowingListSerializer
 )
-from apps.users.models.profile import Profile
+from apps.follows.selectors import (
+    follow_relationships_for_user,
+    followers_for_profile,
+    following_for_profile,
+    get_follow,
+    get_profile,
+)
+from apps.follows.services import create_follow
 
 
 class FollowListAPIView(generics.ListAPIView):
@@ -23,9 +27,7 @@ class FollowListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Follow.objects.filter(
-            Q(follower__user=self.request.user) | Q(followed__user=self.request.user)
-        ).order_by('-created_at')
+        return follow_relationships_for_user(self.request.user)
 
 
 class FollowDetailAPIView(generics.RetrieveAPIView):
@@ -37,9 +39,7 @@ class FollowDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'id'
     
     def get_queryset(self):
-        return Follow.objects.filter(
-            Q(follower__user=self.request.user) | Q(followed__user=self.request.user)
-        )
+        return follow_relationships_for_user(self.request.user)
 
 
 class FollowCreateAPIView(generics.CreateAPIView):
@@ -50,27 +50,10 @@ class FollowCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     
     def perform_create(self, serializer):
-        # Get the follower (current user) and followed profiles
         follower_profile = self.request.user.profile
         followed_id = serializer.validated_data['followed'].id
-        followed_profile = get_object_or_404(Profile, id=followed_id)
-        
-        # Prevent users from following themselves
-        if follower_profile == followed_profile:
-            return Response(
-                {'error': 'You cannot follow yourself'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Check if already following
-        if Follow.objects.filter(follower=follower_profile, followed=followed_profile).exists():
-            return Response(
-                {'error': 'You are already following this user'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Create the follow relationship
-        serializer.save(follower=follower_profile)
+        followed_profile = get_profile(followed_id)
+        serializer.instance = create_follow(follower=follower_profile, followed=followed_profile)
 
 
 class FollowDeleteAPIView(generics.DestroyAPIView):
@@ -88,13 +71,8 @@ class FollowDeleteAPIView(generics.DestroyAPIView):
             )
         
         follower_profile = request.user.profile
-        followed_profile = get_object_or_404(Profile, id=followed_id)
-        
-        follow = get_object_or_404(
-            Follow, 
-            follower=follower_profile, 
-            followed=followed_profile
-        )
+        followed_profile = get_profile(followed_id)
+        follow = get_follow(follower=follower_profile, followed=followed_profile)
         
         follow.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -108,7 +86,7 @@ class FollowerListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Follow.objects.filter(followed__user=self.request.user).order_by('-created_at')
+        return followers_for_profile(self.request.user.profile)
 
 
 class FollowingListAPIView(generics.ListAPIView):
@@ -119,7 +97,7 @@ class FollowingListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Follow.objects.filter(follower__user=self.request.user).order_by('-created_at')
+        return following_for_profile(self.request.user.profile)
 
 
 class UserFollowersAPIView(generics.ListAPIView):
@@ -131,8 +109,8 @@ class UserFollowersAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
-        profile = get_object_or_404(Profile, id=user_id)
-        return Follow.objects.filter(followed=profile).order_by('-created_at')
+        profile = get_profile(user_id)
+        return followers_for_profile(profile)
 
 
 class UserFollowingAPIView(generics.ListAPIView):
@@ -144,5 +122,5 @@ class UserFollowingAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
-        profile = get_object_or_404(Profile, id=user_id)
-        return Follow.objects.filter(follower=profile).order_by('-created_at')
+        profile = get_profile(user_id)
+        return following_for_profile(profile)

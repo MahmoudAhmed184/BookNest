@@ -1,6 +1,6 @@
 from django.db import models
-from django.conf import settings
 from apps.users.models.profile import Profile
+from apps.follows.managers import FollowManager
 
 class Follow(models.Model):
     """
@@ -18,6 +18,7 @@ class Follow(models.Model):
         related_name='followers'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    objects = FollowManager()
     
     class Meta:
         unique_together = ('follower', 'followed')
