@@ -1,0 +1,167 @@
+import {
+  authHeaders,
+  deleteData,
+  getApiError,
+  getData,
+  patchData,
+} from "./apiClient";
+import type { ApiResult } from "../types/api";
+import type {
+  ProfileResponseEnvelope,
+  UpdateBioPayload,
+  UpdateUserPayload,
+  UserProfile,
+  UserRatingsResponse,
+  UserReviewsResponse,
+} from "../types/user";
+
+export async function getMyProfile(): Promise<ApiResult<UserProfile>> {
+  try {
+    const response = await getData<ProfileResponseEnvelope>(
+      "/api/users/profile/me/",
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log(response.data.profile);
+
+    return response.data.profile;
+  } catch (error: unknown) {
+    return getApiError(error);
+  }
+}
+
+export async function getProfile(
+  id: string | undefined
+): Promise<ApiResult<UserProfile>> {
+  try {
+    const response = await getData<ProfileResponseEnvelope>(
+      `/api/users/profile/${id}/`,
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log(response.data.profile);
+
+    return response.data.profile;
+  } catch (error: unknown) {
+    return getApiError(error);
+  }
+}
+
+export async function getUserProfile(
+  id: number | string | undefined
+): Promise<ApiResult<ProfileResponseEnvelope>> {
+  const token = localStorage.getItem("token");
+  console.log(token);
+
+  try {
+    const response = await getData<ProfileResponseEnvelope>(
+      `/api/users/profile/${id}/`,
+      {
+        headers: authHeaders(token),
+      }
+    );
+    console.log(response);
+    return response;
+  } catch (error: unknown) {
+    const apiError = getApiError(error);
+    console.log(apiError);
+    return apiError;
+  }
+}
+
+export async function updateUser(
+  token: string | null,
+  data: UpdateUserPayload
+): Promise<ApiResult<UserProfile>> {
+  console.log(token);
+
+  try {
+    const response = await patchData<UserProfile, UpdateUserPayload>(
+      "/api/users/user/",
+      data,
+      {
+        headers: authHeaders(token),
+      }
+    );
+    console.log(response);
+    return response;
+  } catch (error: unknown) {
+    const apiError = getApiError(error);
+    console.log(apiError);
+    return apiError;
+  }
+}
+
+export async function updateBio(
+  data: UpdateBioPayload
+): Promise<ApiResult<UserProfile>> {
+  try {
+    const response = await patchData<UserProfile, UpdateBioPayload>(
+      "/api/users/profile/me/",
+      data,
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log(response);
+    return response;
+  } catch (error: unknown) {
+    const apiError = getApiError(error);
+    console.log(apiError);
+    return apiError;
+  }
+}
+
+export async function getUserReviews(
+  id: number | string | undefined
+): Promise<ApiResult<UserReviewsResponse>> {
+  try {
+    const response = await getData<UserReviewsResponse>(
+      `/api/books/users/${id}/reviews/`,
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log(response);
+    return response;
+  } catch (error: unknown) {
+    return getApiError(error);
+  }
+}
+
+export async function getUserRatings(
+  id: number | string | undefined
+): Promise<ApiResult<UserRatingsResponse>> {
+  try {
+    const response = await getData<UserRatingsResponse>(
+      `/api/books/users/${id}/ratings/`,
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log(response);
+    return response;
+  } catch (error: unknown) {
+    return getApiError(error);
+  }
+}
+
+export async function deleteReview(
+  id: number | string | undefined
+): Promise<ApiResult<{ detail?: string }>> {
+  try {
+    const response = await deleteData<ApiResult<{ detail?: string }>>(
+      `/api/books/reviews/${id}/delete/`,
+      {
+        headers: authHeaders(),
+      }
+    );
+    console.log("Response:", response);
+    return response;
+  } catch (error: unknown) {
+    console.error("Error response:", getApiError(error));
+    throw error;
+  }
+}
