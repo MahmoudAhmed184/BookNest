@@ -34,7 +34,7 @@ class BookListAPIView(generics.ListAPIView):
     #     search_query = self.request.query_params.get('search', None)
         
     #     if search_query:
-    #         from books.utils.book_service import search_books
+    #         from apps.books.utils.book_service import search_books
             
     #         # Search in database first, then external APIs if needed
     #         books_data = search_books(search_query)
@@ -197,5 +197,4 @@ class GenreBookListAPIView(generics.ListAPIView):
             raise NotFound("Provide either genre ID or name")
             
         return queryset.distinct()
-
 

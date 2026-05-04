@@ -1,3 +1,3 @@
 
 # # Import signals to register them
-# from books import signals
+# from apps.books import signals

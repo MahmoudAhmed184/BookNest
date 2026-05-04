@@ -1,7 +1,7 @@
 # from django.test import TestCase
 # from django.core.exceptions import ValidationError
-# from books.models import Author, Book, BookAuthor, BookGenre, ReadingList, BookRating, BookReview
-# from users.models import CustomUser
+# from apps.books.models import Author, Book, BookAuthor, BookGenre, ReadingList, BookRating, BookReview
+# from apps.users.models import CustomUser
 # from datetime import date
 
 # class AuthorModelTests(TestCase):
@@ -67,7 +67,7 @@
 #         self.assertEqual(str(self.book_author), "Test Author")
 
 # from django.test import TestCase, override_settings
-# from books.models import BookGenre
+# from apps.books.models import BookGenre
 
 # @override_settings(ELASTICSEARCH_DSL_SIGNAL_PROCESSOR='django_elasticsearch_dsl.signals.RealTimeSignalProcessor',
 #                   ELASTICSEARCH_DSL_AUTOSYNC=False)

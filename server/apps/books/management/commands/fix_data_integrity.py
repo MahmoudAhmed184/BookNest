@@ -3,7 +3,7 @@
 # from django.db import transaction
 # from django.db.models import Count, F, Q
 # from django.utils import timezone
-# from books.models import Book, Author, BookAuthor
+# from apps.books.models import Book, Author, BookAuthor
 
 # logger = logging.getLogger(__name__)
 
