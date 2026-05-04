@@ -12,4 +12,8 @@ export interface ApiEnvelope<T> {
   status?: string;
 }
 
+export interface ApiDetailResponse {
+  detail?: string;
+}
+
 export type ApiResult<T> = T | ApiErrorResponse;

@@ -6,6 +6,7 @@ import {
   postData,
   throwApiError,
 } from "./apiClient";
+import type { ApiDetailResponse } from "../types/api";
 import type {
   Book,
   BookRating,
@@ -118,7 +119,7 @@ export async function createRating(
 
 export async function deleteBook(
   data: DeleteBookPayload
-): Promise<{ detail?: string }> {
+): Promise<ApiDetailResponse> {
   console.log("Data sent:", data);
 
   const token = localStorage.getItem("token");
@@ -128,7 +129,7 @@ export async function deleteBook(
   }
 
   try {
-    const response = await deleteData<{ detail?: string }, DeleteBookPayload>(
+    const response = await deleteData<ApiDetailResponse, DeleteBookPayload>(
       "/api/books/reading-lists/books/",
       {
         headers: authHeaders(token),
@@ -139,7 +140,7 @@ export async function deleteBook(
     return response;
   } catch (error: unknown) {
     console.error("Error response:", getApiError(error));
-    throw error;
+    throwApiError(error);
   }
 }
 
