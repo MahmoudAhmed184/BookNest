@@ -7,7 +7,7 @@ from django.utils import timezone
 class Author(models.Model):
 
     author_id = models.AutoField(primary_key=True)
-    name = models.TextField()
+    name = models.CharField(max_length=255)
     number_of_books = models.SmallIntegerField(default=0)
     class Meta:
         db_table = 'author'
@@ -22,7 +22,7 @@ class Book(models.Model):
     isbn13 = models.CharField(primary_key=True, max_length=13)
     isbn = models.CharField(max_length=10, null=True, blank=True)
     cover_img = models.URLField(null=True, blank=True)
-    title = models.TextField(null=False)
+    title = models.CharField(max_length=500)
     description = models.TextField(null=True, blank=True)
     publication_date = models.DateField(null=True, blank=True)
     number_of_pages = models.IntegerField(null=True, blank=True)
@@ -32,7 +32,7 @@ class Book(models.Model):
     )
     authors = models.ManyToManyField('books.Author', related_name='books', through='BookAuthor')
     genres = models.ManyToManyField('books.Genre', related_name='books')
-    language = models.TextField(null=True, blank=True, help_text="Comma-separated list of languages")
+    language = models.CharField(max_length=100, null=True, blank=True, help_text="Comma-separated list of languages")
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
     source = models.CharField(
@@ -410,7 +410,6 @@ class Genre(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 

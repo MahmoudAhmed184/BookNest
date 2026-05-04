@@ -21,12 +21,12 @@ BookNest is a Django REST Framework application that serves as an alternative to
    cp .env.example .env
    ```
    Edit the `.env` file and update the values as needed, especially:
-   - `DB_PASSWORD`: Set a secure password for PostgreSQL
+   - `DB_PASSWORD`: Set a secure password for MariaDB
    - `SECRET_KEY`: Generate a new Django secret key for production
 
 3. **Build and run with Docker Compose**
    ```bash
-   # Basic setup (Django + PostgreSQL + Redis)
+   # Basic setup (Django + MariaDB + Redis)
    docker-compose up --build
    ```
 <!--    
@@ -50,7 +50,7 @@ BookNest is a Django REST Framework application that serves as an alternative to
 | Service | Port | Description |
 |---------|------|-------------|
 | Django Web | 8000 | Main application |
-| PostgreSQL | 5432 | Database |
+| MariaDB | 3306 | Database |
 | Redis | 6379 | Caching (optional) |
 
 ### Docker Commands
@@ -79,7 +79,7 @@ docker-compose exec web python manage.py collectstatic
 
 # Access container shell
 docker-compose exec web bash
-docker-compose exec db psql -U postgres -d booknest_db
+docker-compose exec db mariadb -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME"
 ```
 
 ### Environment Variables
@@ -92,9 +92,9 @@ Key environment variables in `.env`:
   - `ALLOWED_HOSTS`: Comma-separated list of allowed hosts
 
 - **Database**
-  - `DB_NAME`: PostgreSQL database name
-  - `DB_USER`: PostgreSQL username
-  - `DB_PASSWORD`: PostgreSQL password
+  - `DB_NAME`: MariaDB database name
+  - `DB_USER`: MariaDB username
+  - `DB_PASSWORD`: MariaDB password
   - `DB_HOST`: Database host (use 'db' for Docker)
   - `DB_PORT`: Database port
 
@@ -130,14 +130,14 @@ For production deployment:
 3. Update `ALLOWED_HOSTS` with your domain
 4. Use a production WSGI server like Gunicorn:
    ```dockerfile
-   CMD ["gunicorn", "--bind", "0.0.0.0:8000", "BookNest.wsgi:application"]
+   CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
    ```
 
 ### Troubleshooting
 
 **Database connection issues:**
 ```bash
-# Check if PostgreSQL is running
+# Check if MariaDB is running
 docker-compose ps
 
 # View database logs
@@ -178,9 +178,8 @@ The application provides a comprehensive REST API. Visit http://localhost:8000/s
 ## 🛠 Technology Stack
 
 - **Backend**: Django REST Framework
-- **Database**: PostgreSQL
+- **Database**: MariaDB
 - **Authentication**: JWT with django-allauth
 - **Media Storage**: Cloudinary
 - **API Documentation**: drf-spectacular
 - **Containerization**: Docker & Docker Compose -->
-

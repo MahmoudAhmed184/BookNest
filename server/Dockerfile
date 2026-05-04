@@ -1,49 +1,37 @@
-# Use Python 3.10 slim image
-FROM python:3.10-slim
+FROM python:3.14-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Set work directory
-WORKDIR /app
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app:$PYTHONPATH"
-# Install system dependencies
+ENV DJANGO_SETTINGS_MODULE=config.settings.production
+
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /bin/
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        postgresql-client \
         build-essential \
-        libpq-dev \
         curl \
+        default-libmysqlclient-dev \
+        mariadb-client \
         netcat-openbsd \
+        pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY req.txt /app/
-RUN pip install --no-cache-dir -r req.txt
+COPY pyproject.toml uv.lock .python-version /app/
+RUN uv sync --frozen --only-group prod
 
-# Copy project
 COPY . /app/
 
-# Copy wait-for-db script
-COPY wait-for-db.sh /app/
-RUN chmod +x /app/wait-for-db.sh
+RUN chmod +x /app/wait-for-db.sh \
+    && mkdir -p /app/media /app/logs \
+    && uv run python manage.py collectstatic --noinput || true
 
-# Create media directory
-RUN mkdir -p /app/media
-
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
-
-# Expose port
 EXPOSE 8000
 
-# Set Django settings module for Docker
-ENV DJANGO_SETTINGS_MODULE=BookNest.docker_settings
-
-# Create logs directory
-RUN mkdir -p /app/logs
-
-# Run the application
-CMD ["./wait-for-db.sh", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["./wait-for-db.sh", "uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]

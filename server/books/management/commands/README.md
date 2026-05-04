@@ -35,22 +35,6 @@ python manage.py fix_data_integrity --fix-all --dry-run
 python manage.py fix_data_integrity --fix-author-counts --fix-book-ratings
 ```
 
-## setup_postgresql_search.py
-
-This command sets up PostgreSQL full-text search indexes and optimizes database search performance.
-
-### Features
-
-- Creates GIN indexes for book titles, descriptions, and author names
-- Updates search vectors for existing books
-
-### Usage
-
-```bash
-# Set up PostgreSQL search
-python manage.py setup_postgresql_search
-```
-
 ## Overview
 
 This directory contains management commands for maintaining data integrity in the BookNest application. These commands help ensure that the database remains consistent and that data quality is maintained.
@@ -78,28 +62,6 @@ python manage.py fix_data_integrity --fix-author-counts --fix-missing-genres
 
 # Dry run (show what would be fixed without making changes)
 python manage.py fix_data_integrity --fix-all --dry-run
-```
-
-### setup_postgresql_search.py
-
-This command sets up PostgreSQL full-text search indexes and optimizes the database for search performance.
-
-#### Features
-
-- **Create GIN Indexes**: Creates GIN indexes for full-text search on PostgreSQL.
-- **Update Search Vectors**: Updates search vectors for existing books to improve search performance.
-
-#### Usage
-
-```bash
-# Create GIN indexes
-python manage.py setup_postgresql_search --create-gin-indexes
-
-# Update search vectors
-python manage.py setup_postgresql_search --update-search-vectors
-
-# Run both operations
-python manage.py setup_postgresql_search --create-gin-indexes --update-search-vectors
 ```
 
 ## Best Practices

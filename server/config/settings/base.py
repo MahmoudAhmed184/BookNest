@@ -10,23 +10,19 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-import os
 
 from dotenv import load_dotenv
 load_dotenv()
 
-# Base directory of your project
-BASE_DIR_STATIC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Media files configuration
 MEDIA_URL = '/media/'  # This is the URL path where your media will be served from
-MEDIA_ROOT = os.path.join(BASE_DIR_STATIC, 'media')  # This is where files will be stored on your server
+MEDIA_ROOT = BASE_DIR / 'media'  # This is where files will be stored on your server
 
 # Ensure Django handles large file uploads properly
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB in bytes
@@ -44,7 +40,14 @@ cloudinary.config(
 )
 
 # Media Storage Configuration
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+STORAGES = {
+    'default': {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -52,16 +55,9 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production.
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# Security settings for development
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-
-# Update ALLOWED_HOSTS for local development
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
@@ -137,7 +133,7 @@ MIDDLEWARE = [
     'users.middleware.ProfileRequiredMiddleware'
 ]
 
-ROOT_URLCONF = 'BookNest.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
@@ -155,7 +151,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'BookNest.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
@@ -235,11 +231,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "jkennen83@gmail.com"  
-EMAIL_HOST_PASSWORD = "txjf ncxu gphp incg"  
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 # Email settings
-DEFAULT_FROM_EMAIL = "jkennen83@gmail.com"
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # Frontend URL for password reset links
@@ -260,9 +256,8 @@ ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
 
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*', 'password2*']
 AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
     'django.contrib.auth.backends.ModelBackend',
@@ -323,23 +318,7 @@ LOGGING = {
     },
 }
 
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5500",   
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"     
-    ]
-    
 CORS_ALLOW_CREDENTIALS = True
-
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = False  # This only works if you're using https
-SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = False
 
     
 

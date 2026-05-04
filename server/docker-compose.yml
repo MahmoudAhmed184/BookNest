@@ -2,21 +2,22 @@
 
 services:
   db:
-    image: postgres:15
+    image: mariadb:11.8
     container_name: booknest_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME:-booknest_db}
+      MARIADB_USER: ${DB_USER:-booknest}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-booknest}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-booknest_root}
     ports:
-      - "5433:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mariadb_data:/var/lib/mysql
     networks:
       - booknest_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u${DB_USER:-booknest} -p${DB_PASSWORD:-booknest}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,11 +29,12 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SECRET_KEY=${SECRET_KEY}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_NAME=${DB_NAME:-booknest_db}
+      - DB_USER=${DB_USER:-booknest}
+      - DB_PASSWORD=${DB_PASSWORD:-booknest}
       - DB_HOST=db
-      - DB_PORT=5432
+      - DB_PORT=3306
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
@@ -52,34 +54,21 @@ services:
   celery:
     build: .
     container_name: booknest_celery
-    command: celery -A BookNest worker --loglevel=info
+    command: celery -A config worker --loglevel=info
     depends_on:
       - web
       - redis
     environment:
-      - DJANGO_SETTINGS_MODULE=BookNest.docker_settings
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_NAME=${DB_NAME:-booknest_db}
+      - DB_USER=${DB_USER:-booknest}
+      - DB_PASSWORD=${DB_PASSWORD:-booknest}
+      - DB_HOST=db
+      - DB_PORT=3306
     volumes:
       - .:/app
     networks:
       - booknest_network
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: booknest_pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - db
-    networks:
-      - booknest_network
-    profiles:
-      - admin
 
   redis:
     image: redis:7-alpine
@@ -94,8 +83,7 @@ services:
 
 
 volumes:
-  postgres_data:
-  pgadmin_data:
+  mariadb_data:
   redis_data:
 
 networks:

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # wait-for-db.sh
-# Script to wait for PostgreSQL to be ready before starting Django
+# Script to wait for MariaDB to be ready before starting Django
 
 set -e
 
@@ -11,14 +11,14 @@ user="$DB_USER"
 password="$DB_PASSWORD"
 db_name="$DB_NAME"
 
-echo "Waiting for PostgreSQL at $host:$port..."
+echo "Waiting for MariaDB at $host:$port..."
 
-until PGPASSWORD=$password psql -h "$host" -p "$port" -U "$user" -d "$db_name" -c '\q'; do
-  >&2 echo "PostgreSQL is unavailable - sleeping"
+until mariadb --protocol=tcp -h "$host" -P "$port" -u "$user" "-p$password" "$db_name" -e 'SELECT 1' >/dev/null 2>&1; do
+  >&2 echo "MariaDB is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "PostgreSQL is up - executing command"
+>&2 echo "MariaDB is up - executing command"
 
 # Run migrations
 echo "Running database migrations..."
