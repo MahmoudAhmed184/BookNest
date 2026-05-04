@@ -324,7 +324,12 @@ LOGGING = {
         "django": {
             "handlers": ["console", "file"],
             "level": "INFO",
-            "propagate": True,
+            "propagate": False,
+        },
+        "apps.books": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
         "recommendation": {
             "handlers": ["console", "recommendation_file"],
