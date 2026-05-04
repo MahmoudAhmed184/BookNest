@@ -1,8 +1,8 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 from cloudinary.models import CloudinaryField
+
+from apps.users.managers import ProfileManager
 
 DEFAULT_PROFILE_PIC = 'https://liwdokry.manus.space/image.svg'
 DEFAULT_BIO = "Hey there! I'm new to BookNest."
@@ -39,6 +39,8 @@ class Profile(models.Model):
     settings = models.JSONField(default=dict)  # Storing settings as JSON
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ProfileManager()
 
     def __str__(self):
         return f"{self.user.username}'s Profile"

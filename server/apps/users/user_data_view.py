@@ -2,10 +2,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.db import transaction
-from apps.users.models import CustomUser
 from .user_data_serializer import UserDataSerializer
+from apps.users.selectors import get_user_data, user_data_queryset
 
 class UserDataDetailView(generics.RetrieveAPIView):
     """
@@ -17,22 +15,10 @@ class UserDataDetailView(generics.RetrieveAPIView):
     lookup_field = 'id'
     
     def get_queryset(self):
-        return CustomUser.objects.select_related('profile').prefetch_related(
-            'profile__interests',
-            'profile__social_links',
-            'profile__following',
-            'profile__followers',
-            'profile__reading_lists__reading_list_books__book__authors',
-            'profile__reading_lists__reading_list_books__book__genres',
-            'ratings__book__authors',
-            'ratings__book__genres',
-            'reviews__book__authors',
-            'reviews__book__genres'
-        )
+        return user_data_queryset()
     
     def get_object(self):
-        user_id = self.kwargs.get('id')
-        return get_object_or_404(self.get_queryset(), id=user_id)
+        return get_user_data(self.kwargs.get('id'))
     
     def retrieve(self, request, *args, **kwargs):
         try:

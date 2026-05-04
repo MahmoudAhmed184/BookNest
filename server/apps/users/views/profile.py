@@ -2,11 +2,16 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db import transaction
 from apps.users.models.profile import Profile
 from apps.users.serializers.profile import ProfileSerializer, ProfileUpdateSerializer
 from apps.users.permissions import IsOwnerOrReadOnly, IsAuthenticated
-import cloudinary.uploader
+from apps.users.selectors import profile_exists_for_user, profile_for_user, profile_list
+from apps.users.services import (
+    create_profile,
+    update_profile,
+    upload_profile_picture,
+    validate_profile_image,
+)
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import logging
 
@@ -32,7 +37,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         """Create a new profile for the authenticated user"""
         try:
             # Check if user already has a profile
-            if hasattr(request.user, 'profile'):
+            if profile_exists_for_user(request.user):
                 response_data = {
                     "success": False,
                     "message": "Profile creation failed",
@@ -40,28 +45,24 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }
                 return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create profile with authenticated user
-            with transaction.atomic():
-                serializer = self.get_serializer(data=request.data)
-                if serializer.is_valid():
-                    profile = serializer.save(user=request.user)
-                    
-                    response_data = {
-                        "success": True,
-                        "message": "Profile created successfully",
-                        "data": {
-                            "profile": serializer.data
-                        }
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                create_profile(user=request.user, serializer=serializer)
+                response_data = {
+                    "success": True,
+                    "message": "Profile created successfully",
+                    "data": {
+                        "profile": serializer.data
                     }
-                    return Response(response_data, status=status.HTTP_201_CREATED)
-                
-                # Format validation errors
-                error_response = {
-                    "success": False,
-                    "message": "Profile creation failed",
-                    "errors": self._format_validation_errors(serializer.errors)
                 }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            error_response = {
+                "success": False,
+                "message": "Profile creation failed",
+                "errors": self._format_validation_errors(serializer.errors)
+            }
+            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
             logger.error(f"Profile creation error for user {request.user.id}: {str(e)}")
@@ -101,26 +102,24 @@ class ProfileViewSet(viewsets.ModelViewSet):
             partial = kwargs.pop('partial', False)
             instance = self.get_object()
             
-            with transaction.atomic():
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
-                if serializer.is_valid():
-                    serializer.save()
-                    
-                    response_data = {
-                        "success": True,
-                        "message": "Profile updated successfully",
-                        "data": {
-                            "profile": serializer.data
-                        }
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            if serializer.is_valid():
+                update_profile(profile=instance, serializer=serializer)
+                response_data = {
+                    "success": True,
+                    "message": "Profile updated successfully",
+                    "data": {
+                        "profile": serializer.data
                     }
-                    return Response(response_data, status=status.HTTP_200_OK)
-                
-                error_response = {
-                    "success": False,
-                    "message": "Profile update failed",
-                    "errors": self._format_validation_errors(serializer.errors)
                 }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+                return Response(response_data, status=status.HTTP_200_OK)
+
+            error_response = {
+                "success": False,
+                "message": "Profile update failed",
+                "errors": self._format_validation_errors(serializer.errors)
+            }
+            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
                 
         except Profile.DoesNotExist:
             error_response = {
@@ -189,25 +188,17 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Filter queryset based on query parameters"""
-        queryset = Profile.objects.all().select_related('user').prefetch_related('interests', 'social_links')
-        
-        # Filter by username if provided
-        username = self.request.query_params.get('username', None)
-        if username is not None:
-            queryset = queryset.filter(user__username=username)
-            
-        # Filter by profile type if provided
-        profile_type = self.request.query_params.get('profile_type', None)
-        if profile_type is not None:
-            queryset = queryset.filter(profile_type=profile_type)
-            
-        return queryset
+        return profile_list(
+            username=self.request.query_params.get('username'),
+            profile_type=self.request.query_params.get('profile_type'),
+        )
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request):
         """Endpoint to get or update the current user's profile"""
         try:
-            if not hasattr(request.user, 'profile'):
+            profile = profile_for_user(request.user)
+            if profile is None:
                 error_response = {
                     "success": False,
                     "message": "Profile not found",
@@ -217,8 +208,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     }
                 }
                 return Response(error_response, status=status.HTTP_404_NOT_FOUND)
-            
-            profile = request.user.profile
             
             if request.method == 'GET':
                 serializer = self.get_serializer(profile)
@@ -232,26 +221,24 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 return Response(response_data, status=status.HTTP_200_OK)
             
             elif request.method == 'PATCH':
-                with transaction.atomic():
-                    serializer = self.get_serializer(profile, data=request.data, partial=True)
-                    if serializer.is_valid():
-                        serializer.save()
-                        
-                        response_data = {
-                            "success": True,
-                            "message": "Profile updated successfully",
-                            "data": {
-                                "profile": serializer.data
-                            }
+                serializer = self.get_serializer(profile, data=request.data, partial=True)
+                if serializer.is_valid():
+                    update_profile(profile=profile, serializer=serializer)
+                    response_data = {
+                        "success": True,
+                        "message": "Profile updated successfully",
+                        "data": {
+                            "profile": serializer.data
                         }
-                        return Response(response_data, status=status.HTTP_200_OK)
-                    
-                    error_response = {
-                        "success": False,
-                        "message": "Profile update failed",
-                        "errors": self._format_validation_errors(serializer.errors)
                     }
-                    return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(response_data, status=status.HTTP_200_OK)
+
+                error_response = {
+                    "success": False,
+                    "message": "Profile update failed",
+                    "errors": self._format_validation_errors(serializer.errors)
+                }
+                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
                     
         except Exception as e:
             logger.error(f"Profile me endpoint error for user {request.user.id}: {str(e)}")
@@ -267,7 +254,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
         """Upload profile picture to Cloudinary"""
         try:
             # Check if user has a profile
-            if not hasattr(request.user, 'profile'):
+            profile = profile_for_user(request.user)
+            if profile is None:
                 error_response = {
                     "success": False,
                     "message": "Profile not found",
@@ -277,8 +265,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     }
                 }
                 return Response(error_response, status=status.HTTP_404_NOT_FOUND)
-            
-            profile = request.user.profile
             
             # Check if image is provided
             if 'profile_pic' not in request.FILES:
@@ -291,52 +277,25 @@ class ProfileViewSet(viewsets.ModelViewSet):
             
             image_file = request.FILES['profile_pic']
             
-            # Validate file type
-            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-            if image_file.content_type not in allowed_types:
+            validation_error = validate_profile_image(image_file)
+            if validation_error:
                 error_response = {
                     "success": False,
                     "message": "Upload failed",
-                    "errors": {"profile_pic": f"Invalid file type. Allowed types: {', '.join(allowed_types)}"}
+                    "errors": {"profile_pic": validation_error}
                 }
                 return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Validate file size (5MB limit)
-            if image_file.size > 5 * 1024 * 1024:
-                error_response = {
-                    "success": False,
-                    "message": "Upload failed",
-                    "errors": {"profile_pic": "File size too large. Maximum size is 5MB"}
+
+            upload_result = upload_profile_picture(profile=profile, image_file=image_file)
+            response_data = {
+                "success": True,
+                "message": "Profile picture uploaded successfully",
+                "data": {
+                    "profile_pic_url": upload_result['secure_url'],
+                    "cloudinary_public_id": upload_result['public_id']
                 }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Upload to Cloudinary
-            with transaction.atomic():
-                upload_result = cloudinary.uploader.upload(
-                    image_file,
-                    folder=f'profile_pics/{request.user.username}/',
-                    public_id=f'{request.user.username}_profile',
-                    overwrite=True,
-                    transformation=[
-                        {'width': 400, 'height': 400, 'crop': 'fill'},
-                        {'quality': 'auto'},
-                        {'format': 'auto'}
-                    ]
-                )
-                
-                # Update profile with new image URL
-                profile.profile_pic = upload_result['secure_url']
-                profile.save()
-                
-                response_data = {
-                    "success": True,
-                    "message": "Profile picture uploaded successfully",
-                    "data": {
-                        "profile_pic_url": upload_result['secure_url'],
-                        "cloudinary_public_id": upload_result['public_id']
-                    }
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             logger.error(f"Profile picture upload error for user {request.user.id}: {str(e)}")
