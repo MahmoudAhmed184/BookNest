@@ -10,7 +10,7 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 - [Configuration](#configuration)
 - [Local Development](#local-development)
 - [Docker Development](#docker-development)
-- [Database And Seed Data](#database-and-seed-data)
+- [Database Maintenance](#database-maintenance)
 - [API Documentation](#api-documentation)
 - [Frontend Integration](#frontend-integration)
 - [Testing And Verification](#testing-and-verification)
@@ -40,7 +40,7 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 
 The backend follows a domain-app layout:
 
-- `apps/books`: catalog, authors, genres, ratings, reviews, reading lists, search helpers, and seed command.
+- `apps/books`: catalog, authors, genres, ratings, reviews, reading lists, search helpers, and integrity maintenance commands.
 - `apps/users`: custom user model, profiles, profile interests/social links, auth/profile serializers and views.
 - `apps/follows`: follow relationships between profiles.
 - `apps/notifications`: notification types, notification creation, unread counts, read/unread actions.
@@ -64,7 +64,7 @@ Views should stay thin: parse request input, call selectors/services, and return
 server/
 ├── apps/
 │   ├── books/
-│   │   ├── management/commands/seed_database.py
+│   │   ├── management/commands/fix_data_integrity.py
 │   │   ├── managers.py
 │   │   ├── selectors.py
 │   │   ├── services.py
@@ -149,7 +149,6 @@ Key variables:
 | `DJANGO_LOG_DIR` | Log directory, defaults to `logs` under `server/` |
 | `DJANGO_LOG_FILE` | Main Django log path |
 | `RECOMMENDATION_LOG_FILE` | Recommendation log path |
-| `SEED_*` | Seed command credentials |
 
 For native local MariaDB:
 
@@ -176,10 +175,10 @@ Run migrations:
 uv run python manage.py migrate
 ```
 
-Seed demo data:
+Repair imported or restored data integrity:
 
 ```bash
-uv run python manage.py seed_database
+uv run python manage.py fix_data_integrity --fix-all
 ```
 
 Start the development server:
@@ -217,7 +216,6 @@ Run backend commands in the web container:
 
 ```bash
 docker compose exec web uv run python manage.py migrate
-docker compose exec web uv run python manage.py seed_database
 docker compose exec web uv run python manage.py createsuperuser
 docker compose exec web uv run python manage.py check
 ```
@@ -227,7 +225,7 @@ MariaDB data is persisted in the named Docker volume `mariadb_data`.
 - `docker compose down` stops containers and keeps data.
 - `docker compose down -v` removes volumes and deletes database data.
 
-## Database And Seed Data
+## Database Maintenance
 
 BookNest uses MariaDB from the start.
 
@@ -237,25 +235,35 @@ Run migrations:
 uv run python manage.py migrate
 ```
 
-Run the idempotent seed command:
+Run data integrity repairs after large imports or restores:
 
 ```bash
-uv run python manage.py seed_database
+uv run python manage.py fix_data_integrity --fix-all
 ```
 
-The seed command creates or updates:
+The integrity command repairs:
 
-- admin user from `SEED_ADMIN_*`
-- demo reader users
-- profiles, interests, and social links
-- genres, authors, books, and author links
-- reading lists and list books
-- ratings and reviews
-- follow relationships
-- notification types and notifications
-- recommendation model metadata and user recommendations
+- author book counters
+- book rating counters and averages
+- review vote counters
+- missing book genres
+- duplicate reading-list entries
+- missing user profiles
+- MariaDB auto-increment sequences
 
-Running the command multiple times updates existing records and avoids duplicate domain data.
+Create a local MariaDB backup after repairs:
+
+```bash
+set -a
+. ./.env
+set +a
+mkdir -p backups
+MYSQL_PWD="$DB_PASSWORD" mariadb-dump --single-transaction --quick \
+  --routines --triggers --events -u "$DB_USER" "$DB_NAME" \
+  > backups/booknest_mariadb_clean.sql
+```
+
+Database dumps are ignored by Git and should be stored securely because they may contain user data and password hashes.
 
 ## API Documentation
 
@@ -286,7 +294,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
 
-The current frontend UI uses retryable loading/error states for API-backed books, search results, recommendations, reviews, reading lists, profiles, and notifications. Keeping the seeded data current helps those pages demonstrate their skeleton, empty, error, and populated states cleanly.
+The current frontend UI uses retryable loading/error states for API-backed books, search results, recommendations, reviews, reading lists, profiles, and notifications.
 
 ## Testing And Verification
 

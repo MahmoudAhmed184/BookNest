@@ -57,7 +57,6 @@ cd ../server
 uv sync
 cp .env.example .env
 uv run python manage.py migrate
-uv run python manage.py seed_database
 uv run python manage.py runserver
 ```
 
@@ -316,12 +315,11 @@ The production build is emitted to `dist/`.
 
 ### The page renders but data stays loading
 
-Start the backend on `http://localhost:8000` and make sure its database is migrated and seeded:
+Start the backend on `http://localhost:8000` and make sure its database is migrated:
 
 ```bash
 cd ../server
 uv run python manage.py migrate
-uv run python manage.py seed_database
 uv run python manage.py runserver
 ```
 

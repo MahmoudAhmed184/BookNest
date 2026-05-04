@@ -164,7 +164,6 @@ Then run:
 
 ```bash
 uv run python manage.py migrate
-uv run python manage.py seed_database
 uv run python manage.py runserver
 ```
 
@@ -189,7 +188,6 @@ Run Django commands inside the web container:
 
 ```bash
 docker compose exec web uv run python manage.py migrate
-docker compose exec web uv run python manage.py seed_database
 docker compose exec web uv run python manage.py createsuperuser
 docker compose exec web uv run python manage.py check
 ```
@@ -208,34 +206,22 @@ The frontend dev server runs at `http://localhost:5173/`.
 
 The frontend API base URL is defined in `client/src/config/index.ts` and currently points to `http://localhost:8000`. Run the backend before using pages that fetch API data.
 
-## Seed Data
+## Database Backups
 
-The backend includes an idempotent seed command:
+Create local MariaDB backups with `mariadb-dump` after running migrations and any data integrity repairs:
 
 ```bash
 cd server
-uv run python manage.py seed_database
+set -a
+. ./.env
+set +a
+mkdir -p backups
+MYSQL_PWD="$DB_PASSWORD" mariadb-dump --single-transaction --quick \
+  --routines --triggers --events -u "$DB_USER" "$DB_NAME" \
+  > backups/booknest_mariadb_clean.sql
 ```
 
-It creates or updates:
-
-- demo admin account
-- demo users and profiles
-- genres, authors, and books
-- reading lists
-- ratings and reviews
-- follows
-- notifications
-- recommendations
-
-Seed credentials are controlled by these `server/.env` values:
-
-```dotenv
-SEED_ADMIN_USERNAME=admin
-SEED_ADMIN_EMAIL=admin@booknest.local
-SEED_ADMIN_PASSWORD=change-me-admin-password
-SEED_USER_PASSWORD=change-me-demo-user-password
-```
+Database dumps are ignored by Git and should be stored securely because they may contain user data and password hashes.
 
 ## Environment Files
 
@@ -253,7 +239,6 @@ Important backend variables:
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS`
 - `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
 - `FRONTEND_URL`, `SITE_NAME`
-- `SEED_ADMIN_USERNAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_USER_PASSWORD`
 
 The frontend does not currently require a local `.env` file. API configuration is centralized in `client/src/config/index.ts`.
 
