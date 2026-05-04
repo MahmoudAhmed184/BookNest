@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { useFormik } from "formik";
-import Logo from "/logo.svg";
 
+import { AuthShell } from "../components/AuthShell";
 import {
   EmailResetStep,
   OtpResetStep,
@@ -60,25 +60,10 @@ const ResetPassword = (): ReactElement => {
   });
 
   return (
-    <section className="flex grow items-center justify-center py-12 animate-fade-up">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <img
-              className="h-16 w-16 transition-transform duration-200 ease-out hover:scale-105"
-              src={Logo}
-              alt="BookNest logo"
-              width="64"
-              height="64"
-            />
-            <h1 className="text-3xl text-accent-v bg-clip-text text-transparent font-semibold text-balance">
-              Reset Password
-            </h1>
-            <p className="text-sm leading-relaxed text-primary-gray">
-              Follow the steps to regain access to your account.
-            </p>
-          </div>
-
+    <AuthShell
+      title="Reset Password"
+      description="Follow the steps to regain access to your account."
+    >
           <div className="flex justify-center gap-2" aria-label={`Step ${step} of 3`}>
             {[1, 2, 3].map((item) => (
               <span
@@ -105,9 +90,7 @@ const ResetPassword = (): ReactElement => {
               }
             />
           ) : null}
-        </div>
-      </div>
-    </section>
+    </AuthShell>
   );
 };
 

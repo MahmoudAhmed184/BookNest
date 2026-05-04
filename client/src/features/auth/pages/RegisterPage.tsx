@@ -8,6 +8,7 @@ import {
   AuthSubmitButton,
   AuthTextField,
 } from "../components/AuthFields";
+import { AuthShell } from "../components/AuthShell";
 import { routePaths } from "../../../routes/paths";
 import { useRegisterMutation } from "../hooks/useRegisterMutation";
 import type { RegisterPayload } from "../types/auth";
@@ -42,18 +43,8 @@ const Register = (): ReactElement => {
   const isSubmitting = formik.isSubmitting || registerMutation.isPending;
 
   return (
-    <section className="flex grow items-center justify-center py-12 animate-fade-up">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2 text-center">
-            <h1 className="text-3xl text-accent-v bg-clip-text text-transparent font-semibold text-balance">
-              Sign Up
-            </h1>
-            <p className="text-sm leading-relaxed text-primary-gray">
-              Create your account and start building your shelf.
-            </p>
-          </div>
-          <form onSubmit={formik.handleSubmit} className="flex flex-col gap-4">
+    <AuthShell title="Sign Up" description="Create your account and start building your shelf.">
+      <form onSubmit={formik.handleSubmit} className="flex flex-col gap-4">
             <AuthTextField
               id="username"
               name="username"
@@ -116,10 +107,8 @@ const Register = (): ReactElement => {
             {registerMutation.isError ? (
               <FieldError message="We couldn't create your account. Please try again." />
             ) : null}
-          </form>
-        </div>
-      </div>
-    </section>
+      </form>
+    </AuthShell>
   );
 };
 

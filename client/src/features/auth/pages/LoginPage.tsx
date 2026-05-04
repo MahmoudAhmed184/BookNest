@@ -9,6 +9,7 @@ import {
   AuthSubmitButton,
   AuthTextField,
 } from "../components/AuthFields";
+import { AuthShell } from "../components/AuthShell";
 import { routePaths } from "../../../routes/paths";
 import { useLoginMutation } from "../hooks/useLoginMutation";
 import type { LoginPayload } from "../types/auth";
@@ -40,19 +41,8 @@ const Login = (): ReactElement => {
   const isSubmitting = formik.isSubmitting || loginMutation.isPending;
 
   return (
-    <section className="flex grow items-center justify-center py-12 animate-fade-up">
-      <div className="w-full max-w-md rounded-xl bg-primary-black/60">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2 text-center">
-            <h1 className="text-3xl text-accent-v bg-clip-text text-transparent font-semibold text-balance">
-              Sign In
-            </h1>
-            <p className="text-sm leading-relaxed text-primary-gray">
-              Welcome back to your reading shelf.
-            </p>
-          </div>
-
-          <form onSubmit={formik.handleSubmit} className="flex flex-col gap-4">
+    <AuthShell title="Sign In" description="Welcome back to your reading shelf.">
+      <form onSubmit={formik.handleSubmit} className="flex flex-col gap-4">
             <AuthTextField
               id="email"
               name="email"
@@ -96,10 +86,8 @@ const Login = (): ReactElement => {
             {loginMutation.isError ? (
               <FieldError message="We couldn't sign you in. Please try again." />
             ) : null}
-          </form>
-        </div>
-      </div>
-    </section>
+      </form>
+    </AuthShell>
   );
 };
 
