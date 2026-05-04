@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y, Autoplay } from "swiper/modules";
 import { Link } from "react-router-dom";
-import { getBooks, getRecommendedBooks } from "../services/bookService";
+import { getBooks, getRecommendedBooks } from "../../services/bookService";
 
 export default function Explore() {
   const {

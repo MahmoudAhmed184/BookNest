@@ -2,7 +2,7 @@ import React from "react";
 import UserImage from "/user_profile.png";
 import Logo from "/logo.svg";
 
-import { getNotifications } from "../services/notificationService";
+import { getNotifications } from "../../services/notificationService";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Notifications() {

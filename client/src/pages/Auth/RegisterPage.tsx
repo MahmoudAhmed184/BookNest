@@ -3,10 +3,10 @@ import * as Yup from "yup";
 import { Link } from "react-router-dom";
 import Logo from "/logo.svg"; // Adjust path as needed
 import { useMutation } from "@tanstack/react-query";
-import { register, createProfile } from "../services/authService";
+import { register, createProfile } from "../../services/authService";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
 
 const Register = () => {

@@ -5,13 +5,13 @@ import {
   getProfile,
   getUserReviews,
   getUserRatings,
-} from "../services/userService";
+} from "../../services/userService";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y, Autoplay } from "swiper/modules";
-import { getUserCollections } from "../services/collectionService";
+import { getUserCollections } from "../../services/collectionService";
 
 export default function UserProfile() {
-  const { id } = useParams();
+  const { id } = useParams<"id">();
 
   const {
     data: user,

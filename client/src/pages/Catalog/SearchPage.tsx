@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { searchBooks } from "../services/bookService";
+import { searchBooks } from "../../services/bookService";
 
 import { useParams } from "react-router-dom";
 
 export default function Search() {
-  const { query } = useParams();
+  const { query } = useParams<"query">();
 
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");

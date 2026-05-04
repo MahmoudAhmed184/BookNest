@@ -13,13 +13,13 @@ import {
   createReview,
   createRating,
   getBookRatings,
-} from "../services/bookService";
-import { getCollections, addToCollection } from "../services/collectionService";
+} from "../../services/bookService";
+import { getCollections, addToCollection } from "../../services/collectionService";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function BookPage() {
-  const { id } = useParams();
+  const { id } = useParams<"id">();
   const [listId, setListId] = useState(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");

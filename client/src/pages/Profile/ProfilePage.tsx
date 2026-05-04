@@ -8,13 +8,13 @@ import {
   getUserReviews,
   getUserRatings,
   deleteReview,
-} from "../services/userService";
+} from "../../services/userService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y, Autoplay } from "swiper/modules";
 import { useParams } from "react-router-dom";
-import { deleteBook } from "../services/bookService";
-import { getCollections } from "../services/collectionService";
+import { deleteBook } from "../../services/bookService";
+import { getCollections } from "../../services/collectionService";
 
 import { toast } from "react-hot-toast";
 

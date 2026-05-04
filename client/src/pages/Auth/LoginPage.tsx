@@ -4,8 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import Logo from "/logo.svg";
 
-import { login } from "../services/authService";
-import { useAuth } from "../context/AuthContext";
+import { login } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
 
 import { toast } from "react-hot-toast";
 
