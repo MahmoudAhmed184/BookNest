@@ -31,7 +31,7 @@ export default function Explore() {
 
   if (isBooksLoading || isRecommendationsLoading) {
     return (
-      <div className="flex-grow flex justify-center items-center">
+      <div className="grow flex justify-center items-center">
         <div className="spinner"></div>
       </div>
     );

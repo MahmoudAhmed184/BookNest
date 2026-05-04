@@ -40,7 +40,7 @@ export default function Navbar({}: NavbarProps): ReactElement {
       <nav className="w-full bg-primary-black py-4 z-50 shadow-md text-primary-white">
         <div className="container flex items-center justify-between gap-4">
           {/* Logo and Brand */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <img src={Logo} alt="BookNest Logo" className="w-12 h-12" />
             <h2 className="text-2xl text-accent-v bg-clip-text text-transparent font-semibold">
               BookNest
@@ -49,7 +49,7 @@ export default function Navbar({}: NavbarProps): ReactElement {
 
           {/* Hamburger Menu Button (Visible below lg) */}
           <button
-            className="lg:hidden focus:outline-none"
+            className="lg:hidden focus:outline-hidden"
             onClick={toggleMenu}
             aria-label="Toggle menu"
           >
@@ -79,8 +79,8 @@ export default function Navbar({}: NavbarProps): ReactElement {
           </button>
 
           {/* Navigation Links, Search, and Auth (Desktop, visible at lg and above) */}
-          <div className="hidden lg:flex items-center gap-8 flex-grow">
-            <div className="flex gap-6 flex-grow justify-center">
+          <div className="hidden lg:flex items-center gap-8 grow">
+            <div className="flex gap-6 grow justify-center">
               <NavLink
                 to="/explore"
                 className={({ isActive }) =>
@@ -153,7 +153,7 @@ export default function Navbar({}: NavbarProps): ReactElement {
                 <div className="relative">
                   <button
                     onClick={toggleProfile}
-                    className="focus:outline-none"
+                    className="focus:outline-hidden"
                     aria-label="Profile menu"
                   >
                     <div className="profile-image w-10 h-10 bg-secondary-gray rounded-xl overflow-hidden">

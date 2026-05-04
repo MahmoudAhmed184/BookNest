@@ -66,7 +66,7 @@ const ResetPassword = () => {
         {/* Logo and Title */}
         <div className="flex justify-center items-center gap-sm">
           <img
-            className="w-[64px] h-[64px] sm:w-[80px] sm:h-[80px]"
+            className="w-xl h-xl sm:w-[80px] sm:h-[80px]"
             src={Logo}
             alt="BookNest Logo"
           />

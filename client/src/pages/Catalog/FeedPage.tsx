@@ -146,7 +146,7 @@ export default function PublicFeed() {
             {/* Card Content */}
             <div className="flex items-center gap-4 p-4 sm:p-6 relative z-10 w-full">
               {/* Book Cover */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <img
                   src={action.book.cover}
                   alt={`${action.book.title} cover`}

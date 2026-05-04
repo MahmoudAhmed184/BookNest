@@ -44,7 +44,7 @@ export default function Search() {
       <div className="flex gap-2">
         <input
           type="text"
-          className="bg-secondary-black text-primary-gray rounded-2xl outline-none px-4 py-2 placeholder-primary-gray flex-grow"
+          className="bg-secondary-black text-primary-gray rounded-2xl outline-hidden px-4 py-2 placeholder-primary-gray grow"
           placeholder="Search"
           onChange={handleSearchInput}
           value={searchInput}
@@ -60,7 +60,7 @@ export default function Search() {
       <h2 className="text-md sm:text-xl font-semibold">Search Results</h2>
 
       {isLoading && (
-        <div className="flex-grow flex justify-center items-center">
+        <div className="grow flex justify-center items-center">
           <div className="spinner"></div>
         </div>
       )}

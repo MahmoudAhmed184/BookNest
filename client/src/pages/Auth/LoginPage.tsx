@@ -62,8 +62,8 @@ const Login = () => {
   });
 
   return (
-    <div className="flex flex-grow justify-center items-center">
-      <div className="flex flex-col gap-md py-md flex-grow">
+    <div className="flex grow justify-center items-center">
+      <div className="flex flex-col gap-md py-md grow">
         <h2 className="text-2xl text-accent-v bg-clip-text text-transparent font-semibold text-center">
           Sign In
         </h2>
