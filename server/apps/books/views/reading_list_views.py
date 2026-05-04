@@ -1,14 +1,15 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from apps.users.views.profile import IsOwnerOrReadOnly
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-from apps.books.models import ReadingList, Book
+from apps.books.models import ReadingList
 from apps.books.serializers.book_serializers import ReadingListSerializer
+from apps.books.selectors import reading_lists_owned_by_user, reading_lists_visible_to_user
+from apps.books.services import add_book_to_reading_list, remove_book_from_reading_list
 
 
 class ReadingListAPIView(generics.ListAPIView):
@@ -20,10 +21,8 @@ class ReadingListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return ReadingList.objects.filter(
-                Q(profile__user=self.request.user)
-            ).order_by('-created_at')
-        return ReadingList.objects.filter(privacy='public').order_by('-created_at')
+            return reading_lists_owned_by_user(self.request.user)
+        return reading_lists_visible_to_user(self.request.user)
 
 
 
@@ -37,11 +36,7 @@ class ReadingListDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'list_id'
     
     def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return ReadingList.objects.filter(
-                Q(privacy='public') | Q(profile__user=self.request.user)
-            )
-        return ReadingList.objects.filter(privacy='public')
+        return reading_lists_visible_to_user(self.request.user)
 
 
 
@@ -67,7 +62,7 @@ class ReadingListUpdateAPIView(generics.UpdateAPIView):
     lookup_field = 'list_id'
     
     def get_queryset(self):
-        return ReadingList.objects.filter(profile__user=self.request.user)
+        return reading_lists_owned_by_user(self.request.user)
 
 
 
@@ -81,7 +76,7 @@ class ReadingListDeleteAPIView(generics.DestroyAPIView):
     lookup_field = 'list_id'
     
     def get_queryset(self):
-        return ReadingList.objects.filter(profile__user=self.request.user)
+        return reading_lists_owned_by_user(self.request.user)
 
 
 
@@ -106,16 +101,12 @@ class ReadingListBookOperationsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        book = get_object_or_404(Book, isbn13=book_id)
-        reading_list = get_object_or_404(
-            ReadingList, 
-            list_id=list_id, 
-            profile__user=request.user
+        book, reading_list, created = add_book_to_reading_list(
+            user=request.user,
+            book_id=book_id,
+            list_id=list_id,
         )
-        
-        # Add book to reading list if not already there
-        if not reading_list.books.filter(isbn13=book_id).exists():
-            reading_list.books.add(book)
+        if created:
             return Response(
                 {"message": f'Added "{book.title}" to "{reading_list.name}"'}, 
                 status=status.HTTP_200_OK
@@ -139,16 +130,12 @@ class ReadingListBookOperationsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        book = get_object_or_404(Book, isbn13=book_id)
-        reading_list = get_object_or_404(
-            ReadingList, 
-            list_id=list_id, 
-            profile__user=request.user
+        book, reading_list, existed = remove_book_from_reading_list(
+            user=request.user,
+            book_id=book_id,
+            list_id=list_id,
         )
-        
-        # Remove book from reading list
-        if reading_list.books.filter(isbn13=book_id).exists():
-            reading_list.books.remove(book)
+        if existed:
             return Response(
                 {"message": f'Removed "{book.title}" from "{reading_list.name}"'}, 
                 status=status.HTTP_200_OK
@@ -171,7 +158,7 @@ class AdminUserReadingListsAPIView(generics.ListAPIView):
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
         user = get_object_or_404(get_user_model(), id=user_id)
-        return ReadingList.objects.filter(profile__user=user).order_by('-created_at')
+        return reading_lists_owned_by_user(user)
 
 
 # class UserReadingListsAPIView(generics.ListAPIView):

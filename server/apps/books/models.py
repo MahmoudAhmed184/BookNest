@@ -2,6 +2,12 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 from django.utils import timezone
+from apps.books.managers import (
+    BookManager,
+    BookRatingManager,
+    BookReviewManager,
+    ReadingListManager,
+)
 
 
 class Author(models.Model):
@@ -45,6 +51,8 @@ class Book(models.Model):
         ],
         default='database'
     )
+    objects = BookManager()
+
     class Meta:
         db_table = "book"
         indexes = [
@@ -191,6 +199,8 @@ class ReadingList(models.Model):
         on_delete=models.CASCADE,
         related_name='reading_lists'
     )
+    objects = ReadingListManager()
+
     class Meta:
         db_table = 'Reading_List'
     def __str__(self):
@@ -245,6 +255,7 @@ class BookRating(models.Model):
         related_name='ratings'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    objects = BookRatingManager()
     
     class Meta:
         db_table = 'Book_Rating'
@@ -271,6 +282,8 @@ class BookReview(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews'
     )
+    objects = BookReviewManager()
+
     class Meta:
         db_table = 'Book_Review'
         ordering = ['-created_at']
@@ -410,7 +423,6 @@ class Genre(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 

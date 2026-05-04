@@ -2,12 +2,11 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from django.contrib.auth import get_user_model
 
 from apps.books.models import BookReview, BookRating, Book
 from apps.books.serializers.review_serializers import BookReviewSerializer, BookRatingSerializer
+from apps.books.selectors import ratings_for_book, review_list, reviews_for_book
+from apps.books.services import create_rating, create_review, delete_rating, update_rating
 
 
 class BookReviewAPIView(generics.ListAPIView):
@@ -18,24 +17,9 @@ class BookReviewAPIView(generics.ListAPIView):
     serializer_class = BookReviewSerializer
     
     def get_queryset(self):
-        queryset = BookReview.objects.all()
-        
-        # Add sorting options
         sort_by = self.request.query_params.get('sort_by', 'created_at')
         order = self.request.query_params.get('order', 'desc')
-        
-        if sort_by == 'upvotes':
-            if order == 'asc':
-                queryset = queryset.order_by('upvotes_count', '-created_at')
-            else:
-                queryset = queryset.order_by('-upvotes_count', '-created_at')
-        else:  # default to created_at
-            if order == 'asc':
-                queryset = queryset.order_by('created_at')
-            else:
-                queryset = queryset.order_by('-created_at')
-        
-        return queryset
+        return review_list(sort_by=sort_by, order=order)
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -51,7 +35,7 @@ class BookReviewDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'review_id'
     
     def get_queryset(self):
-        return BookReview.objects.all()
+        return BookReview.objects.with_related()
 
 
 class BookReviewCreateAPIView(APIView):
@@ -62,7 +46,6 @@ class BookReviewCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, *args, **kwargs):
-        # Get book ID from request data
         book_id = request.data.get('book')
         if not book_id:
             return Response(
@@ -70,26 +53,9 @@ class BookReviewCreateAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
-        # Check if book exists
-        try:
-            book = Book.objects.get(isbn13=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {'error': 'Book does not exist'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-            
-        # Check if user has already reviewed this book
-        if BookReview.objects.filter(user=request.user, book=book).exists():
-            return Response(
-                {'error': 'You have already reviewed this book'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
-        # Validate and create review
         serializer = BookReviewSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user, book=book)
+            create_review(user=request.user, book_id=book_id, serializer=serializer)
             return Response(
                 serializer.data, 
                 status=status.HTTP_201_CREATED
@@ -110,7 +76,7 @@ class BookReviewUpdateAPIView(generics.UpdateAPIView):
     lookup_field = 'review_id'
     
     def get_queryset(self):
-        return BookReview.objects.filter(user=self.request.user)
+        return BookReview.objects.with_related().for_user(self.request.user)
 
 
 class BookReviewDeleteAPIView(generics.DestroyAPIView):
@@ -123,7 +89,7 @@ class BookReviewDeleteAPIView(generics.DestroyAPIView):
     lookup_field = 'review_id'
     
     def get_queryset(self):
-        return BookReview.objects.filter(user=self.request.user)
+        return BookReview.objects.with_related().for_user(self.request.user)
 
 
 class BookReviewsByBookAPIView(generics.ListAPIView):
@@ -135,28 +101,9 @@ class BookReviewsByBookAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         book_id = self.kwargs.get('book_id')
-        try:
-            book = Book.objects.get(isbn13=book_id)
-            queryset = BookReview.objects.filter(book=book)
-            
-            # Add sorting options
-            sort_by = self.request.query_params.get('sort_by', 'created_at')
-            order = self.request.query_params.get('order', 'desc')
-            
-            if sort_by == 'upvotes':
-                if order == 'asc':
-                    queryset = queryset.order_by('upvotes_count', '-created_at')
-                else:
-                    queryset = queryset.order_by('-upvotes_count', '-created_at')
-            else:  # default to created_at
-                if order == 'asc':
-                    queryset = queryset.order_by('created_at')
-                else:
-                    queryset = queryset.order_by('-created_at')
-            
-            return queryset
-        except Book.DoesNotExist:
-            raise ValidationError({'book': 'Book does not exist'})
+        sort_by = self.request.query_params.get('sort_by', 'created_at')
+        order = self.request.query_params.get('order', 'desc')
+        return reviews_for_book(book_id=book_id, sort_by=sort_by, order=order)
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -172,7 +119,7 @@ class BookRatingAPIView(generics.ListAPIView):
     serializer_class = BookRatingSerializer
     
     def get_queryset(self):
-        return BookRating.objects.all().order_by('-created_at')
+        return BookRating.objects.with_related().order_by('-created_at')
 
 
 class BookRatingDetailAPIView(generics.RetrieveAPIView):
@@ -183,7 +130,7 @@ class BookRatingDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'rate_id'
     
     def get_queryset(self):
-        return BookRating.objects.all()
+        return BookRating.objects.with_related()
 
 
 
@@ -197,11 +144,7 @@ class BookRatingCreateAPIView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         book_id = self.request.data.get('book')
-        try:
-            book = Book.objects.get(isbn13=book_id)
-            serializer.save(user=self.request.user, book=book)
-        except Book.DoesNotExist:
-            raise ValidationError({'book': 'Book does not exist'})
+        create_rating(user=self.request.user, book_id=book_id, serializer=serializer)
 
 
 
@@ -215,23 +158,10 @@ class BookRatingUpdateAPIView(generics.UpdateAPIView):
     lookup_field = 'rate_id'
     
     def get_queryset(self):
-        return BookRating.objects.filter(user=self.request.user)
+        return BookRating.objects.with_related().for_user(self.request.user)
     
     def perform_update(self, serializer):
-        serializer.save()
-        
-        # Recalculate average rating for the book
-        book = serializer.instance.book
-        book_ratings = BookRating.objects.filter(book=book)
-        book.number_of_ratings = book_ratings.count()
-        
-        if book.number_of_ratings > 0:
-            total_rating = sum(br.rate for br in book_ratings)
-            book.average_rate = total_rating / book.number_of_ratings
-        else:
-            book.average_rate = None
-        
-        book.save()
+        update_rating(serializer=serializer)
 
 
 class BookRatingDeleteAPIView(generics.DestroyAPIView):
@@ -244,24 +174,10 @@ class BookRatingDeleteAPIView(generics.DestroyAPIView):
     lookup_field = 'rate_id'
     
     def get_queryset(self):
-        return BookRating.objects.filter(user=self.request.user)
+        return BookRating.objects.with_related().for_user(self.request.user)
     
     def perform_destroy(self, instance):
-        # Store book reference before deletion
-        book = instance.book
-        instance.delete()
-        
-        # Recalculate average rating
-        book_ratings = BookRating.objects.filter(book=book)
-        book.number_of_ratings = book_ratings.count()
-        
-        if book.number_of_ratings > 0:
-            total_rating = sum(br.rate for br in book_ratings)
-            book.average_rate = total_rating / book.number_of_ratings
-        else:
-            book.average_rate = None
-        
-        book.save()
+        delete_rating(rating=instance)
 
 
 class BookRatingsByBookAPIView(generics.ListAPIView):
@@ -272,11 +188,7 @@ class BookRatingsByBookAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         book_id = self.kwargs.get('book_id')
-        try:
-            book = Book.objects.get(isbn13=book_id)
-            return BookRating.objects.filter(book=book).order_by('-created_at')
-        except Book.DoesNotExist:
-            raise ValidationError({'book': 'Book does not exist'})
+        return ratings_for_book(book_id=book_id)
 
 
 class UserBookRatingAPIView(generics.RetrieveAPIView):
