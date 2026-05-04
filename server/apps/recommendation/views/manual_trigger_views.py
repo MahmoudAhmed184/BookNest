@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from apps.books.models import BookRating
+from apps.recommendation.selectors import rating_count_for_user
 from apps.recommendation.services import RecommendationService
 from apps.recommendation.tasks import generate_recommendations_for_user_task
 
@@ -16,7 +16,7 @@ def trigger_recommendations(request):
     user = request.user
     
     # Count user ratings
-    user_rating_count = BookRating.objects.filter(user=user).count()
+    user_rating_count = rating_count_for_user(user)
     
     # Check if user has enough ratings
     if user_rating_count < 10:

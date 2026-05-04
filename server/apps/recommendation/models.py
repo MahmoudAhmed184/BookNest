@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from apps.books.models import Book
+from apps.recommendation.managers import RecommendationModelManager, UserRecommendationManager
 class RecommendationModel(models.Model):
     
     MODEL_TYPES = (
@@ -25,6 +26,7 @@ class RecommendationModel(models.Model):
     
     # Serialized model data will be stored in a file referenced by this field
     model_file = models.FileField(upload_to='recommendation_models/', null=True, blank=True)
+    objects = RecommendationModelManager()
     
     class Meta:
         ordering = ['-created_at']
@@ -40,6 +42,7 @@ class UserRecommendation(models.Model):
     score = models.FloatField(help_text="Predicted rating or recommendation score")
     recommended_at = models.DateTimeField(default=timezone.now)
     model = models.ForeignKey(RecommendationModel, on_delete=models.SET_NULL, null=True)
+    objects = UserRecommendationManager()
     
     class Meta:
         ordering = ['-score']

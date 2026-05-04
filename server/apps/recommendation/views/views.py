@@ -1,11 +1,11 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
 
-from ..models import RecommendationModel, UserRecommendation
 from ..serializers import RecommendationModelSerializer, UserRecommendationSerializer
 from ..services import RecommendationService
+from ..selectors import recommendation_models, user_recommendations
+from ..models import RecommendationModel
 from ..tasks import (
     train_recommendation_model_task,
     generate_recommendations_for_user_task,
@@ -17,9 +17,12 @@ class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoints for recommendation models
     """
-    queryset = RecommendationModel.objects.all()
+    queryset = RecommendationModel.objects.none()
     serializer_class = RecommendationModelSerializer
     permission_classes = [permissions.IsAdminUser]  # Only admins can access model endpoints
+
+    def get_queryset(self):
+        return recommendation_models()
     
     @action(detail=False, methods=['post'])
     def train(self, request):
@@ -72,13 +75,7 @@ class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
         """
         model = self.get_object()
         
-        # Deactivate all models of the same type
-        RecommendationModel.objects.filter(model_type=model.model_type).update(is_active=False)
-        
-        # Activate the selected model
-        model.is_active = True
-        model.save()
-        
+        model = RecommendationService.activate_model(model)
         serializer = self.get_serializer(model)
         return Response(serializer.data)
         
@@ -94,7 +91,7 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Return recommendations for the current user only
         """
-        return UserRecommendation.objects.filter(user=self.request.user)
+        return user_recommendations(self.request.user)
     
     @action(detail=False, methods=['post'])
     def generate(self, request):

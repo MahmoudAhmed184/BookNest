@@ -10,6 +10,7 @@ from django.db.models import Count
 
 from .models import RecommendationModel, UserRecommendation
 from .recommendation_engine import RecommendationEngine
+from .selectors import active_recommendation_model
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +101,9 @@ class RecommendationService:
         """
         try:
             if model_id:
-                model_record = RecommendationModel.objects.get(id=model_id)
+                model_record = active_recommendation_model(model_id)
             else:
-                model_record = RecommendationModel.objects.filter(is_active=True).first()
+                model_record = active_recommendation_model()
                 
             if not model_record or not model_record.model_file:
                 logger.error("No valid recommendation model found")
@@ -188,3 +189,10 @@ class RecommendationService:
             
         logger.info(f"Generated recommendations for {len(user_ids)} users, total of {recommendations_count} recommendations")
         return recommendations_count
+
+    @staticmethod
+    def activate_model(model):
+        RecommendationModel.objects.of_type(model.model_type).update(is_active=False)
+        model.is_active = True
+        model.save(update_fields=['is_active'])
+        return model
