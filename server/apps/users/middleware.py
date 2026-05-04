@@ -1,7 +1,6 @@
-# users/middleware.py
 from django.http import JsonResponse
 from django.urls import resolve
-import json
+
 
 class ProfileRequiredMiddleware:
     """
@@ -26,7 +25,7 @@ class ProfileRequiredMiddleware:
                 "errors": {"detail": "You must create a profile before accessing this feature"},
                 "meta": {
                     "action_required": "create_profile",
-                    "profile_creation_url": "/api/users/profile/"
+                    "profile_creation_url": "/api/v1/profiles/"
                 }
             }, status=403)
             
@@ -41,8 +40,7 @@ class ProfileRequiredMiddleware:
         # Get the current URL pattern
         try:
             url_name = resolve(request.path_info).url_name
-            app_name = resolve(request.path_info).app_name
-        except:
+        except Exception:
             return True
             
         # Allow these paths without profile check
@@ -58,12 +56,11 @@ class ProfileRequiredMiddleware:
         
         # Allow profile-related endpoints
         profile_paths = [
-            '/api/users/profile/',
-            '/api/users/profile/me/',
-            '/api/users/profiles/upload-picture/',
-            '/api/users/register/',
-            '/api/users/login/'
-            
+            '/api/v1/profiles/',
+            '/api/v1/profiles/me/',
+            '/api/v1/profiles/me/picture/',
+            '/api/v1/users/',
+            '/api/v1/auth/sessions/',
         ]
         
         # Check URL patterns
@@ -76,13 +73,13 @@ class ProfileRequiredMiddleware:
             
         # Skip for admin and auth endpoints
         if (request.path_info.startswith('/admin/') or 
-            request.path_info.startswith('/api/auth/') or
-            request.path_info.startswith('/api/schema/')):
+            request.path_info.startswith('/api/v1/auth/') or
+            request.path_info.startswith('/api/v1/schema/')):
             return True
             
         return False
     
     def is_profile_creation_request(self, request):
         """Check if this is a profile creation request"""
-        return (request.path_info == '/api/users/profiles/' and 
+        return (request.path_info == '/api/v1/profiles/' and
                 request.method == 'POST')

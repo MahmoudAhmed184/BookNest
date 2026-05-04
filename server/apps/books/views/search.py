@@ -319,7 +319,7 @@ class BookSearchAPIView(APIView):
         - include_external: Whether to include results from external APIs (default: false)
         
         Example request:
-        /api/books/search/?q=python&genres=Fiction,Mystery&authors=John Smith,Jane Doe&min_rating=4.0
+        /api/v1/books/search-results/?q=python&genres=Fiction,Mystery&authors=John Smith,Jane Doe&min_rating=4.0
         """
         try:
             # Validate search parameters

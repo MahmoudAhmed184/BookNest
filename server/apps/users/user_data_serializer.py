@@ -1,7 +1,7 @@
 # serializers.py
 from rest_framework import serializers
 from apps.users.models.profile import Profile, ProfileInterest, ProfileSocialLink
-from apps.users.models.models import CustomUser
+from apps.users.models.user import CustomUser
 from apps.follows.models import Follow
 from apps.books.models import (
     Book, Author, ReadingList, ReadingListBooks, 

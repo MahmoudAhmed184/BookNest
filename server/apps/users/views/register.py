@@ -1,7 +1,8 @@
 # users/views/register.py
 from dj_rest_auth.registration.views import RegisterView
 from dj_rest_auth.views import LoginView, LogoutView
-from apps.users.serializers.auth_serializer import CustomRegisterSerializer, CustomLoginSerializer
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from apps.users.serializers.auth import CustomRegisterSerializer, CustomLoginSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -172,3 +173,12 @@ class CustomLogoutView(LogoutView):
                 "errors": {"detail": str(e)}
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CurrentSessionAPIView(CustomLogoutView):
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(description="Current session ended.")},
+    )
+    def delete(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)

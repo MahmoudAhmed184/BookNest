@@ -147,7 +147,7 @@ class RelatedBookSuggestionAPIView(APIView):
             if include_external and len(local_suggestions) < limit:
                 # Get author names and genres from reference book
                 author_names = [author.name for author in reference_book.authors.all()]
-                genres = [genre.genre for genre in reference_book.genres.all()]
+                genres = [genre.name for genre in reference_book.genres.all()]
                 
                 # Construct query for external APIs
                 external_query = reference_book.title
@@ -213,7 +213,7 @@ class RelatedBookSuggestionAPIView(APIView):
         try:
             # Get authors and genres from the reference book
             author_ids = reference_book.authors.values_list('author_id', flat=True)
-            genres = reference_book.genres.values_list('genre', flat=True)
+            genres = reference_book.genres.values_list('name', flat=True)
             
             # Build query to find books with similar authors or genres
             query = Q()
@@ -239,7 +239,7 @@ class RelatedBookSuggestionAPIView(APIView):
                     # Count matching authors
                     len(set(book.authors.values_list('author_id', flat=True)) & set(author_ids)) +
                     # Count matching genres
-                    len(set(book.genres.values_list('genre', flat=True)) & set(genres))
+                    len(set(book.genres.values_list('name', flat=True)) & set(genres))
                 ),
                 reverse=True
             )

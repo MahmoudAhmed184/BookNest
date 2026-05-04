@@ -5,7 +5,7 @@ from apps.books.models import Book, Author, ReadingList, BookAuthor , Genre
 class BookGenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
-        fields = ["name"]
+        fields = ["id", "name", "description"]
 
 
 class AuthorSerializer(serializers.ModelSerializer):

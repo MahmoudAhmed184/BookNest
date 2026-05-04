@@ -115,7 +115,7 @@ REST_FRAMEWORK = {
 REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,
-    "REGISTER_SERIALIZER": "apps.users.serializers.auth_serializer.CustomRegisterSerializer",
+    "REGISTER_SERIALIZER": "apps.users.serializers.auth.CustomRegisterSerializer",
 }
 
 
@@ -355,6 +355,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "BookNest API",
     "DESCRIPTION": "API documentation for BookNest application",
     "VERSION": "1.0.0",
+    "OAS_VERSION": "3.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_SETTINGS": {
         "deepLinking": True,
@@ -362,7 +363,7 @@ SPECTACULAR_SETTINGS = {
     },
     "COMPONENT_SPLIT_REQUEST": True,
     "SERVE_PUBLIC": True,
-    "SCHEMA_PATH_PREFIX": r"/api/v1/",
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
     "ENABLE_DJANGO_DEPLOY_CHECK": False,
 }
 

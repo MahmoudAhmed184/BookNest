@@ -1,4 +1,4 @@
-# users/serializers/auth_serializer.py
+# users/serializers/auth.py
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer

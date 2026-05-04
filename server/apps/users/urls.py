@@ -1,45 +1,36 @@
-# authentication/urls.py
-
+from django.urls import path
 from dj_rest_auth.jwt_auth import get_refresh_view
-from .user_data_view import UserDataDetailView
-from apps.users.views.register import CustomRegisterView, CustomLoginView, CustomLogoutView
 from dj_rest_auth.views import UserDetailsView
-from django.urls import path, include
 from rest_framework_simplejwt.views import TokenVerifyView
+
+from apps.users.user_data_view import UserDataDetailView
 from apps.users.views.profile import ProfileViewSet
-from rest_framework.routers import DefaultRouter
-from apps.users.views.password_reset import CustomPasswordResetView, CustomPasswordResetConfirmView
+from apps.users.views.register import CurrentSessionAPIView, CustomLoginView, CustomRegisterView
 
-router = DefaultRouter()
 
-router.register('profile', ProfileViewSet, basename='profile')
+profile_collection = ProfileViewSet.as_view({"get": "list", "post": "create"})
+profile_resource = ProfileViewSet.as_view(
+    {
+        "get": "retrieve",
+        "put": "update",
+        "patch": "partial_update",
+        "delete": "destroy",
+    }
+)
+profile_me = ProfileViewSet.as_view({"get": "me", "patch": "me"})
+profile_picture = ProfileViewSet.as_view({"post": "upload_picture"})
 
 
 urlpatterns = [
-    # Authentication End Points
-    path("register/", CustomRegisterView.as_view(), name="custom_register"),
-    path("login/", CustomLoginView.as_view(), name="rest_login"),
-    path("logout/", CustomLogoutView.as_view(), name="rest_logout"),
-    path("user/", UserDetailsView.as_view(), name="rest_user_details"),
-    path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
-    path("token/refresh/", get_refresh_view().as_view(), name="token_refresh"),
-    
-    # Password reset End Points
-    path('password/reset/', CustomPasswordResetView.as_view(), name='rest_password_reset'),
-    path(
-        'password/reset/confirm/<uidb64>/<token>/',
-        CustomPasswordResetConfirmView.as_view(),
-        name='password_reset_confirm'
-    ),
-    
-    path('users/<int:id>/data/', UserDataDetailView.as_view(), name='user-data-detail'),
-    
-    #Profile End Points 
-    path('', include(router.urls)),
-    path('profile/me/', ProfileViewSet.as_view({'get': 'me', 'patch': 'partial_update'}), name='my-profile'),
-    
-    # URL for profile picture upload
-    path('profiles/upload-picture/', 
-         ProfileViewSet.as_view({'post': 'upload_picture'}), 
-         name='profile-picture-upload'),
+    path("auth/sessions/", CustomLoginView.as_view(), name="session-collection"),
+    path("auth/sessions/current/", CurrentSessionAPIView.as_view(), name="current-session"),
+    path("auth/tokens/refresh/", get_refresh_view().as_view(), name="token-refresh"),
+    path("auth/tokens/verify/", TokenVerifyView.as_view(), name="token-verify"),
+    path("users/", CustomRegisterView.as_view(), name="user-collection"),
+    path("users/me/", UserDetailsView.as_view(), name="current-user"),
+    path("users/<int:id>/data/", UserDataDetailView.as_view(), name="user-data"),
+    path("profiles/", profile_collection, name="profile-collection"),
+    path("profiles/me/", profile_me, name="current-profile"),
+    path("profiles/me/picture/", profile_picture, name="current-profile-picture"),
+    path("profiles/<int:pk>/", profile_resource, name="profile-resource"),
 ]

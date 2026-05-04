@@ -1,25 +1,20 @@
 from django.urls import path
+
 from apps.follows.views import (
-    FollowListAPIView,
-    FollowDetailAPIView,
-    FollowCreateAPIView,
-    FollowDeleteAPIView,
+    FollowCollectionAPIView,
+    FollowResourceAPIView,
     FollowerListAPIView,
     FollowingListAPIView,
     UserFollowersAPIView,
-    UserFollowingAPIView
+    UserFollowingAPIView,
 )
 
+
 urlpatterns = [
-    # Follow relationship endpoints
-    path('', FollowListAPIView.as_view(), name='follow-list'),
-    path('create/', FollowCreateAPIView.as_view(), name='follow-create'),
-    path('<int:id>/', FollowDetailAPIView.as_view(), name='follow-detail'),
-    path('unfollow/<int:followed_id>/', FollowDeleteAPIView.as_view(), name='follow-delete'),
-    
-    # User follow relationships
-    path('followers/', FollowerListAPIView.as_view(), name='follower-list'),
-    path('following/', FollowingListAPIView.as_view(), name='following-list'),
-    path('user/<int:user_id>/followers/', UserFollowersAPIView.as_view(), name='user-followers'),
-    path('user/<int:user_id>/following/', UserFollowingAPIView.as_view(), name='user-following'),
+    path("follows/", FollowCollectionAPIView.as_view(), name="follow-collection"),
+    path("follows/<int:id>/", FollowResourceAPIView.as_view(), name="follow-resource"),
+    path("profiles/me/followers/", FollowerListAPIView.as_view(), name="current-profile-followers"),
+    path("profiles/me/following/", FollowingListAPIView.as_view(), name="current-profile-following"),
+    path("profiles/<int:user_id>/followers/", UserFollowersAPIView.as_view(), name="profile-followers"),
+    path("profiles/<int:user_id>/following/", UserFollowingAPIView.as_view(), name="profile-following"),
 ]

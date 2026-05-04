@@ -15,26 +15,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# from apps.books.home_view import HomeView
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/users/', include('apps.users.urls')),
-    path('api/books/', include('apps.books.urls')),
-    path('api/follow/', include('apps.follows.urls')),
-    path('api/notifications/', include('apps.notifications.urls')),
-    path('api/recommendation/', include('apps.recommendation.urls')),
-    
-    
-    # API Schema documentation
-    path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/v1/schema/', SpectacularAPIView.as_view(), name='v1-schema'),
+    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='v1-schema'), name='v1-swagger-ui'),
+    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='v1-schema'), name='v1-redoc'),
+    path('api/v1/', include('apps.users.urls')),
+    path('api/v1/', include('apps.books.urls')),
+    path('api/v1/', include('apps.follows.urls')),
+    path('api/v1/', include('apps.notifications.urls')),
+    path('api/v1/', include('apps.recommendation.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
