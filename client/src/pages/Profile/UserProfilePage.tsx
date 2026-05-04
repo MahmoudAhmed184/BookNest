@@ -52,7 +52,7 @@ export default function UserProfile() {
 
   if (isUserLoading || isReviewsLoading || isRatingsLoading) {
     return (
-      <div className="flex-grow flex justify-center items-center">
+      <div className="grow flex justify-center items-center">
         <div className="spinner"></div>
       </div>
     );
@@ -187,7 +187,7 @@ export default function UserProfile() {
               className="bg-secondary-black p-4 rounded-md text-primary-white mb-4"
             >
               <div className="flex justify-between">
-                <div className="flex  gap-md flex-grow">
+                <div className="flex  gap-md grow">
                   <div className="min-w-36 h-52 rounded-xl overflow-hidden bg-primary-gray transition-all hover:scale-105">
                     {review?.profile_pic ? (
                       <Link to={`/book/${review?.book}`}>
@@ -202,8 +202,8 @@ export default function UserProfile() {
                       </Link>
                     ) : null}
                   </div>
-                  <div className="flex flex-col justify-between flex-grow">
-                    <div className="flex flex-col w-full flex-grow">
+                  <div className="flex flex-col justify-between grow">
+                    <div className="flex flex-col w-full grow">
                       <div className="flex justify-between gap-md">
                         <strong>{review?.book_title}</strong>
                         <div className="flex gap-1">

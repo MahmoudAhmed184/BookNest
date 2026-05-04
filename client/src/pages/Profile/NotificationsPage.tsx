@@ -33,7 +33,7 @@ export default function Notifications() {
 
   if (isLoading)
     return (
-      <div className="flex-grow flex justify-center items-center">
+      <div className="grow flex justify-center items-center">
         <div className="spinner"></div>
       </div>
     );
@@ -57,7 +57,7 @@ export default function Notifications() {
                 className="flex items-center gap-3 sm:gap-4 py-2 sm:py-3 px-4 sm:px-6 bg-secondary-black text-secondary-gray w-full rounded-xl"
               >
                 {/* User Image */}
-                <div className="w-8 sm:w-8 h-8 sm:h-8 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="w-8 sm:w-8 h-8 sm:h-8 rounded-xl overflow-hidden shrink-0">
                   <img
                     src={Logo}
                     alt="User avatar"

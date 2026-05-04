@@ -157,7 +157,7 @@ export default function Settings() {
               )}
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-primary-white text-xs font-medium">
                   Change Picture
                 </span>
@@ -245,7 +245,7 @@ export default function Settings() {
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary-gray text-primary-white focus:outline-none focus:ring-2 focus:ring-accent-v"
+                  className="w-full px-3 py-2 rounded-lg bg-secondary-gray text-primary-white focus:outline-hidden focus:ring-2 focus:ring-accent-v"
                   placeholder="Username"
                 />
               </div>
@@ -257,7 +257,7 @@ export default function Settings() {
                   id="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary-gray text-primary-white focus:outline-none focus:ring-2 focus:ring-accent-v resize-y"
+                  className="w-full px-3 py-2 rounded-lg bg-secondary-gray text-primary-white focus:outline-hidden focus:ring-2 focus:ring-accent-v resize-y"
                   rows={4}
                   placeholder="Tell us about yourself..."
                 />

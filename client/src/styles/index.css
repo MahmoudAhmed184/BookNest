@@ -1,64 +1,210 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-* {
-  @apply z-10;
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 640px) {
+    max-width: 640px;
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 768px) {
+    max-width: 768px;
+    padding-inline: 2rem;
+  }
+  @media (width >= 1024px) {
+    max-width: 1024px;
+    padding-inline: 2rem;
+  }
+  @media (width >= 1280px) {
+    max-width: 1280px;
+    padding-inline: 2rem;
+  }
+  @media (width >= 1536px) {
+    max-width: 1536px;
+    padding-inline: 2rem;
+  }
 }
 
-body {
-  @apply font-montserrat;
+@theme {
+  --color-primary-black: #1e1e1e;
+  --color-primary-white: #f5f5f5;
+  --color-primary-gray: #b0b0b0;
+
+  --color-secondary-black: #2d2d2d;
+  --color-secondary-gray: #3c3c3c;
+
+  --color-accent: #cfc8b8;
+
+  --background-image-primary-black-vertical: linear-gradient(
+    to bottom,
+    #2d2d2d,
+    #121212
+  );
+  --background-image-primary-black-horizontal: linear-gradient(
+    to right,
+    #121212,
+    #3b3b3b
+  );
+  --background-image-accent-vertical: linear-gradient(
+    to bottom,
+    #cfc8b8,
+    #8e897e
+  );
+  --background-image-accent-horizontal: linear-gradient(
+    to right,
+    #cfc8b8,
+    #8e897e
+  );
+
+  --font-montserrat: Montserrat, sans-serif;
 }
 
-nav,
-footer {
-  @apply z-20;
+@utility gap-md {
+  gap: 16px;
 }
 
-.btn-primary-v,
-.bg-primary-v {
-  @apply bg-primary-black-vertical duration-300;
+@utility gap-sm {
+  gap: 8px;
 }
 
-.btn-primary-h,
-.bg-primary-h {
-  @apply bg-primary-black-horizontal duration-300;
+@utility py-md {
+  padding-block: 16px;
 }
 
-.text-accent-h,
-.btn-accent-h {
-  @apply bg-accent-horizontal duration-300;
+@utility py-sm {
+  padding-block: 8px;
 }
 
-.text-accent-v,
-.btn-accent-v {
-  @apply bg-accent-vertical duration-300;
+@utility px-md {
+  padding-inline: 16px;
 }
 
-.btn-accent-v:hover,
-.btn-accent-h:hover,
-.btn-primary-v:hover,
-.btn-primary-h:hover {
-  @apply brightness-110;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  p {
+    line-height: 1.625;
+  }
+
+  * {
+    z-index: 10;
+  }
+
+  body {
+    font-family: var(--font-montserrat);
+  }
+
+  nav,
+  footer {
+    z-index: 20;
+  }
 }
 
-.btn-accent-v:focus,
-.btn-accent-h:focus,
-.btn-primary-v:focus,
-.btn-primary-h:focus {
-  @apply brightness-75;
-}
+@layer components {
+  .btn-primary-v,
+  .bg-primary-v {
+    background-image: var(--background-image-primary-black-vertical);
+    --tw-duration: 0.3s;
+    transition-duration: 0.3s;
+  }
 
-.field {
-  @apply bg-secondary-black text-primary-gray rounded-lg py-sm px-md outline-none placeholder-primary-gray;
+  .btn-primary-h,
+  .bg-primary-h {
+    background-image: var(--background-image-primary-black-horizontal);
+    --tw-duration: 0.3s;
+    transition-duration: 0.3s;
+  }
+
+  .text-accent-h,
+  .btn-accent-h {
+    background-image: var(--background-image-accent-horizontal);
+    --tw-duration: 0.3s;
+    transition-duration: 0.3s;
+  }
+
+  .text-accent-v,
+  .btn-accent-v {
+    background-image: var(--background-image-accent-vertical);
+    --tw-duration: 0.3s;
+    transition-duration: 0.3s;
+  }
+
+  .btn-accent-v:hover,
+  .btn-accent-h:hover,
+  .btn-primary-v:hover,
+  .btn-primary-h:hover {
+    --tw-brightness: brightness(110%);
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,)
+      var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,)
+      var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+
+  .btn-accent-v:focus,
+  .btn-accent-h:focus,
+  .btn-primary-v:focus,
+  .btn-primary-h:focus {
+    --tw-brightness: brightness(75%);
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,)
+      var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,)
+      var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+
+  .field {
+    border-radius: var(--radius-lg);
+    background-color: var(--color-secondary-black);
+    padding-block: 8px;
+    padding-inline: 16px;
+    color: var(--color-primary-gray);
+    --tw-outline-style: none;
+    outline-style: none;
+  }
+
+  .field::placeholder {
+    color: var(--color-primary-gray);
+  }
+
+  @media (forced-colors: active) {
+    .field {
+      outline-offset: 2px;
+      outline: 2px solid #0000;
+    }
+  }
 }
 
 .btn {
-  @apply px-8 py-2 rounded-xl text-primary-white font-semibold;
+  border-radius: var(--radius-xl);
+  padding-inline: calc(var(--spacing) * 8);
+  padding-block: calc(var(--spacing) * 2);
+  --tw-font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-white);
 }
 
-p {
-  @apply leading-relaxed;
+@media (width >= 40rem) {
+  .btn.sm\:px-6 {
+    padding-inline: 1.5rem;
+  }
+
+  .btn.sm\:py-3 {
+    padding-block: 0.75rem;
+  }
 }
 
 .swiper-button-prev,
@@ -97,7 +243,20 @@ p {
 }
 
 .blob {
-  @apply w-[300px] h-[300px] bg-accent rounded-full blur-[250px] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+  --tw-translate-x: calc(calc(1 / 2 * 100%) * -1);
+  --tw-translate-y: calc(calc(1 / 2 * 100%) * -1);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  translate: var(--tw-translate-x) var(--tw-translate-y);
+  border-radius: 3.40282e38px;
+  background-color: var(--color-accent);
+  --tw-blur: blur(250px);
+  filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,)
+    var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,)
+    var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
 }
 
 .spinner {

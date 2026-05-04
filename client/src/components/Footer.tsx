@@ -11,7 +11,7 @@ export default function Footer({}: FooterProps): ReactElement {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center gap-3 sm:gap-4">
           <Link
             to="/"
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex items-center gap-2 shrink-0"
             aria-label="BookNest Homepage"
           >
             <img

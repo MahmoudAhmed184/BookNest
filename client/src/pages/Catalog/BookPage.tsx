@@ -138,7 +138,7 @@ export default function BookPage() {
 
   if (isLoading)
     return (
-      <div className="flex-grow flex justify-center items-center">
+      <div className="grow flex justify-center items-center">
         <div className="spinner"></div>
       </div>
     );
@@ -164,7 +164,7 @@ export default function BookPage() {
               }}
               aria-hidden="true"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-secondary-black/80 to-transparent z-10" />
+            <div className="absolute inset-0 bg-linear-to-t from-secondary-black/80 to-transparent z-10" />
             <img
               src={
                 book?.cover_img ||
@@ -257,7 +257,7 @@ export default function BookPage() {
         <textarea
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
-          className="bg-primary-black text-primary-white p-2 rounded min-h-32"
+          className="bg-primary-black text-primary-white p-2 rounded-sm min-h-32"
           placeholder="Write your review here..."
         />
         <button

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function NotFound() {
   return (
-    <div className="flex-grow flex flex-col items-center justify-center gap-md relative">
+    <div className="grow flex flex-col items-center justify-center gap-md relative">
       <div className="blob"></div>
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-6 sm:gap-8 text-center">

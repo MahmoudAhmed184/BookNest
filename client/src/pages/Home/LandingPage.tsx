@@ -41,7 +41,7 @@ export default function Landing() {
     //     </div>
     //   </div>
     // </section>
-    <section className="flex-grow flex flex-col items-center justify-center gap-md relative">
+    <section className="grow flex flex-col items-center justify-center gap-md relative">
       <div className="blob"></div>
       <img
         src={Logo}

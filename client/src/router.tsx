@@ -54,7 +54,7 @@ const routes = {
 } as const satisfies Record<string, AppRoutePath>;
 
 const routeFallback = (
-  <div className="flex-grow flex justify-center items-center">
+  <div className="grow flex justify-center items-center">
     <div className="spinner"></div>
   </div>
 );

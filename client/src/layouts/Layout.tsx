@@ -7,7 +7,7 @@ function Layout(): ReactElement {
   return (
     <div className="min-h-screen flex flex-col gap-md bg-primary-black text-primary-white">
       <Navbar />
-      <div className="container flex-grow flex flex-col z-0">
+      <div className="container grow flex flex-col z-0">
         <Outlet />
       </div>
       <Footer />
