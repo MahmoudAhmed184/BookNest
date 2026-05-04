@@ -4,8 +4,8 @@ import {
   getApiError,
   getData,
   postData,
+  throwApiError,
 } from "./apiClient";
-import type { ApiResult } from "../types/api";
 import type {
   Book,
   BookRating,
@@ -14,11 +14,12 @@ import type {
   CreateRatingPayload,
   CreateReviewPayload,
   DeleteBookPayload,
+  RecommendedBook,
 } from "../types/book";
 
 export async function getBooks(
   query: string
-): Promise<ApiResult<BookSearchResponse>> {
+): Promise<BookSearchResponse> {
   try {
     const response = await getData<BookSearchResponse>(
       `/api/books/search/?q=${query}&page_size=50`
@@ -29,11 +30,11 @@ export async function getBooks(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
-export async function getBook(id: string | undefined): Promise<ApiResult<Book>> {
+export async function getBook(id: string | undefined): Promise<Book> {
   try {
     const response = await getData<Book>(`/api/books/books/${id}/`);
     console.log(response);
@@ -41,13 +42,13 @@ export async function getBook(id: string | undefined): Promise<ApiResult<Book>> 
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function searchBooks(
   query: string
-): Promise<ApiResult<BookSearchResponse>> {
+): Promise<BookSearchResponse> {
   try {
     const response = await getData<BookSearchResponse>(
       `/api/books/search/?q=${query}&page_size=100`
@@ -57,13 +58,13 @@ export async function searchBooks(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function getReviews(
   id: string | undefined
-): Promise<ApiResult<BookReview[]>> {
+): Promise<BookReview[]> {
   try {
     const response = await getData<BookReview[]>(
       `/api/books/books/${id}/reviews/`
@@ -71,13 +72,13 @@ export async function getReviews(
     console.log(response);
     return response;
   } catch (error: unknown) {
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function createReview(
   data: CreateReviewPayload
-): Promise<ApiResult<BookReview>> {
+): Promise<BookReview> {
   try {
     const response = await postData<BookReview, CreateReviewPayload>(
       "/api/books/review/create/",
@@ -91,13 +92,13 @@ export async function createReview(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function createRating(
   data: CreateRatingPayload
-): Promise<ApiResult<BookRating>> {
+): Promise<BookRating> {
   try {
     const response = await postData<BookRating, CreateRatingPayload>(
       "/api/books/rating/create/",
@@ -111,13 +112,13 @@ export async function createRating(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function deleteBook(
   data: DeleteBookPayload
-): Promise<ApiResult<{ detail?: string }>> {
+): Promise<{ detail?: string }> {
   console.log("Data sent:", data);
 
   const token = localStorage.getItem("token");
@@ -127,10 +128,7 @@ export async function deleteBook(
   }
 
   try {
-    const response = await deleteData<
-      ApiResult<{ detail?: string }>,
-      DeleteBookPayload
-    >(
+    const response = await deleteData<{ detail?: string }, DeleteBookPayload>(
       "/api/books/reading-lists/books/",
       {
         headers: authHeaders(token),
@@ -145,9 +143,9 @@ export async function deleteBook(
   }
 }
 
-export async function getRecommendedBooks(): Promise<ApiResult<Book[]>> {
+export async function getRecommendedBooks(): Promise<RecommendedBook[]> {
   try {
-    const response = await getData<Book[]>(
+    const response = await getData<RecommendedBook[]>(
       "/api/recommendation/user-recommendations/",
       {
         headers: authHeaders(),
@@ -159,13 +157,13 @@ export async function getRecommendedBooks(): Promise<ApiResult<Book[]>> {
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function getBookRatings(
   id: string | undefined
-): Promise<ApiResult<BookRating[]>> {
+): Promise<BookRating[]> {
   try {
     const response = await getData<BookRating[]>(
       `/api/books/books/${id}/ratings/`,
@@ -178,6 +176,6 @@ export async function getBookRatings(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }

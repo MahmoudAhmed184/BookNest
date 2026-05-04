@@ -48,7 +48,15 @@ export default function Explore() {
     );
   }
 
-  const popularBooks = [
+  const popularBooks: Array<{
+    title: string;
+    authors: string[];
+    author?: string;
+    language: string;
+    date: string;
+    isbn13: string;
+    cover_img: string;
+  }> = [
     {
       title: "Clean Code",
       authors: ["Robert C. Martin"],
@@ -428,7 +436,7 @@ export default function Explore() {
                   aria-hidden="true"
                 />
                 <img
-                  src={book?.cover_img}
+                  src={book?.cover_img || undefined}
                   className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
                   aria-hidden="true"
                   draggable={false}
@@ -436,7 +444,7 @@ export default function Explore() {
                 <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
                   <div className="book-cover h-[256px] sm:h-[280px] relative">
                     <img
-                      src={book?.cover_img}
+                      src={book?.cover_img || undefined}
                       alt={book?.title}
                       className="w-[180px] h-[280px] object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
                     />

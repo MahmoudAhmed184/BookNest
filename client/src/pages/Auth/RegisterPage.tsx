@@ -60,7 +60,7 @@ const Register = () => {
         .min(8, "Password must be at least 8 characters")
         .required("Password is required"),
       password2: Yup.string()
-        .oneOf([Yup.ref("password1"), null], "Passwords must match")
+        .oneOf([Yup.ref("password1")], "Passwords must match")
         .required("Confirm password is required"),
     }),
     onSubmit: (values) => {

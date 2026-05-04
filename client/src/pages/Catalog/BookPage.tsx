@@ -20,7 +20,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function BookPage() {
   const { id } = useParams<"id">();
-  const [listId, setListId] = useState(null);
+  const [listId, setListId] = useState<number | null>(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const queryClient = useQueryClient();
@@ -32,7 +32,10 @@ export default function BookPage() {
 
   useEffect(() => {
     if (collections && collections.length > 0) {
-      setListId(collections[0].list_id);
+      const firstCollection = collections[0];
+      if (firstCollection) {
+        setListId(firstCollection.list_id);
+      }
     }
   }, [collections]);
 
@@ -57,7 +60,7 @@ export default function BookPage() {
       });
     },
     onError: (error) => {
-      toast.error(error, {
+      toast.error(error.message, {
         style: {
           borderRadius: "10px",
           background: "#333",
@@ -105,11 +108,11 @@ export default function BookPage() {
     refetchInterval: 5000,
   });
 
-  const handleStarClick = (rating) => {
+  const handleStarClick = (rating: number): void => {
     setRating(rating);
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!reviewText || !rating) {
       toast.error("You need to provide both rating and review", {
@@ -180,7 +183,11 @@ export default function BookPage() {
           <p className="text-lg text-primary-gray">
             by{" "}
             <span className="text-primary-white">
-              {book?.authors?.map((author) => author.name).join(", ")}
+              {book?.authors
+                ?.map((author) =>
+                  typeof author === "string" ? author : author.name
+                )
+                .join(", ")}
             </span>
           </p>
           <div className="flex items-center gap-2 text-sm text-primary-gray">
@@ -296,7 +303,7 @@ export default function BookPage() {
                 <span
                   key={star}
                   className={`${
-                    ratings && ratings[i]?.rate >= star
+                    (ratings?.[i]?.rate ?? 0) >= star
                       ? "text-yellow-400 font-bold"
                       : "text-white"
                   }`}

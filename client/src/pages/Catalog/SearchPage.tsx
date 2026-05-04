@@ -19,7 +19,7 @@ export default function Search() {
 
   const books = data?.results || [];
 
-  const handleSearchInput = (e) => {
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInput(e.target.value);
   };
 

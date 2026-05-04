@@ -17,6 +17,7 @@ import { deleteBook } from "../../services/bookService";
 import { getCollections } from "../../services/collectionService";
 
 import { toast } from "react-hot-toast";
+import type { DeleteBookPayload } from "../../types/book";
 
 export default function Profile() {
   const { data: user } = useQuery({
@@ -46,10 +47,11 @@ export default function Profile() {
     queryKey: ["collections"],
     queryFn: () => getCollections(localStorage.getItem("token")),
   });
+  const primaryCollection = collections?.[0];
 
   // Mutation for deleting a book
   const deleteMutation = useMutation({
-    mutationFn: ({ book_id, list_id }) => deleteBook({ book_id, list_id }),
+    mutationFn: (payload: DeleteBookPayload) => deleteBook(payload),
     onSuccess: () => {
       toast.success("Book removed successfully", {
         style: {
@@ -58,7 +60,7 @@ export default function Profile() {
           color: "#fff",
         },
       });
-      queryClient.invalidateQueries(["collections"]);
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
     onError: (error) => {
       console.error("Error deleting book:", error);
@@ -72,7 +74,10 @@ export default function Profile() {
     },
   });
 
-  const handleDelete = (book_id, list_id) => {
+  const handleDelete = (
+    book_id: string | undefined,
+    list_id: number | null
+  ): void => {
     if (
       window.confirm(
         "Are you sure you want to delete this book from the library?"
@@ -84,12 +89,12 @@ export default function Profile() {
 
   // Mutation for deleting a review
   const deleteReviewMutation = useMutation({
-    mutationFn: (review_id) => deleteReview(review_id),
+    mutationFn: (review_id: string | number) => deleteReview(review_id),
     onSuccess: () => {
       toast.success("Review deleted successfully", {
         style: { borderRadius: "10px", background: "#333", color: "#fff" },
       });
-      queryClient.invalidateQueries(["reviews"]);
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
     },
     onError: () => {
       toast.error("Failed to delete review. Please try again.", {
@@ -98,7 +103,7 @@ export default function Profile() {
     },
   });
 
-  const handleDeleteReview = (review_id) => {
+  const handleDeleteReview = (review_id: string | number): void => {
     if (window.confirm("Are you sure you want to delete this review?")) {
       deleteReviewMutation.mutate(review_id);
     }
@@ -147,12 +152,12 @@ export default function Profile() {
       <p className="text-base leading-relaxed">{user?.bio}</p>
 
       <h2
-        key={collections[0]?.list_id}
+        key={primaryCollection?.list_id}
         className="text-md sm:text-xl font-semibold"
       >
         My Books
       </h2>
-      <div key={collections[0]?.id}>
+      <div key={primaryCollection?.id}>
         <Swiper
           modules={[Navigation, Pagination, A11y, Autoplay]}
           spaceBetween={20}
@@ -170,10 +175,10 @@ export default function Profile() {
           }}
           className="w-full relative"
         >
-          {collections[0]?.books?.length === 0 ? (
+          {primaryCollection?.books?.length === 0 ? (
             <p className="text-base text-primary-gray">No books added yet.</p>
           ) : (
-            collections[0]?.books?.map((book) => (
+            primaryCollection?.books?.map((book) => (
               <SwiperSlide key={book.isbn13}>
                 <div className="relative">
                   <Link
@@ -216,11 +221,11 @@ export default function Profile() {
                   </Link>
                   <button
                     onClick={() =>
-                      handleDelete(book.isbn13, collections[0]?.list_id)
+                      handleDelete(book.isbn13, primaryCollection?.list_id ?? null)
                     }
                     className="absolute top-2 -right-4 btn btn-error btn-sm rounded-full p-1"
                     aria-label={`Delete ${book?.title} from collection`}
-                    disabled={deleteMutation.isLoading}
+                    disabled={deleteMutation.isPending}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -281,7 +286,7 @@ export default function Profile() {
                           <span
                             key={star}
                             className={`${
-                              ratings && ratings[i]?.rate >= star
+                              (ratings?.[i]?.rate ?? 0) >= star
                                 ? "text-yellow-400 font-bold"
                                 : "text-white"
                             }`}
@@ -303,7 +308,7 @@ export default function Profile() {
                 onClick={() => handleDeleteReview(review.review_id)}
                 className="absolute bottom-2 -right-4 btn btn-error btn-sm rounded-full p-1"
                 aria-label={`Delete review for ${review.book_title}`}
-                disabled={deleteReviewMutation.isLoading}
+                disabled={deleteReviewMutation.isPending}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

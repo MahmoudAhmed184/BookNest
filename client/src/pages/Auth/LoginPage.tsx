@@ -38,7 +38,7 @@ const Login = () => {
       }
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error.message);
       console.error(error);
     },
   });
@@ -128,8 +128,7 @@ const Login = () => {
 
           {mutation.isError && (
             <p className="text-red-500 text-sm text-center mt-2">
-              {mutation.error.response?.data?.message ||
-                "Login failed. Try again."}
+              {mutation.error.message || "Login failed. Try again."}
             </p>
           )}
         </form>

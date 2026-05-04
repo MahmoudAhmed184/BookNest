@@ -4,8 +4,8 @@ import {
   getApiError,
   getData,
   patchData,
+  throwApiError,
 } from "./apiClient";
-import type { ApiResult } from "../types/api";
 import type {
   ProfileResponseEnvelope,
   UpdateBioPayload,
@@ -15,7 +15,7 @@ import type {
   UserReviewsResponse,
 } from "../types/user";
 
-export async function getMyProfile(): Promise<ApiResult<UserProfile>> {
+export async function getMyProfile(): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
       "/api/users/profile/me/",
@@ -27,13 +27,13 @@ export async function getMyProfile(): Promise<ApiResult<UserProfile>> {
 
     return response.data.profile;
   } catch (error: unknown) {
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function getProfile(
   id: string | undefined
-): Promise<ApiResult<UserProfile>> {
+): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
       `/api/users/profile/${id}/`,
@@ -45,13 +45,13 @@ export async function getProfile(
 
     return response.data.profile;
   } catch (error: unknown) {
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function getUserProfile(
   id: number | string | undefined
-): Promise<ApiResult<ProfileResponseEnvelope>> {
+): Promise<ProfileResponseEnvelope> {
   const token = localStorage.getItem("token");
   console.log(token);
 
@@ -67,14 +67,14 @@ export async function getUserProfile(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function updateUser(
   token: string | null,
   data: UpdateUserPayload
-): Promise<ApiResult<UserProfile>> {
+): Promise<UserProfile> {
   console.log(token);
 
   try {
@@ -90,13 +90,13 @@ export async function updateUser(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function updateBio(
   data: UpdateBioPayload
-): Promise<ApiResult<UserProfile>> {
+): Promise<UserProfile> {
   try {
     const response = await patchData<UserProfile, UpdateBioPayload>(
       "/api/users/profile/me/",
@@ -110,13 +110,13 @@ export async function updateBio(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function getUserReviews(
   id: number | string | undefined
-): Promise<ApiResult<UserReviewsResponse>> {
+): Promise<UserReviewsResponse> {
   try {
     const response = await getData<UserReviewsResponse>(
       `/api/books/users/${id}/reviews/`,
@@ -127,13 +127,13 @@ export async function getUserReviews(
     console.log(response);
     return response;
   } catch (error: unknown) {
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function getUserRatings(
   id: number | string | undefined
-): Promise<ApiResult<UserRatingsResponse>> {
+): Promise<UserRatingsResponse> {
   try {
     const response = await getData<UserRatingsResponse>(
       `/api/books/users/${id}/ratings/`,
@@ -144,15 +144,15 @@ export async function getUserRatings(
     console.log(response);
     return response;
   } catch (error: unknown) {
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function deleteReview(
   id: number | string | undefined
-): Promise<ApiResult<{ detail?: string }>> {
+): Promise<{ detail?: string }> {
   try {
-    const response = await deleteData<ApiResult<{ detail?: string }>>(
+    const response = await deleteData<{ detail?: string }>(
       `/api/books/reviews/${id}/delete/`,
       {
         headers: authHeaders(),

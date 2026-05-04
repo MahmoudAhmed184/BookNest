@@ -1,10 +1,9 @@
-import { authHeaders, getApiError, getData } from "./apiClient";
-import type { ApiResult } from "../types/api";
+import { authHeaders, getApiError, getData, throwApiError } from "./apiClient";
 import type { Notification } from "../types/notification";
 
 export async function getNotifications(
   token: string | null
-): Promise<ApiResult<Notification[]>> {
+): Promise<Notification[]> {
   console.log(token);
 
   try {
@@ -16,6 +15,6 @@ export async function getNotifications(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }

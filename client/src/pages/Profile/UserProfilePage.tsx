@@ -48,6 +48,7 @@ export default function UserProfile() {
     queryFn: () => getUserCollections(user?.user_id),
     enabled: !!user?.user_id,
   });
+  const primaryCollection = collections?.[0];
 
   if (isUserLoading || isReviewsLoading || isRatingsLoading) {
     return (
@@ -97,12 +98,12 @@ export default function UserProfile() {
       <p className="text-base leading-relaxed">{user?.bio}</p>
 
       <h2
-        key={collections[0]?.list_id}
+        key={primaryCollection?.list_id}
         className="text-md sm:text-xl font-semibold"
       >
         My Books
       </h2>
-      <div key={collections[0]?.id}>
+      <div key={primaryCollection?.id}>
         <Swiper
           modules={[Navigation, Pagination, A11y, Autoplay]}
           spaceBetween={20}
@@ -120,10 +121,10 @@ export default function UserProfile() {
           }}
           className="w-full relative"
         >
-          {collections[0]?.books?.length === 0 ? (
+          {primaryCollection?.books?.length === 0 ? (
             <p className="text-base text-primary-gray">No books added yet.</p>
           ) : (
-            collections[0]?.books?.map((book) => (
+            primaryCollection?.books?.map((book) => (
               <SwiperSlide key={book.isbn13}>
                 <div className="relative">
                   <Link
@@ -210,7 +211,7 @@ export default function UserProfile() {
                             <span
                               key={star}
                               className={`${
-                                ratings && ratings[i]?.rate >= star
+                                (ratings?.[i]?.rate ?? 0) >= star
                                   ? "text-yellow-400 font-bold"
                                   : "text-white"
                               }`}

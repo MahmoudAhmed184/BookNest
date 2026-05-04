@@ -1,5 +1,10 @@
-import { authHeaders, getApiError, getData, postData } from "./apiClient";
-import type { ApiResult } from "../types/api";
+import {
+  authHeaders,
+  getApiError,
+  getData,
+  postData,
+  throwApiError,
+} from "./apiClient";
 import type {
   AddToCollectionPayload,
   CreateCollectionPayload,
@@ -8,7 +13,7 @@ import type {
 
 export async function getCollections(
   tokenOverride?: string | null
-): Promise<ApiResult<ReadingList[]>> {
+): Promise<ReadingList[]> {
   const token = tokenOverride ?? localStorage.getItem("token");
   console.log(token);
 
@@ -24,13 +29,13 @@ export async function getCollections(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function createCollection(
   data: CreateCollectionPayload
-): Promise<ApiResult<ReadingList>> {
+): Promise<ReadingList> {
   const token = localStorage.getItem("token");
   console.log(token);
   console.log(data);
@@ -48,13 +53,13 @@ export async function createCollection(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }
 
 export async function addToCollection(
   data: AddToCollectionPayload
-): Promise<ApiResult<ReadingList>> {
+): Promise<ReadingList> {
   console.log(data);
 
   try {
@@ -69,13 +74,13 @@ export async function addToCollection(
   } catch (error: unknown) {
     console.log(error);
 
-    return getApiError(error);
+    throwApiError(error);
   }
 }
 
 export async function getUserCollections(
   id: number | string | undefined
-): Promise<ApiResult<ReadingList[]>> {
+): Promise<ReadingList[]> {
   const token = localStorage.getItem("token");
   console.log(token);
 
@@ -91,6 +96,6 @@ export async function getUserCollections(
   } catch (error: unknown) {
     const apiError = getApiError(error);
     console.log(apiError);
-    return apiError;
+    throwApiError(error);
   }
 }

@@ -40,6 +40,7 @@ export default function Notifications() {
   if (error) return <p>Error fetching notifications</p>;
 
   console.log(notifications);
+  const hasNotifications = (notifications?.length ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-md py-md">
@@ -47,7 +48,7 @@ export default function Notifications() {
         Notifications ({notifications?.length})
       </h2>
       <div className="flex flex-col gap-2 sm:gap-3">
-        {notifications?.length > 0 ? (
+        {hasNotifications ? (
           notifications
             ?.filter((notification) => notification.read === false)
             .map((notification, index) => (

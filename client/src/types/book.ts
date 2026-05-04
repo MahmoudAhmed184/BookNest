@@ -59,6 +59,12 @@ export interface BookRating {
   book_average_rate?: number | string | null;
 }
 
+export interface RecommendedBook {
+  book: string;
+  book_title: string;
+  book_cover?: string | null;
+}
+
 export interface CreateReviewPayload {
   user: number;
   book: string | undefined;

@@ -78,3 +78,25 @@ export function getApiError(error: unknown): ApiErrorResponse {
 
   return { detail: "Unknown API error" };
 }
+
+export function getApiErrorMessage(error: unknown): string {
+  const apiError = getApiError(error);
+
+  if (typeof apiError.detail === "string") {
+    return apiError.detail;
+  }
+
+  if (typeof apiError.message === "string") {
+    return apiError.message;
+  }
+
+  if (typeof apiError.error === "string") {
+    return apiError.error;
+  }
+
+  return "API request failed";
+}
+
+export function throwApiError(error: unknown): never {
+  throw new Error(getApiErrorMessage(error));
+}

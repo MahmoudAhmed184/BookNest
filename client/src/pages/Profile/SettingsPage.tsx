@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile, updateUser, updateBio } from "../../services/userService";
 import { API_BASE_URL } from "../../config";
 import toast from "react-hot-toast";
+import type { UpdateBioPayload, UpdateUserPayload } from "../../types/user";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function Settings() {
   const [bio, setBio] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -31,7 +32,7 @@ export default function Settings() {
   const token = localStorage.getItem("token");
 
   const updateMutation = useMutation({
-    mutationFn: (data) => updateUser(token, data),
+    mutationFn: (data: UpdateUserPayload) => updateUser(token, data),
     onSuccess: () => {
       toast.success("Profile updated successfully", {
         style: {
@@ -40,7 +41,7 @@ export default function Settings() {
           color: "#fff",
         },
       });
-      queryClient.invalidateQueries(["user"]);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error) => {
       console.error("Update failed:", error);
@@ -55,11 +56,11 @@ export default function Settings() {
   });
 
   const updateBioMutation = useMutation({
-    mutationFn: (data) => updateBio(data),
+    mutationFn: (data: UpdateBioPayload) => updateBio(data),
   });
 
   const uploadPictureMutation = useMutation({
-    mutationFn: async (file) => {
+    mutationFn: async (file: File): Promise<unknown> => {
       const formData = new FormData();
       formData.append("profile_pic", file);
 
@@ -85,7 +86,7 @@ export default function Settings() {
           color: "#fff",
         },
       });
-      queryClient.invalidateQueries(["user"]);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (err) => {
       console.error(err);
@@ -99,13 +100,13 @@ export default function Settings() {
     },
   });
 
-  const handleUpdateInfo = (e) => {
+  const handleUpdateInfo = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     updateMutation.mutate({ username, bio });
     updateBioMutation.mutate({ bio });
   };
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (newPassword === confirmPassword) {
       console.log("Password updated successfully:", newPassword);
@@ -117,13 +118,13 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
       uploadPictureMutation.mutate(file);
@@ -257,7 +258,7 @@ export default function Settings() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-secondary-gray text-primary-white focus:outline-none focus:ring-2 focus:ring-accent-v resize-y"
-                  rows="4"
+                  rows={4}
                   placeholder="Tell us about yourself..."
                 />
               </div>
