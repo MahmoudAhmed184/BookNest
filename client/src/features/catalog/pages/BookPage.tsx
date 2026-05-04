@@ -3,9 +3,11 @@ import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ErrorState } from "../../../components/ui";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import {
   BookHero,
   BookPageSkeleton,
+  RelatedBooksCarousel,
   ReviewForm,
   ReviewsSection,
 } from "../components/BookPageSections";
@@ -15,6 +17,7 @@ import type { BookRouteParams } from "../../../routes/paths";
 
 export default function BookPage(): ReactElement {
   const { id } = useParams<BookRouteParams>();
+  const { token } = useOptionalAuth();
   const [listId, setListId] = useState<number | null>(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -35,12 +38,13 @@ export default function BookPage(): ReactElement {
     refetchBook,
     refetchReviews,
     refetchRatings,
-  } = useBookPageData(id);
+  } = useBookPageData(id, token);
   const bookActions = useBookActions({
     id,
     listId,
     rating,
     reviewText,
+    token,
     onReviewSubmitted: () => {
       setReviewText("");
       setRating(0);
@@ -111,6 +115,7 @@ export default function BookPage(): ReactElement {
           refetchRatings();
         }}
       />
+      <RelatedBooksCarousel currentBookId={book.isbn13} />
     </div>
   );
 }
