@@ -120,7 +120,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-# .env
+.env
 .venv
 # env/
 venv/
@@ -248,4 +248,3 @@ restore_data.sh
 *secret*
 *key*
 *credential*
-
