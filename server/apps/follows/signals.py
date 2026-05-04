@@ -2,7 +2,6 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import Follow
 from apps.notifications.services import NotificationService
-from apps.notifications.models import NotificationType
 
 
 # This will be used when the notifications app is integrated
@@ -22,7 +21,7 @@ def follow_created(sender, instance, created, **kwargs):
             verb='followed you',
             target=instance.followed,
             action_object=instance,
-            notification_type=NotificationType.FOLLOW
+            notification_type='follow'
         )
         
 

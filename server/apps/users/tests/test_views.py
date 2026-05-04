@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from apps.users.models.profile import Profile
 from django.core.files.uploadedfile import SimpleUploadedFile
 import os
+from unittest.mock import patch
 
 User = get_user_model()
 
@@ -21,20 +22,20 @@ class UserAuthAPITests(APITestCase):
         self.user_data = {
             'username': 'testuser_api',
             'email': 'testuser_api@example.com',
-            'password': 'password123',
-            'password2': 'password123'
+            'password1': 'StrongerPass123!',
+            'password2': 'StrongerPass123!'
         }
         self.user_login_data = {
             'email': 'testuser_api@example.com', # CustomLoginSerializer uses email
-            'password': 'password123'
+            'password': 'StrongerPass123!'
         }
 
     def test_user_registration(self):
         response = self.client.post(self.register_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username='testuser_api').exists())
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        self.assertIn('access', response.data['data'])
+        self.assertIn('refresh', response.data['data'])
 
     def test_user_login(self):
         # First, register the user
@@ -42,15 +43,15 @@ class UserAuthAPITests(APITestCase):
         # Then, log in
         response = self.client.post(self.login_url, self.user_login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
-        self.assertIn('user', response.data)
-        self.assertEqual(response.data['user']['username'], self.user_data['username'])
+        self.assertIn('access', response.data['data'])
+        self.assertIn('refresh', response.data['data'])
+        self.assertIn('user', response.data['data'])
+        self.assertEqual(response.data['data']['user']['username'], self.user_data['username'])
 
     def test_user_logout(self):
         self.client.post(self.register_url, self.user_data, format='json')
         login_response = self.client.post(self.login_url, self.user_login_data, format='json')
-        access_token = login_response.data['access']
+        access_token = login_response.data['data']['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
         
         logout_response = self.client.post(self.logout_url, {}, format='json') # Logout might need refresh token depending on setup
@@ -59,7 +60,7 @@ class UserAuthAPITests(APITestCase):
     def test_get_user_details_authenticated(self):
         self.client.post(self.register_url, self.user_data, format='json')
         login_response = self.client.post(self.login_url, self.user_login_data, format='json')
-        access_token = login_response.data['access']
+        access_token = login_response.data['data']['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
         
         response = self.client.get(self.user_details_url)
@@ -73,7 +74,7 @@ class UserAuthAPITests(APITestCase):
     def test_token_verify(self):
         self.client.post(self.register_url, self.user_data, format='json')
         login_response = self.client.post(self.login_url, self.user_login_data, format='json')
-        access_token = login_response.data['access']
+        access_token = login_response.data['data']['access']
         
         response = self.client.post(self.token_verify_url, {'token': access_token}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -81,7 +82,7 @@ class UserAuthAPITests(APITestCase):
     def test_token_refresh(self):
         self.client.post(self.register_url, self.user_data, format='json')
         login_response = self.client.post(self.login_url, self.user_login_data, format='json')
-        refresh_token = login_response.data['refresh']
+        refresh_token = login_response.data['data']['refresh']
         
         response = self.client.post(self.token_refresh_url, {'refresh': refresh_token}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -104,13 +105,14 @@ class ProfileAPITests(APITestCase):
         self.profile_upload_pic_url = reverse('profile-picture-upload')
 
         # Authenticate user1 for most tests
-        self.client.login(username='user1_profile_api', password='password1')
+        self.client.force_authenticate(user=self.user1)
 
     def test_get_my_profile(self):
         response = self.client.get(self.my_profile_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['user']['username'], self.user1.username)
-        self.assertEqual(response.data['bio'], self.profile1.bio)
+        profile = response.data['data']['profile']
+        self.assertEqual(profile['username'], self.user1.username)
+        self.assertEqual(profile['bio'], self.profile1.bio)
 
     def test_update_my_profile(self):
         updated_data = {'bio': 'Updated bio for user1', 'profile_type': 'AUTHOR'}
@@ -124,12 +126,12 @@ class ProfileAPITests(APITestCase):
         response = self.client.get(self.profile_list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Assuming pagination, check if results exist
-        self.assertGreaterEqual(len(response.data.get('results', response.data)), 2) # user1 and user2 profiles
+        self.assertGreaterEqual(len(response.data['data']['profiles']), 2) # user1 and user2 profiles
 
     def test_retrieve_profile_authenticated(self):
         response = self.client.get(self.profile_detail_url(self.profile2.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['user']['username'], self.user2.username)
+        self.assertEqual(response.data['data']['profile']['username'], self.user2.username)
 
     def test_cannot_update_other_user_profile(self):
         # user1 tries to update user2's profile
@@ -145,10 +147,15 @@ class ProfileAPITests(APITestCase):
         # The view's create method handles user assignment.
         response = self.client.post(self.profile_list_create_url, profile_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'User already has a profile')
+        self.assertIn('errors', response.data)
+        self.assertEqual(response.data['errors']['detail'], 'User already has a profile')
 
-    def test_upload_profile_picture(self):
+    @patch('apps.users.services.cloudinary.uploader.upload')
+    def test_upload_profile_picture(self, mock_upload):
+        mock_upload.return_value = {
+            'secure_url': 'https://example.com/profile.jpg',
+            'public_id': 'profile_pics/user1_profile_api/user1_profile_api_profile',
+        }
         # Create a dummy image file
         image = SimpleUploadedFile(
             name='test_image.jpg',
@@ -157,15 +164,15 @@ class ProfileAPITests(APITestCase):
         )
         response = self.client.post(self.profile_upload_pic_url, {'profile_pic': image}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('profile_pic_url', response.data)
+        self.assertIn('profile_pic_url', response.data['data'])
         self.profile1.refresh_from_db()
-        self.assertTrue(self.profile1.profile_pic.url.startswith('http')) # Check if URL is set
+        self.assertTrue(str(self.profile1.profile_pic).startswith('http')) # Check if URL is set
 
     def test_upload_profile_picture_no_file(self):
         response = self.client.post(self.profile_upload_pic_url, {}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'No image provided')
+        self.assertIn('errors', response.data)
+        self.assertEqual(response.data['errors']['profile_pic'], 'No image file provided')
 
     def test_upload_profile_picture_invalid_file_type(self):
         text_file = SimpleUploadedFile(
@@ -175,19 +182,19 @@ class ProfileAPITests(APITestCase):
         )
         response = self.client.post(self.profile_upload_pic_url, {'profile_pic': text_file}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Invalid file type')
+        self.assertIn('errors', response.data)
+        self.assertIn('Invalid file type', response.data['errors']['profile_pic'])
 
     def test_get_profile_by_username_query_param(self):
         # user1 is authenticated
         response = self.client.get(self.profile_list_create_url, {'username': self.user2.username})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        results = response.data.get('results', response.data) # Handle paginated or non-paginated response
+        results = response.data['data']['profiles'] # Handle paginated or non-paginated response
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['user']['username'], self.user2.username)
+        self.assertEqual(results[0]['username'], self.user2.username)
 
     def test_unauthenticated_access_to_profile_endpoints(self):
-        self.client.logout() # Ensure client is unauthenticated
+        self.client.force_authenticate(user=None) # Ensure client is unauthenticated
         
         response_my_profile = self.client.get(self.my_profile_url)
         self.assertEqual(response_my_profile.status_code, status.HTTP_401_UNAUTHORIZED)

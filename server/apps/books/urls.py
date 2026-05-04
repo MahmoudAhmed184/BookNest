@@ -80,8 +80,8 @@ urlpatterns = [
     
     # Author endpoints
     path("authors/", AuthorListAPIView.as_view(), name="authors-list-api"),
-    path("authors/<str:pk>/", AuthorDetailAPIView.as_view(), name="author-detail-api"),
     path("authors/create/", AuthorCreateAPIView.as_view(), name="author-create"),
+    path("authors/<str:pk>/", AuthorDetailAPIView.as_view(), name="author-detail-api"),
     path("authors/<str:pk>/update/", AuthorUpdateAPIView.as_view(), name="author-update"),
     path("authors/<str:pk>/delete/", AuthorDeleteAPIView.as_view(), name="author-delete"),
     path("authors/<int:pk>/books/", AuthorBookListAPIView.as_view(), name="author-books-by-id"),

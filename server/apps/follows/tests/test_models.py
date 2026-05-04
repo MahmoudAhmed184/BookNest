@@ -1,14 +1,17 @@
 from django.test import TestCase
 from django.db import IntegrityError
-from apps.users.models import User, Profile  # Assuming User and Profile models from your project
+from django.contrib.auth import get_user_model
+from apps.users.models.profile import Profile
 from apps.follows.models import Follow
+
+User = get_user_model()
 
 class FollowModelTests(TestCase):
     def setUp(self):
         # Create users
-        self.user1 = User.objects.create_user(username='user1', password='password1')
-        self.user2 = User.objects.create_user(username='user2', password='password2')
-        self.user3 = User.objects.create_user(username='user3', password='password3')
+        self.user1 = User.objects.create_user(username='user1', email='user1@example.com', password='password1')
+        self.user2 = User.objects.create_user(username='user2', email='user2@example.com', password='password2')
+        self.user3 = User.objects.create_user(username='user3', email='user3@example.com', password='password3')
 
         # Create profiles if they are not created automatically by a signal
         # If Profile is created via a signal on User creation, this might not be needed

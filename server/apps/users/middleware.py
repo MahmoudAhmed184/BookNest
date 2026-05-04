@@ -26,7 +26,7 @@ class ProfileRequiredMiddleware:
                 "errors": {"detail": "You must create a profile before accessing this feature"},
                 "meta": {
                     "action_required": "create_profile",
-                    "profile_creation_url": "/api/v1/users/profiles/"
+                    "profile_creation_url": "/api/users/profile/"
                 }
             }, status=403)
             
@@ -49,7 +49,10 @@ class ProfileRequiredMiddleware:
         allowed_patterns = [
             'rest_password_reset',
             'rest_password_reset_confirm',
+            'rest_user_details',
             'rest_logout',
+            'token_verify',
+            'token_refresh',
             'admin',
         ]
         

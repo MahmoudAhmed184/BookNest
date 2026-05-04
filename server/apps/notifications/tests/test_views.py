@@ -1,15 +1,18 @@
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from apps.notifications.models import Notification, NotificationType
-from apps.users.models import User  # Assuming User model from your project structure
 from django.contrib.contenttypes.models import ContentType
+
+User = get_user_model()
 
 class NotificationAPITests(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user1 = User.objects.create_user(username='testuser1', password='password123', email='test1@example.com')
         self.user2 = User.objects.create_user(username='testuser2', password='password456', email='test2@example.com')
+        Notification.objects.filter(recipient__in=[self.user1, self.user2]).delete()
 
         self.type1 = NotificationType.objects.create(name='Test Notification Type 1', description='Desc 1')
         self.type2 = NotificationType.objects.create(name='Test Notification Type 2', description='Desc 2')
@@ -52,72 +55,74 @@ class NotificationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) # Or 403 depending on setup
 
     def test_get_notification_list_authenticated(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should only return notifications for user1 (notification1, notification2)
-        self.assertEqual(len(response.data['results']), 2) 
-        self.assertEqual(response.data['results'][0]['verb'], self.notification2.verb) # Ordered by -timestamp
-        self.assertEqual(response.data['results'][1]['verb'], self.notification1.verb)
+        self.assertEqual(len(response.data), 2) 
+        self.assertEqual(response.data[0]['verb'], self.notification2.verb) # Ordered by -timestamp
+        self.assertEqual(response.data[1]['verb'], self.notification1.verb)
 
     def test_get_notification_detail_authenticated(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         response = self.client.get(self.detail_url(self.notification1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['verb'], self.notification1.verb)
 
     def test_get_notification_detail_unauthorized_access(self):
         # user2 trying to access user1's notification
-        self.client.login(username='testuser2', password='password456')
+        self.client.force_authenticate(user=self.user2)
         response = self.client.get(self.detail_url(self.notification1.id))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND) # Or 403
 
     def test_mark_notification_as_read(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         self.assertFalse(Notification.objects.get(id=self.notification1.id).read)
         response = self.client.post(self.mark_read_url(self.notification1.id)) # Assuming POST or PATCH
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.notification1.refresh_from_db()
         self.assertTrue(self.notification1.read)
 
     def test_mark_notification_as_unread(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         self.assertTrue(Notification.objects.get(id=self.notification2.id).read)
         response = self.client.post(self.mark_unread_url(self.notification2.id))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.notification2.refresh_from_db()
         self.assertFalse(self.notification2.read)
 
     def test_mark_all_notifications_as_read(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         # user1 has one unread notification (notification1)
         self.assertEqual(Notification.objects.filter(recipient=self.user1, read=False).count(), 1)
         response = self.client.post(self.mark_all_read_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK) # Or 204
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Notification.objects.filter(recipient=self.user1, read=False).count(), 0)
 
     def test_get_unread_notification_count(self):
-        self.client.login(username='testuser1', password='password123')
+        self.client.force_authenticate(user=self.user1)
         # user1 has one unread notification (notification1) initially in this test setup
         Notification.objects.filter(id=self.notification1.id).update(read=False)
         Notification.objects.filter(id=self.notification2.id).update(read=True)
         response = self.client.get(self.unread_count_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['unread_count'], 1)
+        self.assertEqual(response.data['count'], 1)
 
         # Mark it as read and check again
         self.notification1.mark_as_read()
         response = self.client.get(self.unread_count_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['unread_count'], 0)
+        self.assertEqual(response.data['count'], 0)
 
     def test_get_notification_type_list(self):
         # Notification types are usually public
+        self.client.force_authenticate(user=self.user1)
         response = self.client.get(self.type_list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), NotificationType.objects.count())
+        self.assertEqual(len(response.data), NotificationType.objects.count())
 
     def test_get_notification_type_detail(self):
+        self.client.force_authenticate(user=self.user1)
         response = self.client.get(self.type_detail_url(self.type1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.type1.name)

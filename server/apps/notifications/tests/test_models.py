@@ -1,8 +1,10 @@
 from django.test import TestCase
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import get_user_model
 from apps.notifications.models import Notification, NotificationType
-from apps.users.models import User # Assuming you have a User model
 from apps.books.models import Book # Assuming a Book model to act as a target/action_object
+
+User = get_user_model()
 
 class NotificationTypeModelTests(TestCase):
     def setUp(self):
@@ -20,8 +22,9 @@ class NotificationTypeModelTests(TestCase):
 
 class NotificationModelTests(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create_user(username='recipient_user', password='password123')
-        self.user2 = User.objects.create_user(username='actor_user', password='password456')
+        self.user1 = User.objects.create_user(username='recipient_user', email='recipient@example.com', password='password123')
+        self.user2 = User.objects.create_user(username='actor_user', email='actor@example.com', password='password456')
+        Notification.objects.filter(recipient__in=[self.user1, self.user2]).delete()
         self.book = Book.objects.create(isbn13='9780000000010', title='Target Book')
         self.notification_type = NotificationType.objects.create(name='Follow', description='User followed another user')
 

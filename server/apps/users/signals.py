@@ -4,7 +4,7 @@ from apps.users.models.profile import Profile
 import logging
 from django.contrib.auth import get_user_model
 from apps.notifications.services import NotificationService
-from apps.users.services import create_default_reading_lists
+from apps.users.services import create_default_reading_lists as create_default_reading_lists_for_profile
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def create_default_reading_lists(sender, instance, created, **kwargs):
     """Create default reading lists when a new profile is created"""
     if created:
         try:
-            for reading_list in create_default_reading_lists(profile=instance):
+            for reading_list in create_default_reading_lists_for_profile(profile=instance):
                 logger.info(f"Created {reading_list.name} list for user {instance.user.username}")
                 
         except Exception as e:

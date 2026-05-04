@@ -13,6 +13,7 @@ from apps.users.services import (
     validate_profile_image,
 )
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.exceptions import PermissionDenied
 import logging
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 "errors": {"detail": "The requested profile does not exist"}
             }
             return Response(error_response, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied:
+            raise
         except Exception as e:
             logger.error(f"Profile update error for user {request.user.id}: {str(e)}")
             error_response = {
