@@ -1,7 +1,6 @@
 import {
   authHeaders,
   deleteData,
-  getApiError,
   getData,
   patchData,
   postData,
@@ -18,15 +17,14 @@ import type {
   UserReviewsResponse,
 } from "../types/user";
 
-export async function getMyProfile(): Promise<UserProfile> {
+export async function getMyProfile(token?: string | null): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
       "/api/users/profile/me/",
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response.data.profile);
 
     return response.data.profile;
   } catch (error: unknown) {
@@ -35,16 +33,16 @@ export async function getMyProfile(): Promise<UserProfile> {
 }
 
 export async function getProfile(
-  id: string | undefined
+  id: string | undefined,
+  token?: string | null
 ): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
       `/api/users/profile/${id}/`,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response.data.profile);
 
     return response.data.profile;
   } catch (error: unknown) {
@@ -53,11 +51,9 @@ export async function getProfile(
 }
 
 export async function getUserProfile(
-  id: number | string | undefined
+  id: number | string | undefined,
+  token?: string | null
 ): Promise<ProfileResponseEnvelope> {
-  const token = localStorage.getItem("token");
-  console.log(token);
-
   try {
     const response = await getData<ProfileResponseEnvelope>(
       `/api/users/profile/${id}/`,
@@ -65,21 +61,16 @@ export async function getUserProfile(
         headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function updateUser(
-  token: string | null,
+  token: string | null | undefined,
   data: UpdateUserPayload
 ): Promise<UserProfile> {
-  console.log(token);
-
   try {
     const response = await patchData<UserProfile, UpdateUserPayload>(
       "/api/users/user/",
@@ -88,31 +79,26 @@ export async function updateUser(
         headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function updateBio(
-  data: UpdateBioPayload
+  data: UpdateBioPayload,
+  token?: string | null
 ): Promise<UserProfile> {
   try {
     const response = await patchData<UserProfile, UpdateBioPayload>(
       "/api/users/profile/me/",
       data,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
@@ -129,7 +115,7 @@ export async function uploadProfilePicture(
       "/api/users/profile/upload_picture/",
       formData,
       {
-        headers: authHeaders(tokenOverride ?? localStorage.getItem("token")),
+        headers: authHeaders(tokenOverride),
       }
     );
     return response;
@@ -139,16 +125,16 @@ export async function uploadProfilePicture(
 }
 
 export async function getUserReviews(
-  id: number | string | undefined
+  id: number | string | undefined,
+  token?: string | null
 ): Promise<UserReviewsResponse> {
   try {
     const response = await getData<UserReviewsResponse>(
       `/api/books/users/${id}/reviews/`,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
     throwApiError(error);
@@ -156,16 +142,16 @@ export async function getUserReviews(
 }
 
 export async function getUserRatings(
-  id: number | string | undefined
+  id: number | string | undefined,
+  token?: string | null
 ): Promise<UserRatingsResponse> {
   try {
     const response = await getData<UserRatingsResponse>(
       `/api/books/users/${id}/ratings/`,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
     throwApiError(error);
@@ -173,19 +159,18 @@ export async function getUserRatings(
 }
 
 export async function deleteReview(
-  id: number | string | undefined
+  id: number | string | undefined,
+  token?: string | null
 ): Promise<ApiDetailResponse> {
   try {
     const response = await deleteData<ApiDetailResponse>(
       `/api/books/reviews/${id}/delete/`,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log("Response:", response);
     return response;
   } catch (error: unknown) {
-    console.error("Error response:", getApiError(error));
     throwApiError(error);
   }
 }

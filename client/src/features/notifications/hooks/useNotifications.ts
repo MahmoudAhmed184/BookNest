@@ -12,10 +12,14 @@ interface UseNotificationsResult {
   refetch: () => void;
 }
 
-export function useNotifications(token: string | null): UseNotificationsResult {
+export function useNotifications(
+  token: string | null,
+  enabled = true
+): UseNotificationsResult {
   const notificationsQuery = useQuery({
     queryKey: notificationKeys.list(),
     queryFn: () => getNotifications(token),
+    enabled,
   });
 
   return {

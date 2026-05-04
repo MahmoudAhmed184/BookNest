@@ -28,8 +28,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
   const userLogin = (_userData: unknown, authToken: string): void => {
     setUser(true);
-    console.log(user);
-
     setToken(authToken);
     localStorage.setItem("token", authToken);
   };

@@ -29,11 +29,12 @@ interface UseBookPageDataResult {
 }
 
 export function useBookPageData(
-  id: string | undefined
+  id: string | undefined,
+  token?: string | null
 ): UseBookPageDataResult {
   const collectionsQuery = useQuery({
     queryKey: profileKeys.collections(),
-    queryFn: () => getCollections(localStorage.getItem("token")),
+    queryFn: () => getCollections(token),
   });
   const bookQuery = useQuery({
     queryKey: catalogKeys.book(id),
@@ -45,7 +46,7 @@ export function useBookPageData(
   });
   const ratingsQuery = useQuery({
     queryKey: catalogKeys.ratings(id),
-    queryFn: () => getBookRatings(id),
+    queryFn: () => getBookRatings(id, token),
     refetchInterval: 5000,
   });
 

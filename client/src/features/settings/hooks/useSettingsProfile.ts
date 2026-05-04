@@ -26,18 +26,17 @@ interface UseSettingsProfileResult {
   uploadProfilePicture: (file: File) => void;
 }
 
-export function useSettingsProfile(): UseSettingsProfileResult {
+export function useSettingsProfile(token?: string | null): UseSettingsProfileResult {
   const queryClient = useQueryClient();
-  const token = localStorage.getItem("token");
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
-    queryFn: getMyProfile,
+    queryFn: () => getMyProfile(token),
   });
   const updateMutation = useMutation({
     mutationFn: (data: UpdateUserPayload) => updateUser(token, data),
   });
   const updateBioMutation = useMutation({
-    mutationFn: (data: UpdateBioPayload) => updateBio(data),
+    mutationFn: (data: UpdateBioPayload) => updateBio(data, token),
   });
   const uploadPictureMutation = useMutation({
     mutationFn: (file: File) => uploadProfilePicture(file, token),

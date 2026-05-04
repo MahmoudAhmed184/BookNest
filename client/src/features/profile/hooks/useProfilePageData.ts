@@ -32,24 +32,24 @@ interface UseProfilePageDataResult {
   refetchCollections: () => void;
 }
 
-export function useProfilePageData(): UseProfilePageDataResult {
+export function useProfilePageData(token?: string | null): UseProfilePageDataResult {
   const userQuery = useQuery({
     queryKey: profileKeys.me(),
-    queryFn: () => getMyProfile(),
+    queryFn: () => getMyProfile(token),
   });
   const reviewsQuery = useQuery({
     queryKey: profileKeys.reviews(),
-    queryFn: () => getUserReviews(userQuery.data?.user_id),
+    queryFn: () => getUserReviews(userQuery.data?.user_id, token),
     enabled: !!userQuery.data?.user_id,
   });
   const ratingsQuery = useQuery({
     queryKey: profileKeys.ratings(),
-    queryFn: () => getUserRatings(userQuery.data?.user_id),
+    queryFn: () => getUserRatings(userQuery.data?.user_id, token),
     enabled: !!userQuery.data?.user_id,
   });
   const collectionsQuery = useQuery({
     queryKey: profileKeys.collections(),
-    queryFn: () => getCollections(localStorage.getItem("token")),
+    queryFn: () => getCollections(token),
   });
 
   return {

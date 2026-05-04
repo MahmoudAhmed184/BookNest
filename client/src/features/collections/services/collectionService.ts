@@ -1,6 +1,5 @@
 import {
   authHeaders,
-  getApiError,
   getData,
   postData,
   throwApiError,
@@ -14,32 +13,23 @@ import type {
 export async function getCollections(
   tokenOverride?: string | null
 ): Promise<ReadingList[]> {
-  const token = tokenOverride ?? localStorage.getItem("token");
-  console.log(token);
-
   try {
     const response = await getData<ReadingList[]>(
       "/api/books/reading-lists/",
       {
-        headers: authHeaders(token),
+        headers: authHeaders(tokenOverride),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function createCollection(
-  data: CreateCollectionPayload
+  data: CreateCollectionPayload,
+  token?: string | null
 ): Promise<ReadingList> {
-  const token = localStorage.getItem("token");
-  console.log(token);
-  console.log(data);
-
   try {
     const response = await postData<ReadingList, CreateCollectionPayload>(
       "/api/books/reading-lists/create/",
@@ -48,42 +38,34 @@ export async function createCollection(
         headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function addToCollection(
-  data: AddToCollectionPayload
+  data: AddToCollectionPayload,
+  token?: string | null
 ): Promise<ReadingList> {
-  console.log(data);
-
   try {
     const response = await postData<ReadingList, AddToCollectionPayload>(
       "/api/books/reading-lists/books/",
       data,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
     return response;
   } catch (error: unknown) {
-    console.log(error);
-
     throwApiError(error);
   }
 }
 
 export async function getUserCollections(
-  id: number | string | undefined
+  id: number | string | undefined,
+  token?: string | null
 ): Promise<ReadingList[]> {
-  const token = localStorage.getItem("token");
-  console.log(token);
-
   try {
     const response = await getData<ReadingList[]>(
       `/api/books/users/${id}/reading-lists/`,
@@ -91,11 +73,8 @@ export async function getUserCollections(
         headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }

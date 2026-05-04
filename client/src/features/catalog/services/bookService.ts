@@ -1,7 +1,6 @@
 import {
   authHeaders,
   deleteData,
-  getApiError,
   getData,
   postData,
   throwApiError,
@@ -25,12 +24,9 @@ export async function getBooks(
     const response = await getData<BookSearchResponse>(
       `/api/books/search/?q=${query}&page_size=50`
     );
-    console.log(response);
 
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
@@ -38,11 +34,8 @@ export async function getBooks(
 export async function getBook(id: string | undefined): Promise<Book> {
   try {
     const response = await getData<Book>(`/api/books/books/${id}/`);
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
@@ -54,11 +47,8 @@ export async function searchBooks(
     const response = await getData<BookSearchResponse>(
       `/api/books/search/?q=${query}&page_size=100`
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
@@ -70,7 +60,6 @@ export async function getReviews(
     const response = await getData<BookReview[]>(
       `/api/books/books/${id}/reviews/`
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
     throwApiError(error);
@@ -78,53 +67,46 @@ export async function getReviews(
 }
 
 export async function createReview(
-  data: CreateReviewPayload
+  data: CreateReviewPayload,
+  token?: string | null
 ): Promise<BookReview> {
   try {
     const response = await postData<BookReview, CreateReviewPayload>(
       "/api/books/review/create/",
       data,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function createRating(
-  data: CreateRatingPayload
+  data: CreateRatingPayload,
+  token?: string | null
 ): Promise<BookRating> {
   try {
     const response = await postData<BookRating, CreateRatingPayload>(
       "/api/books/rating/create/",
       data,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function deleteBook(
-  data: DeleteBookPayload
+  data: DeleteBookPayload,
+  token?: string | null
 ): Promise<ApiDetailResponse> {
-  console.log("Data sent:", data);
-
-  const token = localStorage.getItem("token");
   if (!token) {
-    console.error("No token found in localStorage");
     throw new Error("Authentication token is missing");
   }
 
@@ -136,47 +118,42 @@ export async function deleteBook(
         data,
       }
     );
-    console.log("Response:", response);
     return response;
   } catch (error: unknown) {
-    console.error("Error response:", getApiError(error));
     throwApiError(error);
   }
 }
 
-export async function getRecommendedBooks(): Promise<RecommendedBook[]> {
+export async function getRecommendedBooks(
+  token?: string | null
+): Promise<RecommendedBook[]> {
   try {
     const response = await getData<RecommendedBook[]>(
       "/api/recommendation/user-recommendations/",
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
 
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }
 
 export async function getBookRatings(
-  id: string | undefined
+  id: string | undefined,
+  token?: string | null
 ): Promise<BookRating[]> {
   try {
     const response = await getData<BookRating[]>(
       `/api/books/books/${id}/ratings/`,
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
-    console.log(response);
     return response;
   } catch (error: unknown) {
-    const apiError = getApiError(error);
-    console.log(apiError);
     throwApiError(error);
   }
 }

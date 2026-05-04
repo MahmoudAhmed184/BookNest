@@ -13,6 +13,7 @@ interface UseBookActionsOptions {
   listId: number | null;
   rating: number;
   reviewText: string;
+  token?: string | null | undefined;
   onReviewSubmitted: () => void;
 }
 
@@ -28,12 +29,13 @@ export function useBookActions({
   listId,
   rating,
   reviewText,
+  token,
   onReviewSubmitted,
 }: UseBookActionsOptions): UseBookActionsResult {
   const queryClient = useQueryClient();
 
   const addBookMutation = useMutation({
-    mutationFn: () => addToCollection({ book_id: id, list_id: listId }),
+    mutationFn: () => addToCollection({ book_id: id, list_id: listId }, token),
     onSuccess: () => {
       toast.success("Added to your shelf!");
     },
@@ -42,7 +44,7 @@ export function useBookActions({
     },
   });
   const reviewMutation = useMutation({
-    mutationFn: () => createReview({ user: 31, book: id, review_text: reviewText }),
+    mutationFn: () => createReview({ user: 31, book: id, review_text: reviewText }, token),
     onSuccess: () => {
       onReviewSubmitted();
       toast.success("Review submitted!");
@@ -53,7 +55,7 @@ export function useBookActions({
     },
   });
   const ratingMutation = useMutation({
-    mutationFn: () => createRating({ book: id, rate: rating, user: 31 }),
+    mutationFn: () => createRating({ book: id, rate: rating, user: 31 }, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
       queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });

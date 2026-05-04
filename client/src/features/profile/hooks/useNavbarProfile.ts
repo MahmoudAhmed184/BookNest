@@ -8,10 +8,13 @@ interface UseNavbarProfileResult {
   profile?: UserProfile | null | undefined;
 }
 
-export function useNavbarProfile(enabled: boolean): UseNavbarProfileResult {
+export function useNavbarProfile(
+  enabled: boolean,
+  token?: string | null
+): UseNavbarProfileResult {
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
-    queryFn: getMyProfile,
+    queryFn: () => getMyProfile(token),
     enabled,
   });
 

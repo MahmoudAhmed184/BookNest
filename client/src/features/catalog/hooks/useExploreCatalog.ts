@@ -17,19 +17,19 @@ interface UseExploreCatalogResult {
   refetchRecommendations: () => void;
 }
 
-export function useExploreCatalog(): UseExploreCatalogResult {
+export function useExploreCatalog(token?: string | null): UseExploreCatalogResult {
   const booksQuery = useQuery({
     queryKey: catalogKeys.books("python"),
     queryFn: () => getBooks("python"),
   });
   const recommendationsQuery = useQuery({
     queryKey: catalogKeys.recommendations(),
-    queryFn: getRecommendedBooks,
+    queryFn: () => getRecommendedBooks(token),
   });
 
   const books = booksQuery.data?.results || [];
   const uniqueBooks = books.filter(
-    (book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
+    (_book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
   );
 
   return {

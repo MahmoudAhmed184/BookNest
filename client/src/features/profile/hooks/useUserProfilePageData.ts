@@ -33,27 +33,28 @@ interface UseUserProfilePageDataResult {
 }
 
 export function useUserProfilePageData(
-  id: string | undefined
+  id: string | undefined,
+  token?: string | null
 ): UseUserProfilePageDataResult {
   const userQuery = useQuery({
     queryKey: profileKeys.profile(id),
-    queryFn: () => getProfile(id),
+    queryFn: () => getProfile(id, token),
     enabled: !!id,
   });
   const userId = userQuery.data?.user_id;
   const reviewsQuery = useQuery({
     queryKey: profileKeys.userReviews(id),
-    queryFn: () => getUserReviews(userId),
+    queryFn: () => getUserReviews(userId, token),
     enabled: !!userId,
   });
   const ratingsQuery = useQuery({
     queryKey: profileKeys.userRatings(id),
-    queryFn: () => getUserRatings(userId),
+    queryFn: () => getUserRatings(userId, token),
     enabled: !!userId,
   });
   const collectionsQuery = useQuery({
     queryKey: profileKeys.userCollections(id),
-    queryFn: () => getUserCollections(userId),
+    queryFn: () => getUserCollections(userId, token),
     enabled: !!userId,
   });
 

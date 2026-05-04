@@ -6,9 +6,7 @@ export const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export function authHeaders(
-  token: string | null = localStorage.getItem("token")
-): Record<string, string> {
+export function authHeaders(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

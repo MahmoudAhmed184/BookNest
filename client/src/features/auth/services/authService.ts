@@ -3,13 +3,13 @@ import type { ApiEnvelope } from "../../../types/api";
 import type { UserProfile } from "../../profile/types/user";
 import type { AuthTokens, LoginPayload, RegisterPayload } from "../types/auth";
 
-export async function createProfile(): Promise<UserProfile> {
+export async function createProfile(token?: string | null): Promise<UserProfile> {
   try {
     return await postData<UserProfile, Record<string, never>>(
       "/api/users/profile/",
       {},
       {
-        headers: authHeaders(),
+        headers: authHeaders(token),
       }
     );
   } catch (error: unknown) {
@@ -35,8 +35,6 @@ export async function login(
 export async function register(
   formData: RegisterPayload
 ): Promise<AuthTokens> {
-  console.log(formData);
-
   try {
     const response = await postData<ApiEnvelope<AuthTokens>, RegisterPayload>(
       "/api/users/register/",

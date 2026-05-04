@@ -24,7 +24,7 @@ export function useRegisterMutation(): UseRegisterMutationResult {
       if (data.access) {
         toast.success("Account created. Welcome to BookNest.");
         userLogin(null, data.access);
-        await createProfile();
+        await createProfile(data.access);
         navigate(routePaths.explore);
       } else {
         toast.error("Couldn't create your account. Try again.");

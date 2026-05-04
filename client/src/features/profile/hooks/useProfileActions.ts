@@ -13,11 +13,11 @@ interface UseProfileActionsResult {
   deleteProfileReview: (reviewId: string | number) => void;
 }
 
-export function useProfileActions(): UseProfileActionsResult {
+export function useProfileActions(token?: string | null): UseProfileActionsResult {
   const queryClient = useQueryClient();
 
   const deleteBookMutation = useMutation({
-    mutationFn: (payload: DeleteBookPayload) => deleteBook(payload),
+    mutationFn: (payload: DeleteBookPayload) => deleteBook(payload, token),
     onSuccess: () => {
       toast.success("Book removed from your shelf.");
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
@@ -27,7 +27,7 @@ export function useProfileActions(): UseProfileActionsResult {
     },
   });
   const deleteReviewMutation = useMutation({
-    mutationFn: (reviewId: string | number) => deleteReview(reviewId),
+    mutationFn: (reviewId: string | number) => deleteReview(reviewId, token),
     onSuccess: () => {
       toast.success("Review deleted.");
       queryClient.invalidateQueries({ queryKey: profileKeys.reviews() });
