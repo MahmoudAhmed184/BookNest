@@ -1,185 +1,167 @@
-# BookNest - A Goodreads Alternative
+# BookNest Backend
 
-BookNest is a Django REST Framework application that serves as an alternative to Goodreads, allowing users to discover, review, and manage their reading lists.
+This is the Django backend for BookNest. It uses `uv`, Python 3.14.4+, Django 6.0.4, MariaDB, Redis, Celery, Django REST Framework, JWT auth, Cloudinary media storage, and `drf-spectacular` API docs.
 
-## 🚀 Quick Start with Docker
+## Structure
 
-### Prerequisites
-- Docker Desktop installed on your system
-- Git (to clone the repository)
-
-### Setup Instructions
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/JinxX404/BookNest
-   cd BookNest
-   ```
-
-2. **Create environment file**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit the `.env` file and update the values as needed, especially:
-   - `DB_PASSWORD`: Set a secure password for MariaDB
-   - `SECRET_KEY`: Generate a new Django secret key for production
-
-3. **Build and run with Docker Compose**
-   ```bash
-   # Basic setup (Django + MariaDB + Redis)
-   docker-compose up --build
-   ```
-<!--    
-    # With pgAdmin for database management
-   docker-compose --profile admin up --build
-   
-   # With Redis for caching
-   docker-compose --profile cache up --build
-   
-   # Full setup with all services
-   docker-compose --profile admin --profile cache up --build
-   ``` -->
-
-4. **Access the application**
-   - Django API: http://localhost:8000
-   - API Documentation: http://localhost:8000/swagger/
-
-
-### Available Services
-
-| Service | Port | Description |
-|---------|------|-------------|
-| Django Web | 8000 | Main application |
-| MariaDB | 3306 | Database |
-| Redis | 6379 | Caching (optional) |
-
-### Docker Commands
-
-```bash
-# Start services
-docker-compose up
-
-# Start services in background
-docker-compose up -d
-
-# Stop services
-docker-compose down
-
-# View logs
-docker-compose logs
-docker-compose logs web  # Specific service
-
-# Rebuild containers
-docker-compose up --build
-
-# Run Django commands
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py createsuperuser
-docker-compose exec web python manage.py collectstatic
-
-# Access container shell
-docker-compose exec web bash
-docker-compose exec db mariadb -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME"
+```text
+server/
+├── apps/
+│   ├── books/
+│   ├── follows/
+│   ├── notifications/
+│   ├── recommendation/
+│   └── users/
+├── config/
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   ├── production.py
+│   │   └── testing.py
+│   ├── urls.py
+│   ├── asgi.py
+│   ├── celery.py
+│   └── wsgi.py
+├── pyproject.toml
+├── uv.lock
+├── docker-compose.yml
+└── manage.py
 ```
 
-### Environment Variables
+Each app has:
 
-Key environment variables in `.env`:
+- `services.py`: writes, actions, orchestration
+- `selectors.py`: reads and query composition
+- `managers.py`: reusable queryset/manager behavior
+- `tests/`: `test_models.py`, `test_views.py`, `test_services.py`, `test_selectors.py`
 
-- **Django Settings**
-  - `DEBUG`: Enable/disable debug mode
-  - `SECRET_KEY`: Django secret key
-  - `ALLOWED_HOSTS`: Comma-separated list of allowed hosts
+## Environment
 
-- **Database**
-  - `DB_NAME`: MariaDB database name
-  - `DB_USER`: MariaDB username
-  - `DB_PASSWORD`: MariaDB password
-  - `DB_HOST`: Database host (use 'db' for Docker)
-  - `DB_PORT`: Database port
+Create a local env file from the tracked template:
 
-- **Cloudinary (Media Storage)**
-  - `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name
-  - `CLOUDINARY_API_KEY`: Your Cloudinary API key
-  - `CLOUDINARY_API_SECRET`: Your Cloudinary API secret
-
-<!-- ### Development
-
-For development with live code reloading:
-
-1. Mount your code as a volume in `docker-compose.yml`:
-   ```yaml
-   web:
-     volumes:
-       - .:/app
-       - ./media:/app/media
-       - ./logs:/app/logs
-   ```
-
-2. Use the development server:
-   ```bash
-   docker-compose exec web python manage.py runserver 0.0.0.0:8000
-   ```
-
-### Production Deployment
-
-For production deployment:
-
-1. Set `DEBUG=False` in your `.env` file
-2. Generate a new `SECRET_KEY`
-3. Update `ALLOWED_HOSTS` with your domain
-4. Use a production WSGI server like Gunicorn:
-   ```dockerfile
-   CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
-   ```
-
-### Troubleshooting
-
-**Database connection issues:**
 ```bash
-# Check if MariaDB is running
-docker-compose ps
-
-# View database logs
-docker-compose logs db
-
-# Reset database
-docker-compose down -v
-docker-compose up --build
+cp .env.example .env
 ```
 
-**Permission issues on Linux/Mac:**
-```bash
-# Make wait-for-db.sh executable
-chmod +x wait-for-db.sh
+`server/.env` is ignored and must not be committed.
+
+For Docker Compose, keep:
+
+```dotenv
+DB_HOST=db
+DB_PORT=3306
 ```
 
-**Clear Docker cache:**
-```bash
-docker system prune -a
-docker-compose build --no-cache
+For native local MariaDB, use:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
 ```
 
-## 🔒 Security First Setup
+Important variables:
 
-**IMPORTANT**: Before running the application, please follow the security setup:
+- `DJANGO_SETTINGS_MODULE`
+- `SECRET_KEY`
+- `JWT_SIGNING_KEY`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_HOST`
+- `DB_PORT`
+- `MARIADB_ROOT_PASSWORD`
+- `REDIS_URL`
+- `CELERY_BROKER_URL`
+- `CELERY_RESULT_BACKEND`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `ALLOWED_HOSTS`
+- `CSRF_TRUSTED_ORIGINS`
+- `CORS_ALLOWED_ORIGINS`
+- `SEED_ADMIN_USERNAME`
+- `SEED_ADMIN_EMAIL`
+- `SEED_ADMIN_PASSWORD`
+- `SEED_USER_PASSWORD`
 
-1. **Copy environment template**: `cp .env.example .env`
-2. **Generate secure keys**: `python generate_keys.py`
-3. **Update your .env file** with the generated keys and your actual credentials
-4. **Read the security guide**: See [SECURITY.md](SECURITY.md) for detailed instructions
+## Local Setup
 
-⚠️ **Never commit your .env file or any files containing real secrets to version control!**
+```bash
+uv sync
+uv run python manage.py migrate
+uv run python manage.py seed_database
+uv run python manage.py runserver
+```
 
-## 📱 API Endpoints
+The API runs at `http://localhost:8000/`.
 
-The application provides a comprehensive REST API. Visit http://localhost:8000/swagger/ for interactive API documentation.
+## Docker Setup
 
-## 🛠 Technology Stack
+```bash
+cp .env.example .env
+docker compose up --build
+```
 
-- **Backend**: Django REST Framework
-- **Database**: MariaDB
-- **Authentication**: JWT with django-allauth
-- **Media Storage**: Cloudinary
-- **API Documentation**: drf-spectacular
-- **Containerization**: Docker & Docker Compose -->
+Services:
+
+- `web`: Django API on port `8000`
+- `db`: MariaDB on port `3306`
+- `redis`: Redis on port `6379`
+- `celery`: background worker
+
+Run Django commands inside the web container:
+
+```bash
+docker compose exec web uv run python manage.py migrate
+docker compose exec web uv run python manage.py seed_database
+docker compose exec web uv run python manage.py createsuperuser
+docker compose exec web uv run python manage.py check
+```
+
+MariaDB data is persisted in the `mariadb_data` Docker volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
+
+## Seed Command
+
+```bash
+uv run python manage.py seed_database
+```
+
+The command is idempotent. It creates or updates:
+
+- demo admin account
+- demo users and profiles
+- genres, authors, and books
+- reading lists
+- ratings and reviews
+- follows
+- notifications
+- recommendations
+
+Seed credentials come from `SEED_*` env vars.
+
+## Useful Commands
+
+```bash
+uv sync
+uv run python manage.py check
+uv run python manage.py migrate
+uv run python manage.py test --verbosity=2
+uv run python manage.py check --deploy --settings=config.settings.production
+uv run python manage.py collectstatic --noinput --settings=config.settings.production
+```
+
+## API Docs
+
+When the server is running:
+
+- Swagger UI: `http://localhost:8000/swagger/`
+- API schema generation is handled by `drf-spectacular`.
+
+## Production Notes
+
+- Use MariaDB for the backend database.
+- Use `DJANGO_SETTINGS_MODULE=config.settings.production`.
+- Set a strong `SECRET_KEY`.
+- Set a `JWT_SIGNING_KEY` of at least 64 bytes for HS512.
+- Configure real host/origin values for `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, and `CORS_ALLOWED_ORIGINS`.
+- Run `uv run python manage.py check --deploy --settings=config.settings.production` before release.

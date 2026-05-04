@@ -1,261 +1,212 @@
 # BookNest
 
-A modern book discovery and recommendation platform that helps users find their next great read, track their reading journey, and connect with fellow book enthusiasts.
+BookNest is a full-stack book discovery and reading community app. The backend is a Django REST Framework API with MariaDB, Redis, Celery, JWT auth, Cloudinary media storage, and an idempotent demo seed command. The frontend is a React/Vite TypeScript app organized around feature-first folders.
 
-## Project Overview
+## Current Stack
 
-BookNest is a full-stack web application that combines the power of Django REST Framework and React to create a seamless book discovery experience. The platform features personalized book recommendations using machine learning algorithms, user profiles, social interactions, and comprehensive book information.
+### Backend
 
-### Key Features
+- Python 3.14.4+ managed by `uv`
+- Django 6.0.4 and Django REST Framework
+- MariaDB via `django.db.backends.mysql` and `mysqlclient`
+- Redis for cache and Celery broker/result backend
+- Celery for background work
+- JWT auth with `dj-rest-auth`, `django-allauth`, and Simple JWT
+- Cloudinary for media storage
+- `drf-spectacular` Swagger/OpenAPI docs
 
-- **Book Discovery**: Browse, search, and explore books by genre, author, or popularity
-- **Personalized Recommendations**: Get book suggestions based on your reading history and preferences
-- **User Profiles**: Create and customize your reading profile
-- **Social Features**: Follow other readers, see their activity in your feed
-- **Book Details**: Access comprehensive information about books, authors, and genres
-- **Notifications**: Stay updated on social interactions and new recommendations
+### Frontend
 
-### Tech Stack
+- React 19
+- TypeScript
+- Vite
+- React Router
+- Axios
+- TanStack Query
+- Tailwind CSS
 
-#### Backend
-- **Django**: Web framework for building the API
-- **Django REST Framework**: For creating RESTful APIs
-- **PostgreSQL**: Primary database
-- **Celery**: Task queue for background processing
-- **Redis**: For caching and as a message broker
-- **Surprise**: Machine learning library for recommendation system
-- **Cloudinary**: Cloud storage for media files
+## Repository Layout
 
-#### Frontend
-- **React**: JavaScript library for building the user interface
-- **React Router**: For client-side routing
-- **Axios**: For making HTTP requests
-- **Formik & Yup**: For form handling and validation
-- **TailwindCSS**: For styling
-- **Vite**: Build tool and development server
-
-## Prerequisites
-
-### System Requirements
-
-- **Operating System**: Windows, macOS, or Linux
-- **Python**: Version 3.10 or higher
-- **Node.js**: Version 16.0 or higher
-- **npm**: Version 8.0 or higher (comes with Node.js)
-- **PostgreSQL**: Version 15 or higher
-- **Docker & Docker Compose**: Latest version (optional, for containerized setup)
-
-### Global Tools
-
-- **virtualenv**: For creating isolated Python environments
-  ```bash
-  pip install virtualenv
-  ```
-- **Git**: For version control
-
-## Traditional Installation (Local Development)
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/JinxX404/BookNest_fullstack.git
-cd BookNest_fullstack
+```text
+BookNest/
+├── client/                  # React/Vite frontend
+├── server/                  # Django backend
+│   ├── apps/                # Domain apps
+│   │   ├── books/
+│   │   ├── follows/
+│   │   ├── notifications/
+│   │   ├── recommendation/
+│   │   └── users/
+│   ├── config/              # Django project config
+│   │   └── settings/
+│   │       ├── base.py
+│   │       ├── development.py
+│   │       ├── production.py
+│   │       └── testing.py
+│   ├── pyproject.toml
+│   ├── uv.lock
+│   └── docker-compose.yml
+└── docs/
 ```
 
-### Backend Setup
+Each backend app has `services.py`, `selectors.py`, `managers.py`, and a `tests/` package. Services handle writes/actions, selectors handle reads/queries, and managers/querysets hold reusable ORM behavior.
 
-1. **Create and activate a virtual environment**
+## Backend Setup
 
-   ```bash
-   cd server
-   python -m virtualenv venv
-   
-   # On Windows
-   .\venv\Scripts\activate
-   
-   # On macOS/Linux
-   source venv/bin/activate
-   ```
+### Prerequisites
 
-2. **Install Python dependencies**
+- Python 3.14.4+
+- `uv`
+- MariaDB 11+ or Docker Compose
+- Redis if you want cache/Celery locally
 
-   ```bash
-   pip install -r req.txt
-   ```
-
-3. **Set up environment variables**
-
-   Copy the example environment file and update it with your values:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit the `.env` file with your database credentials, Cloudinary API keys, and other configuration values.
-
-4. **Run database migrations**
-
-   ```bash
-   python manage.py migrate
-   ```
-
-5. **Create a superuser**
-
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-6. **Run the Django development server**
-
-   ```bash
-   python manage.py runserver
-   ```
-
-   The backend API will be available at http://localhost:8000/
-
-### Frontend Setup
-
-1. **Navigate to the client directory**
-
-   ```bash
-   cd ../client
-   ```
-
-2. **Install Node.js dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Run the React development server**
-
-   ```bash
-   npm run dev
-   ```
-
-   The frontend application will be available at http://localhost:5173/
-
-## Dockerized Installation
-
-BookNest can be easily deployed using Docker and Docker Compose, which sets up the entire stack including PostgreSQL, Redis.
-
-### Docker Compose Overview
-
-The `docker-compose.yml` file defines several services:
-
-- **db**: PostgreSQL database
-- **web**: Django backend API
-- **celery**: Background task processing
-- **redis**: Caching and message broker
-
-### Steps to Run with Docker
-
-1. **Set up environment variables**
-
-   Copy the example environment file and update it with your values:
-
-   ```bash
-   cd server
-   cp .env.example .env
-   ```
-
-2. **Build and start the containers**
-
-   ```bash
-   docker-compose up --build
-   ```
-
-3. **Run migrations inside the container**
-
-   ```bash
-   docker-compose exec web python manage.py migrate
-   ```
-
-4. **Create a superuser**
-
-   ```bash
-   docker-compose exec web python manage.py createsuperuser
-   ```
-
-5. **Navigate to the client directory**
-
-   ```bash
-   cd ../client
-   ```
-
-6. **Install Node.js dependencies**
-
-   ```bash
-   npm install
-   ```
-
-7. **Run the React development server**
-
-   ```bash
-   npm run dev
-   ```
-
-   The frontend application will be available at http://localhost:5173/
-
-
-### Access URLs
-
-- **Backend API**: http://localhost:8000/
-- **Frontend** (if deployed separately): http://localhost:5173/
-
-### Shutting Down and Cleaning Up
+### Local Development
 
 ```bash
-# Stop containers
-docker-compose down
-
-# Remove volumes (caution: this will delete all data)
-docker-compose down -v
-```
-
-## Usage
-
-### Logging In
-
-Access the application at http://localhost:5173/ (or your deployed URL) and log in with your credentials.
-
-### API Documentation
-
-The API documentation is available at http://localhost:8000/swagger/ when running the backend server.
-
-### Running Tests
-
-```bash
-# Backend tests
 cd server
-python manage.py test
+uv sync
+cp .env.example .env
+```
 
-# Frontend tests
+For native local MariaDB, edit `server/.env`:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=booknest_db
+DB_USER=booknest
+DB_PASSWORD=booknest
+```
+
+Then run:
+
+```bash
+uv run python manage.py migrate
+uv run python manage.py seed_database
+uv run python manage.py runserver
+```
+
+The API is available at `http://localhost:8000/`.
+
+### Docker Development
+
+```bash
+cd server
+cp .env.example .env
+docker compose up --build
+```
+
+Docker Compose starts:
+
+- `web` on port `8000`
+- `db` MariaDB on port `3306`
+- `redis` on port `6379`
+- `celery`
+
+MariaDB data is stored in the named Docker volume `mariadb_data`. It survives normal restarts and `docker compose down`, but `docker compose down -v` deletes it.
+
+Run Django commands in the container:
+
+```bash
+docker compose exec web uv run python manage.py migrate
+docker compose exec web uv run python manage.py seed_database
+docker compose exec web uv run python manage.py createsuperuser
+docker compose exec web uv run python manage.py check
+```
+
+## Seed Data
+
+The backend includes an idempotent seed command:
+
+```bash
+uv run python manage.py seed_database
+```
+
+It creates a small demo catalog, users, profiles, reading lists, ratings, reviews, follows, notifications, and recommendations. Running it again updates existing records rather than duplicating them.
+
+Seed credentials are controlled by `.env` values:
+
+```dotenv
+SEED_ADMIN_USERNAME=admin
+SEED_ADMIN_EMAIL=admin@booknest.local
+SEED_ADMIN_PASSWORD=change-me-admin-password
+SEED_USER_PASSWORD=change-me-demo-user-password
+```
+
+## Frontend Setup
+
+```bash
 cd client
-npm test
+npm install
+npm run dev
 ```
 
-## Troubleshooting
+The frontend is available at `http://localhost:5173/`.
 
-### Common Issues
-
-#### Port Conflicts
-
-If you encounter port conflicts, you can modify the port mappings in the `docker-compose.yml` file or change the ports in your local development servers:
+Useful commands:
 
 ```bash
-# For Django
-python manage.py runserver 8001
-
-# For React/Vite
-npm run dev -- --port 5174
+npm run build
+npm run lint
+npm run preview
 ```
 
-#### Database Migration Issues
+## Environment Files
 
-If you encounter migration issues, try resetting the migrations:
+`server/.env` is ignored and must not be committed. Use `server/.env.example` as the template.
+
+Important backend environment variables:
+
+- `DJANGO_SETTINGS_MODULE`: `config.settings.development` locally or `config.settings.production` in production
+- `SECRET_KEY`: long random Django secret
+- `JWT_SIGNING_KEY`: at least 64 bytes for HS512
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`: MariaDB connection
+- `MARIADB_ROOT_PASSWORD`: used by Docker Compose database initialization
+- `REDIS_URL`, `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`: Redis/Celery
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: media storage
+- `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS`: deployment hosts/origins
+
+## API Docs
+
+When the backend is running:
+
+- Swagger UI: `http://localhost:8000/swagger/`
+- API schema: generated by `drf-spectacular`
+
+## Verification
+
+Backend:
 
 ```bash
-python manage.py migrate --fake books zero
-python manage.py migrate books
+cd server
+uv sync
+uv run python manage.py check
+uv run python manage.py test --verbosity=2
+uv run python manage.py check --deploy --settings=config.settings.production
 ```
+
+Frontend:
+
+```bash
+cd client
+npm run build
+npm run lint
+```
+
+## Production Notes
+
+- Use MariaDB for the backend database.
+- Keep `server/.env` out of Git.
+- Set `DJANGO_SETTINGS_MODULE=config.settings.production`.
+- Use strong `SECRET_KEY` and `JWT_SIGNING_KEY` values.
+- Set real `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, and `CORS_ALLOWED_ORIGINS`.
+- Run `uv run python manage.py check --deploy --settings=config.settings.production` before deployment.
+- Rotate any secret that was ever committed before the Git history scrub.
+
+## References
+
+- Django: https://www.djangoproject.com/download/
+- Django management commands: https://docs.djangoproject.com/en/6.0/howto/custom-management-commands/
+- Django deployment checklist: https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+- uv: https://docs.astral.sh/uv/
+- MariaDB Docker image variables: https://mariadb.com/kb/en/mariadb-server-docker-official-image-environment-variables/
