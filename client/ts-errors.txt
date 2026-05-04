@@ -1,0 +1,157 @@
+Baseline TypeScript errors: 142
+
+src/components/Footer.jsx(3,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/components/Navbar.jsx(4,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/components/Navbar.jsx(5,26): error TS2307: Cannot find module '/user_profile.png' or its corresponding type declarations.
+src/context/AuthContext.jsx(3,21): error TS2554: Expected 1 arguments, but got 0.
+src/context/AuthContext.jsx(5,32): error TS7031: Binding element 'children' implicitly has an 'any' type.
+src/context/AuthContext.jsx(11,22): error TS7006: Parameter 'userData' implicitly has an 'any' type.
+src/context/AuthContext.jsx(11,32): error TS7006: Parameter 'authToken' implicitly has an 'any' type.
+src/main.jsx(3,8): error TS2882: Cannot find module or type declarations for side-effect import of './index.css'.
+src/main.jsx(8,8): error TS2882: Cannot find module or type declarations for side-effect import of '@fontsource/montserrat/400.css'.
+src/main.jsx(9,8): error TS2882: Cannot find module or type declarations for side-effect import of '@fontsource/montserrat/500.css'.
+src/main.jsx(10,8): error TS2882: Cannot find module or type declarations for side-effect import of '@fontsource/montserrat/600.css'.
+src/main.jsx(11,8): error TS2882: Cannot find module or type declarations for side-effect import of '@fontsource/montserrat/700.css'.
+src/main.jsx(13,8): error TS2882: Cannot find module or type declarations for side-effect import of 'swiper/css'.
+src/main.jsx(14,8): error TS2882: Cannot find module or type declarations for side-effect import of 'swiper/css/navigation'.
+src/main.jsx(15,8): error TS2882: Cannot find module or type declarations for side-effect import of 'swiper/css/pagination'.
+src/main.jsx(20,12): error TS2345: Argument of type 'HTMLElement | null' is not assignable to parameter of type 'Container'.
+  Type 'null' is not assignable to type 'Container'.
+src/pages/Author.jsx(2,26): error TS2307: Cannot find module '/william_shakespere.jpg' or its corresponding type declarations.
+src/pages/Book.jsx(3,26): error TS2307: Cannot find module '/user_profile.png' or its corresponding type declarations.
+src/pages/Book.jsx(30,35): error TS2554: Expected 0 arguments, but got 1.
+src/pages/Book.jsx(60,19): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'Message'.
+src/pages/Book.jsx(108,28): error TS7006: Parameter 'rating' implicitly has an 'any' type.
+src/pages/Book.jsx(112,31): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Book.jsx(183,36): error TS7006: Parameter 'author' implicitly has an 'any' type.
+src/pages/Book.jsx(217,37): error TS7006: Parameter 'genre' implicitly has an 'any' type.
+src/pages/Book.jsx(264,22): error TS7006: Parameter 'review' implicitly has an 'any' type.
+src/pages/Book.jsx(264,30): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/Explore.jsx(354,36): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Explore.jsx(419,21): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Explore.jsx(419,27): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/Explore.jsx(420,17): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Explore.jsx(505,26): error TS2551: Property 'author' does not exist on type '{ title: string; authors: string[]; language: string; date: string; isbn13: string; cover_img: string; }'. Did you mean 'authors'?
+src/pages/Landing.jsx(2,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/pages/Landing.jsx(3,26): error TS2307: Cannot find module '/man-in-the-dark.jpg' or its corresponding type declarations.
+src/pages/Landing.jsx(4,30): error TS2307: Cannot find module '/highlighted-quote.jpg' or its corresponding type declarations.
+src/pages/Login.jsx(5,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/pages/Login.jsx(41,19): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'Message'.
+src/pages/Login.jsx(131,31): error TS2339: Property 'response' does not exist on type 'Error'.
+src/pages/Notifications.jsx(2,23): error TS2307: Cannot find module '/user_profile.png' or its corresponding type declarations.
+src/pages/Notifications.jsx(3,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/pages/Notifications.jsx(52,23): error TS7006: Parameter 'notification' implicitly has an 'any' type.
+src/pages/Notifications.jsx(53,19): error TS7006: Parameter 'notification' implicitly has an 'any' type.
+src/pages/Notifications.jsx(53,33): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/pages/Profile.jsx(2,26): error TS2307: Cannot find module '/user_profile.png' or its corresponding type declarations.
+src/pages/Profile.jsx(47,35): error TS2554: Expected 0 arguments, but got 1.
+src/pages/Profile.jsx(52,20): error TS2339: Property 'book_id' does not exist on type 'void'.
+src/pages/Profile.jsx(52,29): error TS2339: Property 'list_id' does not exist on type 'void'.
+src/pages/Profile.jsx(61,37): error TS2559: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters<readonly unknown[]>'.
+src/pages/Profile.jsx(75,25): error TS7006: Parameter 'book_id' implicitly has an 'any' type.
+src/pages/Profile.jsx(75,34): error TS7006: Parameter 'list_id' implicitly has an 'any' type.
+src/pages/Profile.jsx(81,29): error TS2345: Argument of type '{ book_id: any; list_id: any; }' is not assignable to parameter of type 'void'.
+src/pages/Profile.jsx(92,37): error TS2559: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters<readonly unknown[]>'.
+src/pages/Profile.jsx(101,31): error TS7006: Parameter 'review_id' implicitly has an 'any' type.
+src/pages/Profile.jsx(176,41): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Profile.jsx(223,46): error TS2339: Property 'isLoading' does not exist on type 'UseMutationResult<any, Error, void, unknown>'.
+  Property 'isLoading' does not exist on type 'Override<MutationObserverIdleResult<any, Error, void, unknown>, { mutate: UseMutateFunction<any, Error, void, unknown>; }> & { ...; }'.
+src/pages/Profile.jsx(254,23): error TS7006: Parameter 'review' implicitly has an 'any' type.
+src/pages/Profile.jsx(254,31): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/Profile.jsx(306,48): error TS2339: Property 'isLoading' does not exist on type 'UseMutationResult<any, Error, void, unknown>'.
+  Property 'isLoading' does not exist on type 'Override<MutationObserverIdleResult<any, Error, void, unknown>, { mutate: UseMutateFunction<any, Error, void, unknown>; }> & { ...; }'.
+src/pages/Register.jsx(4,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/pages/Register.jsx(63,39): error TS2769: No overload matches this call.
+  Overload 2 of 2, '(enums: readonly (string | Reference<unknown> | undefined)[], message?: Message<{ values: any; }> | undefined): StringSchema<string | undefined, AnyObject, undefined, "">', gave the following error.
+    Type 'null' is not assignable to type 'string | Reference<unknown> | undefined'.
+src/pages/ResetPassword.jsx(5,18): error TS2307: Cannot find module '/logo.svg' or its corresponding type declarations.
+src/pages/ResetPassword.jsx(54,38): error TS2769: No overload matches this call.
+  Overload 2 of 2, '(enums: readonly (string | Reference<unknown> | undefined)[], message?: Message<{ values: any; }> | undefined): StringSchema<string | undefined, AnyObject, undefined, "">', gave the following error.
+    Type 'null' is not assignable to type 'string | Reference<unknown> | undefined'.
+src/pages/Search.jsx(22,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Search.jsx(67,20): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Search.jsx(67,26): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/Search.jsx(68,17): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/Settings.jsx(42,37): error TS2559: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters<readonly unknown[]>'.
+src/pages/Settings.jsx(63,38): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(name: string, value: string | Blob): void', gave the following error.
+    Argument of type 'void' is not assignable to parameter of type 'string | Blob'.
+  Overload 2 of 3, '(name: string, value: string): void', gave the following error.
+    Argument of type 'void' is not assignable to parameter of type 'string'.
+  Overload 3 of 3, '(name: string, blobValue: Blob, filename?: string | undefined): void', gave the following error.
+    Argument of type 'void' is not assignable to parameter of type 'Blob'.
+src/pages/Settings.jsx(87,37): error TS2559: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters<readonly unknown[]>'.
+src/pages/Settings.jsx(101,29): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.jsx(103,27): error TS2345: Argument of type '{ username: string; bio: string; }' is not assignable to parameter of type 'void'.
+src/pages/Settings.jsx(104,30): error TS2345: Argument of type '{ bio: string; }' is not assignable to parameter of type 'void'.
+src/pages/Settings.jsx(107,33): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.jsx(124,29): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.jsx(259,19): error TS2322: Type 'string' is not assignable to type 'number'.
+src/pages/UserProfile.jsx(126,41): error TS7006: Parameter 'book' implicitly has an 'any' type.
+src/pages/UserProfile.jsx(182,23): error TS7006: Parameter 'review' implicitly has an 'any' type.
+src/pages/UserProfile.jsx(182,31): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/services/authService.js(19,12): error TS18046: 'error' is of type 'unknown'.
+src/services/authService.js(34,17): error TS18046: 'error' is of type 'unknown'.
+src/services/authService.js(35,12): error TS18046: 'error' is of type 'unknown'.
+src/services/authService.js(39,22): error TS7006: Parameter 'formData' implicitly has an 'any' type.
+src/services/authService.js(44,12): error TS18046: 'error' is of type 'unknown'.
+src/services/authService.js(48,25): error TS7006: Parameter 'formData' implicitly has an 'any' type.
+src/services/authService.js(54,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(5,25): error TS7006: Parameter 'query' implicitly has an 'any' type.
+src/services/bookService.js(14,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(15,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(19,24): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/bookService.js(25,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(26,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(30,28): error TS7006: Parameter 'query' implicitly has an 'any' type.
+src/services/bookService.js(38,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(39,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(43,27): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/bookService.js(49,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(53,29): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/bookService.js(64,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(65,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(69,29): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/bookService.js(80,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(81,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(85,27): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/bookService.js(107,38): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(107,62): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(127,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(128,12): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(132,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/bookService.js(143,17): error TS18046: 'error' is of type 'unknown'.
+src/services/bookService.js(144,12): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(18,17): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(19,12): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(23,33): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/collectionService.js(41,17): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(42,12): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(46,32): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/collectionService.js(64,12): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(68,35): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/collectionService.js(83,17): error TS18046: 'error' is of type 'unknown'.
+src/services/collectionService.js(84,12): error TS18046: 'error' is of type 'unknown'.
+src/services/notificationService.js(7,33): error TS7006: Parameter 'token' implicitly has an 'any' type.
+src/services/notificationService.js(19,17): error TS18046: 'error' is of type 'unknown'.
+src/services/notificationService.js(20,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(32,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(36,27): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/userService.js(48,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(52,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/userService.js(65,17): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(66,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(86,27): error TS7006: Parameter 'token' implicitly has an 'any' type.
+src/services/userService.js(86,34): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/userService.js(98,17): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(99,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(103,26): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/userService.js(114,17): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(115,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(119,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/userService.js(130,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(134,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/userService.js(145,12): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(149,29): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/services/userService.js(163,38): error TS18046: 'error' is of type 'unknown'.
+src/services/userService.js(163,62): error TS18046: 'error' is of type 'unknown'.
