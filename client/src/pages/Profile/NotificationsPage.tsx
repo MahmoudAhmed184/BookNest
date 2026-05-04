@@ -1,95 +1,106 @@
-import React from "react";
-import UserImage from "/user_profile.png";
-import Logo from "/logo.svg";
-
 import { getNotifications } from "../../services/notificationService";
 import { useQuery } from "@tanstack/react-query";
+import EmptyState from "../../components/EmptyState";
+import ErrorState from "../../components/ErrorState";
+
+function NotificationsSkeleton() {
+  return (
+    <div className="flex flex-col gap-4" role="status" aria-live="polite">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="rounded-xl bg-secondary-black p-5">
+          <div className="mb-3 h-5 w-1/2 rounded-full animate-shimmer" />
+          <div className="h-4 w-1/3 rounded-full animate-shimmer" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Notifications() {
-  // const notifications = [
-  //   {
-  //     userImage: UserImage,
-  //     actionText: "@Mosab started following you.",
-  //   },
-  //   {
-  //     userImage: UserImage,
-  //     actionText:
-  //       "@Mosab started reading Harry Potter: The Prisoner of Azkaban.",
-  //   },
-  //   {
-  //     userImage: UserImage,
-  //     actionText: "@Jane added The Great Gatsby to their library.",
-  //   },
-  // ];
-
   const {
     data: notifications,
     isLoading,
-    error,
+    isFetching,
+    isError,
+    refetch,
   } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => getNotifications(localStorage.getItem("token")),
   });
 
-  if (isLoading)
-    return (
-      <div className="grow flex justify-center items-center">
-        <div className="spinner"></div>
-      </div>
-    );
-  if (error) return <p>Error fetching notifications</p>;
-
-  console.log(notifications);
-  const hasNotifications = (notifications?.length ?? 0) > 0;
+  const unreadNotifications =
+    notifications?.filter((notification) => notification.read === false) || [];
 
   return (
-    <div className="flex flex-col gap-md py-md">
-      <h2 className="text-lg sm:text-xl md:text-2xl text-accent-v bg-clip-text text-transparent font-semibold text-center">
-        Notifications ({notifications?.length})
-      </h2>
-      <div className="flex flex-col gap-2 sm:gap-3">
-        {hasNotifications ? (
-          notifications
-            ?.filter((notification) => notification.read === false)
-            .map((notification, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 sm:gap-4 py-2 sm:py-3 px-4 sm:px-6 bg-secondary-black text-secondary-gray w-full rounded-xl"
-              >
-                {/* User Image */}
-                <div className="w-8 sm:w-8 h-8 sm:h-8 rounded-xl overflow-hidden shrink-0">
-                  <img
-                    src={Logo}
-                    alt="User avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+    <div className="flex flex-col gap-8 py-12 animate-fade-up">
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+          Notifications
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">
+          {unreadNotifications.length} unread updates
+          {isFetching && notifications ? " · refreshing" : ""}
+        </p>
+      </header>
 
-                {/* Action Text */}
-                <div className="flex flex-col justify-between">
-                  <p className="mt-2 text-sm text-primary-white">
-                    <strong className="text-accent">
-                      System Notification:
-                    </strong>{" "}
-                    <br></br> {notification?.verb}
-                  </p>
-                  <div className="flex justify-between items-end">
-                    <p className="text-primary-gray text-xs mt-2">
-                      {notification?.timestamp}
-                    </p>
-                    {/* <p className="text-primary-gray text-xs mt-2">
-                      Mark as read
-                    </p> */}
-                  </div>
-                </div>
+      {isLoading ? <NotificationsSkeleton /> : null}
+
+      {isError ? (
+        <ErrorState
+          title="Notifications could not be loaded"
+          message="We could not load your notifications right now."
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
+      ) : null}
+
+      {!isLoading && !isError && unreadNotifications.length === 0 ? (
+        <EmptyState
+          title="Nothing new yet"
+          description="You're all caught up. New follows, reading updates, and system messages will appear here."
+          actionLabel="Browse books"
+          actionTo="/explore"
+        />
+      ) : null}
+
+      {!isLoading && !isError && unreadNotifications.length > 0 ? (
+        <div className="flex flex-col gap-4" role="list">
+          {unreadNotifications.map((notification) => (
+            <article
+              key={notification.id}
+              role="listitem"
+              className="flex items-start gap-4 rounded-xl bg-secondary-black p-5 text-primary-white shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-black text-accent">
+                <svg
+                  className="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
-            ))
-        ) : (
-          <p className="text-sm sm:text-base md:text-lg text-primary-gray text-center">
-            No notifications yet. Start exploring to connect with others!
-          </p>
-        )}
-      </div>
+
+              <div className="flex min-w-0 flex-col gap-2">
+                <p className="text-sm leading-relaxed text-primary-white">
+                  <strong className="text-accent">System Notification:</strong>{" "}
+                  {notification.verb}
+                </p>
+                <p className="text-xs text-primary-gray">
+                  {notification.timestamp}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
