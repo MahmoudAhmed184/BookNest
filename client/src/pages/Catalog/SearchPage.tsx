@@ -1,117 +1,274 @@
-import React, { useEffect, useState, useTransition } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { searchBooks } from "../../services/bookService";
 
-import { useParams } from "react-router-dom";
+import { searchBooks } from "../../services/bookService";
+import BookCard from "../../components/BookCard";
+import BookCardSkeleton from "../../components/BookCardSkeleton";
+import EmptyState from "../../components/EmptyState";
+import ErrorState from "../../components/ErrorState";
+import InlineSpinner from "../../components/InlineSpinner";
+
+type SortMode = "relevance" | "title";
+
+const searchScrollKey = "booknest:search-scroll";
 
 export default function Search() {
   const { query } = useParams<"query">();
+  const navigate = useNavigate();
 
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [, startSearchTransition] = useTransition();
+  const initialQuery = query ?? "";
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const [searchTerm, setSearchTerm] = useState(initialQuery);
+  const [sortMode, setSortMode] = useState<SortMode>("relevance");
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["books", searchTerm],
-    queryFn: () => searchBooks(searchTerm),
-    enabled: searchTerm.length > 0,
+  const trimmedSearch = searchTerm.trim();
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["books", trimmedSearch],
+    queryFn: () => searchBooks(trimmedSearch),
+    enabled: trimmedSearch.length > 0,
   });
 
   const books = data?.results || [];
+  const uniqueBooks = useMemo(
+    () =>
+      books.filter(
+        (book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
+      ),
+    [books]
+  );
 
-  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(e.target.value);
-  };
+  const sortedBooks = useMemo(() => {
+    if (sortMode === "title") {
+      return [...uniqueBooks].sort((a, b) => a.title.localeCompare(b.title));
+    }
 
-  const handleSearch = (): void => {
-    startSearchTransition(() => {
-      setSearchTerm(searchInput);
-    });
-  };
+    return uniqueBooks;
+  }, [sortMode, uniqueBooks]);
 
   useEffect(() => {
     if (query) {
       setSearchInput(query);
-      startSearchTransition(() => {
-        setSearchTerm(query);
-      });
+      setSearchTerm(query);
     }
-  }, [query, startSearchTransition]);
+  }, [query]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearchTerm(searchInput.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
+  useEffect(() => {
+    const savedPosition = sessionStorage.getItem(searchScrollKey);
+    if (!savedPosition) return;
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, Number(savedPosition));
+      sessionStorage.removeItem(searchScrollKey);
+    });
+  }, []);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    const nextQuery = searchInput.trim();
+    setSearchTerm(nextQuery);
+
+    if (nextQuery) {
+      navigate(`/search/${encodeURIComponent(nextQuery)}`);
+    }
+  };
+
+  const clearSearch = (): void => {
+    setSearchInput("");
+    setSearchTerm("");
+  };
+
+  const rememberScroll = (): void => {
+    sessionStorage.setItem(searchScrollKey, String(window.scrollY));
+  };
+
+  const hasActiveSearch = trimmedSearch.length > 0;
 
   return (
-    <div className="flex flex-col gap-md py-md">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          className="bg-secondary-black text-primary-gray rounded-2xl outline-hidden px-4 py-2 placeholder-primary-gray grow"
-          placeholder="Search"
-          onChange={handleSearchInput}
-          value={searchInput}
-        />
-        <button
-          onClick={handleSearch}
-          className="btn btn-accent-v text-white px-4 py-2 rounded-2xl hover:bg-blue-600"
-        >
-          Search
-        </button>
-      </div>
+    <div className="flex flex-col gap-8 py-12 animate-fade-up">
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+          Search Books
+        </h1>
+        <p className="max-w-2xl text-sm text-primary-gray leading-relaxed">
+          Search by title, author, genre, or ISBN to find your next read.
+        </p>
+      </header>
 
-      <h2 className="text-md sm:text-xl font-semibold">Search Results</h2>
-
-      {isLoading && (
-        <div className="grow flex justify-center items-center">
-          <div className="spinner"></div>
-        </div>
-      )}
-      {error && <p className="text-red-500">Error fetching books</p>}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-        {books
-          // .filter((book) => book.cover_img !== null)
-          .filter((book, i) => books[i]?.isbn13 !== books[i - 1]?.isbn13)
-          .map((book) => (
-            <Link
-              key={book?.isbn13}
-              to={`/book/${book?.isbn13}`}
-              className="group rounded-2xl shadow-md overflow-hidden relative block"
-            >
-              <div
-                className="absolute inset-0 bg-secondary-black transition-opacity duration-300 opacity-100 group-hover:opacity-0 z-0"
-                aria-hidden="true"
-              />
-              <img
-                src={
-                  book?.cover_img ||
-                  `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-                }
-                className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
-                aria-hidden="true"
-                draggable={false}
-              />
-              <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
-                <div className="book-cover h-[256px] sm:h-[280px] relative">
-                  <img
-                    src={
-                      book?.cover_img ||
-                      `https://dhmckee.com/wp-content/uploads/2018/11/defbookcover-min.jpg`
-                    }
-                    alt={book?.title}
-                    className="w-[180px] h-[280px] object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <label htmlFor="book-search" className="text-sm font-medium text-primary-white">
+          Search query
+        </label>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative grow">
+            <input
+              id="book-search"
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="search-results"
+              className="field w-full pr-12 text-primary-white placeholder-primary-gray focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary-black"
+              placeholder="Search for books"
+              onChange={(event) => setSearchInput(event.target.value)}
+              value={searchInput}
+              autoComplete="off"
+            />
+            {searchInput ? (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-1 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-xl text-primary-gray hover:text-primary-white"
+                aria-label="Clear search"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6.3 5.3a1 1 0 0 0-1.4 1.4L8.2 10l-3.3 3.3a1 1 0 1 0 1.4 1.4L9.6 11.4l3.3 3.3a1 1 0 0 0 1.4-1.4L11 10l3.3-3.3a1 1 0 0 0-1.4-1.4L9.6 8.6 6.3 5.3Z"
+                    clipRule="evenodd"
                   />
-                </div>
-                <figcaption className="flex flex-col justify-center items-center gap-2 sm:gap-3">
-                  <h4 className="text-base sm:text-lg text-primary-white font-semibold text-center line-clamp-1">
-                    {book?.title}
-                  </h4>
-                  <h5 className="text-sm sm:text-base text-primary-gray text-center">
-                    {book?.author}
-                  </h5>
-                </figcaption>
-              </figure>
-            </Link>
-          ))}
-      </div>
+                </svg>
+              </button>
+            ) : null}
+          </div>
+          <button
+            type="submit"
+            disabled={!searchInput.trim() || (isFetching && !data)}
+            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            {isFetching && !data ? <InlineSpinner /> : null}
+            Search
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
+          <p role="status" aria-live="polite">
+            {hasActiveSearch
+              ? `Searching for "${trimmedSearch}"`
+              : "Enter at least one keyword to begin."}
+          </p>
+          <p>{searchInput.length} characters</p>
+        </div>
+      </form>
+
+      <section className="flex flex-col gap-5" aria-labelledby="search-results-title">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2
+              id="search-results-title"
+              className="text-xl font-semibold text-primary-white sm:text-2xl"
+            >
+              Search Results
+            </h2>
+            {hasActiveSearch ? (
+              <p className="mt-2 text-sm text-primary-gray" role="status">
+                {sortedBooks.length} results for "{trimmedSearch}"
+                {isFetching && data ? " · updating" : ""}
+              </p>
+            ) : null}
+          </div>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-xs font-medium text-primary-gray">
+              Sort results
+            </legend>
+            <div className="flex rounded-xl bg-secondary-black p-1">
+              {(["relevance", "title"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setSortMode(mode)}
+                  className={`min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ease-out ${
+                    sortMode === mode
+                      ? "btn-accent-v text-primary-white shadow-md"
+                      : "text-primary-gray hover:bg-primary-black hover:text-primary-white"
+                  }`}
+                  aria-pressed={sortMode === mode}
+                >
+                  {mode === "relevance" ? "Relevance" : "Title A-Z"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+
+        {isLoading ? (
+          <div
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            role="status"
+            aria-live="polite"
+          >
+            {Array.from({ length: 8 }).map((_, index) => (
+              <BookCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : null}
+
+        {isError ? (
+          <ErrorState
+            title="Search is unavailable"
+            message="We could not load search results right now."
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
+          />
+        ) : null}
+
+        {!hasActiveSearch && !isLoading ? (
+          <EmptyState
+            title="Start with a title, author, or genre"
+            description="Your results will appear here as you type."
+            actionLabel="Browse categories"
+            actionTo="/categories"
+          />
+        ) : null}
+
+        {hasActiveSearch && !isLoading && !isError && sortedBooks.length === 0 ? (
+          <EmptyState
+            title={`No books found for "${trimmedSearch}"`}
+            description="Try different keywords, fewer words, or another author name."
+            actionLabel="Clear search"
+            onAction={clearSearch}
+          />
+        ) : null}
+
+        {sortedBooks.length > 0 && !isError ? (
+          <div
+            id="search-results"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            {sortedBooks.map((book) => (
+              <BookCard
+                key={book.isbn13}
+                to={`/book/${book.isbn13}`}
+                title={book.title}
+                author={book.author}
+                coverSrc={book.cover_img}
+                className="h-full"
+                onClick={rememberScroll}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

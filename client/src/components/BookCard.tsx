@@ -8,6 +8,7 @@ interface BookCardProps {
   coverSrc?: string | null | undefined;
   rating?: number | string | null | undefined;
   showAuthor?: boolean;
+  onClick?: () => void;
   className?: string;
 }
 
@@ -24,6 +25,7 @@ export default function BookCard({
   coverSrc,
   rating,
   showAuthor = true,
+  onClick,
   className = "",
 }: BookCardProps): ReactElement {
   const [hasImageError, setHasImageError] = useState(false);
@@ -32,6 +34,7 @@ export default function BookCard({
   return (
     <Link
       to={to}
+      onClick={onClick}
       className={`group block overflow-hidden rounded-xl bg-secondary-black shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl focus-visible:outline-accent [will-change:transform] ${className}`}
     >
       <figure className="relative flex flex-col items-center gap-4 p-4 sm:gap-5 sm:p-6">
