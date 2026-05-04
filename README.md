@@ -50,21 +50,22 @@ BookNest/
 |   |-- tsconfig.json
 |   |-- public/
 |   `-- src/
+|       |-- app/
 |       |-- assets/
 |       |-- components/
+|       |   |-- layout/
+|       |   `-- ui/
 |       |-- config/
 |       |-- features/
 |       |-- hooks/
-|       |-- layouts/
-|       |-- pages/
+|       |-- lib/
+|       |-- routes/
 |       |-- services/
 |       |-- store/
 |       |-- styles/
 |       |-- types/
 |       |-- utils/
-|       |-- app.tsx
-|       |-- index.tsx
-|       `-- router.tsx
+|       `-- main.tsx
 |-- server/
 |   |-- README.md
 |   |-- manage.py
@@ -106,13 +107,14 @@ The Django settings are split by environment:
 
 Frontend code is TypeScript-first and organized around the current feature-first structure:
 
-- Shared UI lives in `client/src/components/`.
-- Route pages live in `client/src/pages/` and are grouped by domain.
-- Domain-specific feature folders live in `client/src/features/`.
-- API calls live in `client/src/services/`.
-- Shared request and response contracts live in `client/src/types/`.
-- Global state lives in `client/src/store/`.
-- App configuration lives in `client/src/config/`.
+- App entry and provider composition live in `client/src/main.tsx` and `client/src/app/`.
+- Shared UI primitives live in `client/src/components/ui/`.
+- App shell components live in `client/src/components/layout/`.
+- Route definitions use React Router DOM 7 in `client/src/routes/AppRouter.tsx`, with path constants in `client/src/routes/paths.ts`.
+- Route-level pages, hooks, services, data, and domain types live inside `client/src/features/{domain}/`.
+- Axios and TanStack Query infrastructure wrappers live in `client/src/lib/`.
+- Root `client/src/services/`, `client/src/store/`, `client/src/hooks/`, and `client/src/types/` are reserved for cross-feature concerns only.
+- App configuration lives in `client/src/config/env.ts`.
 
 The frontend has strict TypeScript enabled with `strict`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`. No `.js` or `.jsx` files remain under `client/src/`.
 
@@ -124,7 +126,7 @@ The current UI layer includes reusable state and interaction primitives:
 - `ErrorBoundary` in the shared layout for graceful runtime fallback UI.
 - Global Tailwind v4 utilities in `client/src/styles/index.css` for fade-up entry motion, shimmer skeletons, focus-visible states, and reduced-motion support.
 
-The latest frontend pass keeps the existing palette, routes, API layer, type contracts, and file organization intact while improving skeleton loading, empty/error states, search UX, auth/settings form UX, navigation states, and accessibility.
+The latest frontend pass keeps the existing palette, URL paths, React Router DOM routing, API behavior, and type contracts intact while enforcing the feature-first folder structure. No TanStack Router package, plugin, generated route tree, or route file convention is used.
 
 ## Prerequisites
 
@@ -204,7 +206,7 @@ npm run dev
 
 The frontend dev server runs at `http://localhost:5173/`.
 
-The frontend API base URL is defined in `client/src/config/index.ts` and currently points to `http://localhost:8000`. Run the backend before using pages that fetch API data.
+The frontend API base URL is defined in `client/src/config/env.ts` and currently points to `http://localhost:8000`. Run the backend before using pages that fetch API data.
 
 ## Database Backups
 
@@ -240,7 +242,7 @@ Important backend variables:
 - `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
 - `FRONTEND_URL`, `SITE_NAME`
 
-The frontend does not currently require a local `.env` file. API configuration is centralized in `client/src/config/index.ts`.
+The frontend does not currently require a local `.env` file. API configuration is centralized in `client/src/config/env.ts`.
 
 ## API Documentation
 

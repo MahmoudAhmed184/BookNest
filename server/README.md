@@ -285,7 +285,13 @@ Primary API route prefixes:
 
 ## Frontend Integration
 
-The React client in `../client` is the primary consumer of this API. It expects the backend to be available at `http://localhost:8000` during local development unless `client/src/config/index.ts` is changed.
+The React client in `../client` is the primary consumer of this API. It expects the backend to be available at `http://localhost:8000` during local development unless `client/src/config/env.ts` is changed.
+
+The frontend now uses a feature-first source layout:
+
+- React Router DOM route definitions live in `client/src/routes/`; the project does not use TanStack Router or generated route trees.
+- Domain pages, hooks, services, and types live under `client/src/features/{domain}/`.
+- Shared Axios helpers live in `client/src/lib/axios.ts`, and domain API clients call the backend from feature-local service files.
 
 For local browser testing, make sure `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` include the active Vite origin, usually:
 
