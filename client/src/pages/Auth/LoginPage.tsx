@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import Logo from "/logo.svg";
 
 import { login } from "../../services/authService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../store/AuthContext";
 
 import { toast } from "react-hot-toast";
 

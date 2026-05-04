@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { register, createProfile } from "../../services/authService";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../store/AuthContext";
 import { toast } from "react-hot-toast";
 
 const Register = () => {

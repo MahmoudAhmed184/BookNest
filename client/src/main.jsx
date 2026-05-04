@@ -15,7 +15,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const queryClient = new QueryClient();
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider } from "./store/AuthContext";
 
 createRoot(document.getElementById("root")).render(
   <AuthProvider>
