@@ -1,6 +1,8 @@
+import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
+import { routePaths } from "../../routes";
 
-export default function NotFound() {
+export default function NotFound(): ReactElement {
   return (
     <div className="grow flex flex-col items-center justify-center gap-8 py-16 text-center relative animate-fade-up">
       <div className="blob" aria-hidden="true"></div>
@@ -52,13 +54,13 @@ export default function NotFound() {
 
         <div className="flex flex-wrap justify-center gap-3">
           <Link
-            to="/"
+            to={routePaths.root}
             className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg sm:px-6 sm:py-3"
           >
             Go home
           </Link>
           <Link
-            to="/explore"
+            to={routePaths.explore}
             className="btn btn-primary-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg sm:px-6 sm:py-3"
           >
             Browse books

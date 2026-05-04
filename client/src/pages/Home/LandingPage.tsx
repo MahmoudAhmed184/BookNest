@@ -1,8 +1,10 @@
+import type { ReactElement } from "react";
 import Logo from "/logo.svg";
 
 import { Link } from "react-router-dom";
+import { routePaths } from "../../routes";
 
-export default function Landing() {
+export default function Landing(): ReactElement {
   return (
     <section
       className="grow flex flex-col items-center justify-center gap-6 py-16 text-center relative animate-fade-up"
@@ -31,13 +33,13 @@ export default function Landing() {
       </div>
       <div className="flex flex-wrap justify-center gap-3 sm:gap-4 relative z-10">
         <Link
-          to="/login"
+          to={routePaths.login}
           className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg sm:px-6 sm:py-3 sm:text-base"
         >
           Get Started
         </Link>
         <Link
-          to="/explore"
+          to={routePaths.explore}
           className="btn btn-primary-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg sm:px-6 sm:py-3 sm:text-base"
         >
           Explore Now
