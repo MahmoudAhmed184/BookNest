@@ -1,6 +1,6 @@
-import React from "react";
-
 import { Link } from "react-router-dom";
+
+import EmptyState from "../../components/EmptyState";
 
 export default function Categories() {
   const categories = [
@@ -57,18 +57,37 @@ export default function Categories() {
   ];
 
   return (
-    <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-      {categories.map((category) => (
-        <Link
-          key={category?.id}
-          to={`/search/${category?.title}`}
-          className="bg-[#2D2D2D] hover:bg-[#3C3C3C] transition-colors duration-200 rounded-2xl p-4 flex items-center justify-center text-center"
-        >
-          <span className="text-[#F5F5F5] text-base font-medium">
-            {category?.title}
-          </span>
-        </Link>
-      ))}
+    <div className="flex flex-col gap-8 py-12 animate-fade-up">
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+          Browse Categories
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">
+          Pick a genre to jump into a focused search shelf.
+        </p>
+      </header>
+
+      {categories.length === 0 ? (
+        <EmptyState
+          title="No categories yet"
+          description="Discovery categories will appear here when they are available."
+          actionLabel="Explore books"
+          actionTo="/explore"
+        />
+      ) : (
+        <div className="flex flex-wrap gap-3" aria-label="Book categories">
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              to={`/search/${category.title}`}
+              title={`Browse ${category.title} books`}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-secondary-black px-4 py-2 text-center text-sm font-medium text-primary-white shadow-md transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-secondary-gray hover:shadow-lg focus-visible:outline-accent"
+            >
+              {category.title}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
