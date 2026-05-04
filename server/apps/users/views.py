@@ -1,9 +1,194 @@
+# users/views/register.py
+from dj_rest_auth.registration.views import RegisterView
+from dj_rest_auth.views import LoginView, LogoutView
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from apps.users.serializers import CustomRegisterSerializer, CustomLoginSerializer
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class CustomRegisterView(RegisterView):
+    serializer_class = CustomRegisterSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new user account
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            response_data = {
+                "success": True,
+                "message": "Registration successful",
+                "data": {
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                    },
+                    "access": access_token,
+                    "refresh": refresh_token
+                },
+                "meta": {
+                    "next_action": "create_profile",
+                    "profile_required": True
+                }
+            }
+            
+            return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+        
+        # Format validation errors
+        error_response = {
+            "success": False,
+            "message": "Registration failed",
+            "errors": self._format_validation_errors(serializer.errors)
+        }
+        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def _format_validation_errors(self, errors):
+        """Format validation errors for consistent response"""
+        formatted_errors = {}
+        for field, error_list in errors.items():
+            if isinstance(error_list, list):
+                formatted_errors[field] = error_list[0] if error_list else None
+            else:
+                formatted_errors[field] = str(error_list)
+        return formatted_errors
+
+
+class CustomLoginView(LoginView):
+    serializer_class = CustomLoginSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Login user with email and password
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            
+            # Check if user has a profile
+            has_profile = hasattr(user, 'profile')
+            
+            # Get the login response from parent
+            response = super().post(request, *args, **kwargs)
+            
+            if response.status_code == 200:
+                # Customize the response data
+                original_data = response.data
+                access_token = original_data.get('access')
+                refresh_token = original_data.get('refresh')
+                
+                response_data = {
+                    "success": True,
+                    "message": "Login successful",
+                    "data": {
+                        "user": {
+                            "id": user.id,
+                            "username": user.username,
+                            "email": user.email,
+                            "has_profile": has_profile
+                        },
+                    'access': access_token,
+                    'refresh': refresh_token
+                       
+                    },
+                    "meta": {
+                        "profile_required": not has_profile,
+                        "next_action": "create_profile" if not has_profile else None
+                    }
+                }
+                response.data = response_data
+            
+            return response
+        
+        # Format validation errors
+        error_response = {
+            "success": False,
+            "message": "Login failed",
+            "errors": self._format_validation_errors(serializer.errors)
+        }
+        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def _format_validation_errors(self, errors):
+        """Format validation errors for consistent response"""
+        formatted_errors = {}
+        for field, error_list in errors.items():
+            if isinstance(error_list, list):
+                formatted_errors[field] = error_list[0] if error_list else None
+            else:
+                formatted_errors[field] = str(error_list)
+        return formatted_errors
+
+
+class CustomLogoutView(LogoutView):
+    """
+    Custom logout view with token blacklisting
+    """
+    def post(self, request, *args, **kwargs):
+        """
+        Logout user and blacklist refresh token
+        """
+        try:
+            # Get refresh token from request
+            refresh_token = request.data.get('refresh')
+            
+            if refresh_token:
+                # Blacklist the refresh token
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            else:
+                # If no refresh token provided, blacklist all user tokens
+                if request.user.is_authenticated:
+                    tokens = OutstandingToken.objects.filter(user=request.user)
+                    for token in tokens:
+                        try:
+                            BlacklistedToken.objects.get_or_create(token=token)
+                        except Exception:
+                            pass  # Token might already be blacklisted
+            
+            response_data = {
+                "success": True,
+                "message": "Logout successful",
+                "data": None
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            error_response = {
+                "success": False,
+                "message": "Logout failed",
+                "errors": {"detail": str(e)}
+            }
+            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CurrentSessionAPIView(CustomLogoutView):
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(description="Current session ended.")},
+    )
+    def delete(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
 # users/views/profile.py
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from apps.users.models.profile import Profile
-from apps.users.serializers.profile import ProfileSerializer, ProfileUpdateSerializer
+from apps.users.serializers import ProfileSerializer, ProfileUpdateSerializer
 from apps.users.permissions import IsOwnerOrReadOnly, IsAuthenticated
 from apps.users.selectors import profile_exists_for_user, profile_for_user, profile_list
 from apps.users.services import (
@@ -321,3 +506,95 @@ class ProfileViewSet(viewsets.ModelViewSet):
             else:
                 formatted_errors[field] = str(error_list)
         return formatted_errors
+
+# users/views/password_reset.py
+from dj_rest_auth.views import PasswordResetView, PasswordResetConfirmView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+
+class CustomPasswordResetView(PasswordResetView):
+    """Custom password reset view with standardized response"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        
+        if response.status_code == 200:
+            response_data = {
+                "success": True,
+                "message": "Password reset email sent successfully",
+                "data": {
+                    "detail": "If an account with this email exists, you will receive a password reset link."
+                }
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        return response
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    """Custom password reset confirmation view"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        
+        if response.status_code == 200:
+            response_data = {
+                "success": True,
+                "message": "Password reset successful",
+                "data": {
+                    "detail": "Your password has been reset successfully. You can now login with your new password."
+                }
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        else:
+            # Handle validation errors
+            error_response = {
+                "success": False,
+                "message": "Password reset failed",
+                "errors": response.data if hasattr(response, 'data') else {"detail": "Invalid token or passwords don't match"}
+            }
+            return Response(error_response, status=response.status_code)
+            
+        return response
+
+# views.py
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from apps.users.serializers import UserDataSerializer
+from apps.users.selectors import get_user_data, user_data_queryset
+
+class UserDataDetailView(generics.RetrieveAPIView):
+    """
+    Retrieve all data associated with a specific user.
+    Includes profile, reading lists, ratings, reviews, and social connections.
+    """
+    serializer_class = UserDataSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def get_queryset(self):
+        return user_data_queryset()
+    
+    def get_object(self):
+        return get_user_data(self.kwargs.get('id'))
+    
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            
+            return Response({
+                'success': True,
+                'message': 'User data retrieved successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'Error retrieving user data: {str(e)}',
+                'data': None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

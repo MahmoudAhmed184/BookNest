@@ -3,9 +3,13 @@ from dj_rest_auth.jwt_auth import get_refresh_view
 from dj_rest_auth.views import UserDetailsView
 from rest_framework_simplejwt.views import TokenVerifyView
 
-from apps.users.user_data_view import UserDataDetailView
-from apps.users.views.profile import ProfileViewSet
-from apps.users.views.register import CurrentSessionAPIView, CustomLoginView, CustomRegisterView
+from apps.users.views import (
+    CurrentSessionAPIView,
+    CustomLoginView,
+    CustomRegisterView,
+    ProfileViewSet,
+    UserDataDetailView,
+)
 
 
 profile_collection = ProfileViewSet.as_view({"get": "list", "post": "create"})
