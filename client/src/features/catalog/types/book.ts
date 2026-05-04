@@ -78,6 +78,7 @@ export interface BookRating {
 export interface RecommendedBook {
   book: string;
   book_title: string;
+  book_author?: string | null;
   book_cover?: string | null;
 }
 

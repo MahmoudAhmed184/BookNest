@@ -73,8 +73,11 @@ describe("query-backed pages", () => {
     });
     vi.mocked(useBookActions).mockReturnValue({
       isAddingBook: false,
+      isMarkingAsRead: false,
       isSubmittingReview: false,
       addBook: vi.fn(),
+      markAsRead: vi.fn(),
+      submitRating: vi.fn(),
       submitReview: vi.fn(),
     });
     vi.mocked(useRelatedBooks).mockReturnValue({
@@ -207,6 +210,10 @@ describe("query-backed pages", () => {
 
     vi.mocked(useBookPageData).mockReturnValue({
       book: { isbn13: "1", title: "Book Detail" },
+      collections: [
+        { list_id: 3, name: "Completed", type: "done" },
+        { list_id: 1, name: "To Do", type: "todo" },
+      ],
       reviews: [],
       ratings: [],
       isBookLoading: false,
@@ -222,6 +229,12 @@ describe("query-backed pages", () => {
     });
     renderPage(<BookPage />);
     expect(screen.getByText("Book Detail")).toBeTruthy();
+    expect(useBookActions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        libraryListId: 1,
+        completedListId: 3,
+      })
+    );
   });
 
   it("renders profile-backed pages in loading, error, and success states", () => {
@@ -272,6 +285,8 @@ describe("query-backed pages", () => {
       isLoading: true,
       isFetching: false,
       isError: false,
+      isMarkingAllAsRead: false,
+      markAllAsRead: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);
@@ -282,6 +297,8 @@ describe("query-backed pages", () => {
       isLoading: false,
       isFetching: false,
       isError: true,
+      isMarkingAllAsRead: false,
+      markAllAsRead: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);
@@ -294,6 +311,8 @@ describe("query-backed pages", () => {
       isLoading: false,
       isFetching: false,
       isError: false,
+      isMarkingAllAsRead: false,
+      markAllAsRead: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);

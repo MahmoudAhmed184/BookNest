@@ -13,8 +13,11 @@ export interface BookHeroProps {
   isDescriptionExpanded: boolean;
   coverFailed: boolean;
   isAddPending: boolean;
+  isMarkReadPending: boolean;
   canAddToList: boolean;
+  canMarkAsRead: boolean;
   onAddBook: () => void;
+  onMarkAsRead: () => void;
   onToggleDescription: () => void;
   onCoverError: () => void;
 }
@@ -24,8 +27,11 @@ export function BookHero({
   isDescriptionExpanded,
   coverFailed,
   isAddPending,
+  isMarkReadPending,
   canAddToList,
+  canMarkAsRead,
   onAddBook,
+  onMarkAsRead,
   onToggleDescription,
   onCoverError,
 }: BookHeroProps): ReactElement {
@@ -76,8 +82,11 @@ export function BookHero({
           <BookSummary book={book} authors={authors} />
           <BookActions
             isAddPending={isAddPending}
+            isMarkReadPending={isMarkReadPending}
             canAddToList={canAddToList}
+            canMarkAsRead={canMarkAsRead}
             onAddBook={onAddBook}
+            onMarkAsRead={onMarkAsRead}
           />
           <BookMetadata book={book} />
           <BookDescription

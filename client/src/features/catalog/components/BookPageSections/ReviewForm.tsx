@@ -6,6 +6,7 @@ export interface ReviewFormProps {
   rating: number;
   reviewText: string;
   isSubmitting: boolean;
+  submitLabel: string;
   onRatingChange: (rating: number) => void;
   onReviewTextChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -15,6 +16,7 @@ export function ReviewForm({
   rating,
   reviewText,
   isSubmitting,
+  submitLabel,
   onRatingChange,
   onReviewTextChange,
   onSubmit,
@@ -53,7 +55,7 @@ export function ReviewForm({
           className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white"
         >
           {isSubmitting ? <InlineSpinner /> : null}
-          Submit Review
+          {submitLabel}
         </button>
       </form>
     </section>

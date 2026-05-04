@@ -7,10 +7,12 @@ import {
 } from "../services/bookService";
 import { addToCollection } from "../../collections/services/collectionService";
 import { catalogKeys } from "./catalog.keys";
+import { profileKeys } from "../../profile/hooks/profile.keys";
 
 interface UseBookActionsOptions {
   id: string | undefined;
-  listId: number | null;
+  libraryListId: number | null;
+  completedListId: number | null;
   rating: number;
   reviewText: string;
   token?: string | null | undefined;
@@ -19,46 +21,70 @@ interface UseBookActionsOptions {
 
 interface UseBookActionsResult {
   isAddingBook: boolean;
+  isMarkingAsRead: boolean;
   isSubmittingReview: boolean;
   addBook: () => void;
+  markAsRead: () => void;
+  submitRating: () => void;
   submitReview: () => void;
 }
 
 export function useBookActions({
   id,
-  listId,
+  libraryListId,
+  completedListId,
   rating,
   reviewText,
   token,
   onReviewSubmitted,
 }: UseBookActionsOptions): UseBookActionsResult {
   const queryClient = useQueryClient();
+  const ratingPayload = () => ({ book: id, rate: rating });
 
   const addBookMutation = useMutation({
-    mutationFn: () => addToCollection({ book_id: id, list_id: listId }, token),
+    mutationFn: () => addToCollection({ book_id: id, list_id: libraryListId }, token),
     onSuccess: () => {
       toast.success("Added to your shelf!");
+      queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
     onError: () => {
       toast.error("Couldn't save. Try again.");
     },
   });
+  const markAsReadMutation = useMutation({
+    mutationFn: () => addToCollection({ book_id: id, list_id: completedListId }, token),
+    onSuccess: () => {
+      toast.success("Marked as read.");
+      queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
+    },
+    onError: () => {
+      toast.error("Couldn't mark this book as read. Try again.");
+    },
+  });
   const reviewMutation = useMutation({
-    mutationFn: () => createReview({ book: id, review_text: reviewText }, token),
+    mutationFn: async () => {
+      await createRating(ratingPayload(), token);
+      return createReview({ book: id, review_text: reviewText.trim() }, token);
+    },
     onSuccess: () => {
       onReviewSubmitted();
       toast.success("Review submitted!");
+      queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
+      queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
       queryClient.invalidateQueries({ queryKey: catalogKeys.reviews(id) });
+      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
     },
     onError: () => {
       toast.error("Couldn't submit your review. Try again.");
     },
   });
   const ratingMutation = useMutation({
-    mutationFn: () => createRating({ book: id, rate: rating }, token),
+    mutationFn: () => createRating(ratingPayload(), token),
     onSuccess: () => {
+      toast.success("Rating saved.");
       queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
       queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
+      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
     },
     onError: () => {
       toast.error("Couldn't save your rating. Try again.");
@@ -67,11 +93,11 @@ export function useBookActions({
 
   return {
     isAddingBook: addBookMutation.isPending,
+    isMarkingAsRead: markAsReadMutation.isPending,
     isSubmittingReview: reviewMutation.isPending || ratingMutation.isPending,
     addBook: () => addBookMutation.mutate(),
-    submitReview: () => {
-      reviewMutation.mutate();
-      ratingMutation.mutate();
-    },
+    markAsRead: () => markAsReadMutation.mutate(),
+    submitRating: () => ratingMutation.mutate(),
+    submitReview: () => reviewMutation.mutate(),
   };
 }

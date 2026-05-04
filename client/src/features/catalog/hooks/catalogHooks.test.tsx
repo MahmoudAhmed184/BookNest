@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createQueryWrapper } from "../../../test/renderHookWithClient";
 import {
@@ -13,7 +13,10 @@ import {
   getRecommendedBooks,
   getReviews,
 } from "../services/bookService";
-import { getCollections } from "../../collections/services/collectionService";
+import {
+  addToCollection,
+  getCollections,
+} from "../../collections/services/collectionService";
 import { useBookActions } from "./useBookActions";
 import { useBookPageData } from "./useBookPageData";
 import { useExploreCatalog } from "./useExploreCatalog";
@@ -38,10 +41,11 @@ vi.mock("../../collections/services/collectionService", () => ({
 }));
 
 describe("catalog hooks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("loads explore books and recommendations", async () => {
-    vi.mocked(getBooks).mockResolvedValue({
-      results: [{ isbn13: "1", title: "Python 101" }],
-    });
     vi.mocked(getRecommendedBooks).mockResolvedValue([
       { book: "1", book_title: "Python 101" },
     ]);
@@ -56,6 +60,8 @@ describe("catalog hooks", () => {
 
     await waitFor(() => expect(result.current.isBooksLoading).toBe(false));
     expect(result.current.books[0]?.title).toBe("Python 101");
+    expect(getBooks).not.toHaveBeenCalled();
+    expect(getPopularBooks).toHaveBeenCalledWith(24);
     expect(result.current.recommendations[0]?.book_title).toBe("Python 101");
   });
 
@@ -95,7 +101,8 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "1",
-          listId: 1,
+          libraryListId: 1,
+          completedListId: 3,
           rating: 5,
           reviewText: "Great",
           onReviewSubmitted: vi.fn(),
@@ -104,6 +111,8 @@ describe("catalog hooks", () => {
     );
 
     expect(typeof result.current.addBook).toBe("function");
+    expect(typeof result.current.markAsRead).toBe("function");
+    expect(typeof result.current.submitRating).toBe("function");
     expect(typeof result.current.submitReview).toBe("function");
   });
 
@@ -119,7 +128,8 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "9780000000001",
-          listId: 1,
+          libraryListId: 1,
+          completedListId: 3,
           rating: 5,
           reviewText: "Great",
           token: "token",
@@ -143,5 +153,69 @@ describe("catalog hooks", () => {
       );
     });
     await waitFor(() => expect(onReviewSubmitted).toHaveBeenCalled());
+  });
+
+  it("uses separate reading lists for library and completed actions", async () => {
+    vi.mocked(addToCollection).mockResolvedValue({ list_id: 1, name: "Shelf" });
+
+    const { result } = renderHook(
+      () =>
+        useBookActions({
+          id: "9780000000001",
+          libraryListId: 1,
+          completedListId: 3,
+          rating: 5,
+          reviewText: "",
+          token: "token",
+          onReviewSubmitted: vi.fn(),
+        }),
+      { wrapper: createQueryWrapper() }
+    );
+
+    act(() => {
+      result.current.addBook();
+      result.current.markAsRead();
+    });
+
+    await waitFor(() => {
+      expect(addToCollection).toHaveBeenCalledWith(
+        { book_id: "9780000000001", list_id: 1 },
+        "token"
+      );
+      expect(addToCollection).toHaveBeenCalledWith(
+        { book_id: "9780000000001", list_id: 3 },
+        "token"
+      );
+    });
+  });
+
+  it("can save a rating without creating a review", async () => {
+    vi.mocked(createRating).mockResolvedValue({ rate_id: 1, rate: 4 });
+
+    const { result } = renderHook(
+      () =>
+        useBookActions({
+          id: "9780000000001",
+          libraryListId: 1,
+          completedListId: 3,
+          rating: 4,
+          reviewText: "",
+          token: "token",
+          onReviewSubmitted: vi.fn(),
+        }),
+      { wrapper: createQueryWrapper() }
+    );
+
+    act(() => {
+      result.current.submitRating();
+    });
+
+    await waitFor(() => {
+      expect(createRating).toHaveBeenCalledWith(
+        { book: "9780000000001", rate: 4 },
+        "token"
+      );
+    });
+    expect(createReview).not.toHaveBeenCalled();
   });
 });

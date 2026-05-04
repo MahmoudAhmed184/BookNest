@@ -43,7 +43,7 @@ def _positive_int(value, default, maximum):
 
 
 class BookCollectionAPIView(generics.ListCreateAPIView):
-    queryset = Book.objects.all()
+    queryset = Book.objects.prefetch_related("authors", "genres")
     serializer_class = BookSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {

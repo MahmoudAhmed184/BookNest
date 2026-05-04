@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  getBooks,
   getGenres,
   getPopularBooks,
   getRecommendedBooks,
@@ -34,16 +33,12 @@ interface UseExploreCatalogResult {
 
 export function useExploreCatalog(token?: string | null): UseExploreCatalogResult {
   const booksQuery = useQuery({
-    queryKey: catalogKeys.books("python"),
-    queryFn: () => getBooks("python"),
+    queryKey: catalogKeys.popularBooks(24),
+    queryFn: () => getPopularBooks(24),
   });
   const categoriesQuery = useQuery({
     queryKey: catalogKeys.genres(50),
     queryFn: () => getGenres(50),
-  });
-  const popularBooksQuery = useQuery({
-    queryKey: catalogKeys.popularBooks(12),
-    queryFn: () => getPopularBooks(12),
   });
   const recommendationsQuery = useQuery({
     queryKey: catalogKeys.recommendations(),
@@ -51,7 +46,7 @@ export function useExploreCatalog(token?: string | null): UseExploreCatalogResul
     enabled: Boolean(token),
   });
 
-  const books = booksQuery.data?.results || [];
+  const books = booksQuery.data || [];
   const uniqueBooks = books.filter(
     (_book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
   );
@@ -59,7 +54,7 @@ export function useExploreCatalog(token?: string | null): UseExploreCatalogResul
   return {
     books: uniqueBooks,
     categories: categoriesQuery.data || [],
-    popularBooks: popularBooksQuery.data || [],
+    popularBooks: uniqueBooks.slice(0, 12),
     recommendations: recommendationsQuery.data || [],
     isBooksLoading: booksQuery.isLoading,
     isBooksFetching: booksQuery.isFetching,
@@ -67,15 +62,15 @@ export function useExploreCatalog(token?: string | null): UseExploreCatalogResul
     isCategoriesLoading: categoriesQuery.isLoading,
     isCategoriesFetching: categoriesQuery.isFetching,
     isCategoriesError: categoriesQuery.isError,
-    isPopularBooksLoading: popularBooksQuery.isLoading,
-    isPopularBooksFetching: popularBooksQuery.isFetching,
-    isPopularBooksError: popularBooksQuery.isError,
+    isPopularBooksLoading: booksQuery.isLoading,
+    isPopularBooksFetching: booksQuery.isFetching,
+    isPopularBooksError: booksQuery.isError,
     isRecommendationsLoading: recommendationsQuery.isLoading,
     isRecommendationsFetching: recommendationsQuery.isFetching,
     isRecommendationsError: recommendationsQuery.isError,
     refetchBooks: () => void booksQuery.refetch(),
     refetchCategories: () => void categoriesQuery.refetch(),
-    refetchPopularBooks: () => void popularBooksQuery.refetch(),
+    refetchPopularBooks: () => void booksQuery.refetch(),
     refetchRecommendations: () => void recommendationsQuery.refetch(),
   };
 }

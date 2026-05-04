@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -14,11 +14,18 @@ import {
 import { useBookActions } from "../hooks/useBookActions";
 import { useBookPageData } from "../hooks/useBookPageData";
 import type { BookRouteParams } from "../../../routes/paths";
+import type { ReadingList } from "../../collections/types/collection";
+
+function findReadingListByType(
+  collections: ReadingList[] | undefined,
+  type: "todo" | "doing" | "done"
+): ReadingList | undefined {
+  return collections?.find((collection) => collection.type === type);
+}
 
 export default function BookPage(): ReactElement {
   const { id } = useParams<BookRouteParams>();
   const { token } = useOptionalAuth();
-  const [listId, setListId] = useState<number | null>(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -39,9 +46,14 @@ export default function BookPage(): ReactElement {
     refetchReviews,
     refetchRatings,
   } = useBookPageData(id, token);
+  const libraryList = findReadingListByType(collections, "todo")
+    ?? collections?.find((collection) => collection.type !== "done")
+    ?? collections?.[0];
+  const completedList = findReadingListByType(collections, "done");
   const bookActions = useBookActions({
     id,
-    listId,
+    libraryListId: libraryList?.list_id ?? null,
+    completedListId: completedList?.list_id ?? null,
     rating,
     reviewText,
     token,
@@ -51,17 +63,17 @@ export default function BookPage(): ReactElement {
     },
   });
 
-  useEffect(() => {
-    const firstCollection = collections?.[0];
-    if (firstCollection) {
-      setListId(firstCollection.list_id);
-    }
-  }, [collections]);
-
   const handleSubmitReview = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (!reviewText.trim() || !rating) {
-      toast.error("Add a rating and review before submitting.");
+    const hasReviewText = Boolean(reviewText.trim());
+
+    if (!rating) {
+      toast.error("Choose a rating before submitting.");
+      return;
+    }
+
+    if (!hasReviewText) {
+      bookActions.submitRating();
       return;
     }
 
@@ -90,8 +102,11 @@ export default function BookPage(): ReactElement {
         isDescriptionExpanded={isDescriptionExpanded}
         coverFailed={coverFailed}
         isAddPending={bookActions.isAddingBook}
-        canAddToList={Boolean(listId)}
+        isMarkReadPending={bookActions.isMarkingAsRead}
+        canAddToList={Boolean(libraryList)}
+        canMarkAsRead={Boolean(completedList)}
         onAddBook={bookActions.addBook}
+        onMarkAsRead={bookActions.markAsRead}
         onToggleDescription={() => setIsDescriptionExpanded((current) => !current)}
         onCoverError={() => setCoverFailed(true)}
       />
@@ -99,6 +114,7 @@ export default function BookPage(): ReactElement {
         rating={rating}
         reviewText={reviewText}
         isSubmitting={bookActions.isSubmittingReview}
+        submitLabel={reviewText.trim() ? "Submit Review" : "Save Rating"}
         onRatingChange={setRating}
         onReviewTextChange={setReviewText}
         onSubmit={handleSubmitReview}
