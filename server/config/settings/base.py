@@ -267,6 +267,27 @@ AUTHENTICATION_BACKENDS = (
 # BookNest runs on MariaDB by design, so this backend-specific warning is expected.
 SILENCED_SYSTEM_CHECKS = ["models.W036"]
 
+
+def _server_path(value):
+    path = Path(value)
+    if not path.is_absolute():
+        path = BASE_DIR / path
+    return path
+
+
+LOG_DIR = _server_path(os.environ.get("DJANGO_LOG_DIR", "logs"))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _log_file_path(env_name, filename):
+    configured_path = os.environ.get(env_name)
+    if configured_path:
+        path = _server_path(configured_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return str(path)
+    return str(LOG_DIR / filename)
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -289,13 +310,13 @@ LOGGING = {
         "file": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": "django_debug.log",  # Will be created in your project root
+            "filename": _log_file_path("DJANGO_LOG_FILE", "django_debug.log"),
             "formatter": "verbose",
         },
         "recommendation_file": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": "recommendation.log",  # Will be created in your project root
+            "filename": _log_file_path("RECOMMENDATION_LOG_FILE", "recommendation.log"),
             "formatter": "verbose",
         },
     },

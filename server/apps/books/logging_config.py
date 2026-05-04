@@ -1,11 +1,12 @@
 import logging
 import logging.handlers
-import os
 from datetime import datetime
+from pathlib import Path
 
-# Create logs directory if it doesn't exist
-LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
-os.makedirs(LOGS_DIR, exist_ok=True)
+from django.conf import settings
+
+LOGS_DIR = Path(settings.BASE_DIR) / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Configure logging format
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -16,7 +17,7 @@ formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
 
 # Create handlers
 # File handler for all logs
-all_logs_file = os.path.join(LOGS_DIR, f'booknest_{datetime.now().strftime("%Y%m%d")}.log')
+all_logs_file = LOGS_DIR / f'booknest_{datetime.now().strftime("%Y%m%d")}.log'
 all_logs_handler = logging.handlers.RotatingFileHandler(
     all_logs_file,
     maxBytes=10*1024*1024,  # 10MB
@@ -25,7 +26,7 @@ all_logs_handler = logging.handlers.RotatingFileHandler(
 all_logs_handler.setFormatter(formatter)
 
 # File handler for errors
-error_logs_file = os.path.join(LOGS_DIR, f'booknest_errors_{datetime.now().strftime("%Y%m%d")}.log')
+error_logs_file = LOGS_DIR / f'booknest_errors_{datetime.now().strftime("%Y%m%d")}.log'
 error_logs_handler = logging.handlers.RotatingFileHandler(
     error_logs_file,
     maxBytes=10*1024*1024,  # 10MB

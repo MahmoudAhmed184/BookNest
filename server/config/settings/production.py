@@ -42,15 +42,3 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-LOG_DIR = Path(os.environ.get('DJANGO_LOG_DIR', BASE_DIR / 'logs'))
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-LOGGING['handlers']['file']['filename'] = os.environ.get(
-    'DJANGO_LOG_FILE',
-    str(LOG_DIR / 'django_debug.log'),
-)
-LOGGING['handlers']['recommendation_file']['filename'] = os.environ.get(
-    'RECOMMENDATION_LOG_FILE',
-    str(LOG_DIR / 'recommendation.log'),
-)
