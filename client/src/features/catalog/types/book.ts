@@ -21,6 +21,8 @@ export interface Book {
   reviews_count?: number;
   language?: string | null;
   source?: string | null;
+  moods?: string[];
+  pace?: string | null;
 }
 
 export interface BookSearchResponse {

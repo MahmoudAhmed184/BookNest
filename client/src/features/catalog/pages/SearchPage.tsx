@@ -9,7 +9,36 @@ import {
 import { useSearchBooks } from "../hooks/useSearchBooks";
 import { routeBuilders, type SearchRouteParams } from "../../../routes/paths";
 
-const searchScrollKey = "booknest:search-scroll";
+const searchScrollKey = "bookNestSearchScroll";
+
+function getSearchScrollPosition(): number | null {
+  const state: unknown = window.history.state;
+
+  if (!state || typeof state !== "object") return null;
+
+  const value = (state as Record<string, unknown>)[searchScrollKey];
+  return typeof value === "number" ? value : null;
+}
+
+function saveSearchScrollPosition(position: number): void {
+  const state: unknown = window.history.state;
+  const currentState = state && typeof state === "object"
+    ? (state as Record<string, unknown>)
+    : {};
+
+  window.history.replaceState(
+    { ...currentState, [searchScrollKey]: position },
+    ""
+  );
+}
+
+function clearSearchScrollPosition(): void {
+  const state: unknown = window.history.state;
+  if (!state || typeof state !== "object") return;
+
+  const { [searchScrollKey]: _removed, ...nextState } = state as Record<string, unknown>;
+  window.history.replaceState(nextState, "");
+}
 
 export default function Search(): ReactElement {
   const { query } = useParams<SearchRouteParams>();
@@ -27,7 +56,7 @@ export default function Search(): ReactElement {
   const uniqueBooks = useMemo(
     () =>
       books.filter(
-        (book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
+        (_book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
       ),
     [books]
   );
@@ -55,12 +84,12 @@ export default function Search(): ReactElement {
   }, [searchInput]);
 
   useEffect(() => {
-    const savedPosition = sessionStorage.getItem(searchScrollKey);
-    if (!savedPosition) return;
+    const savedPosition = getSearchScrollPosition();
+    if (savedPosition === null) return;
 
     window.requestAnimationFrame(() => {
-      window.scrollTo(0, Number(savedPosition));
-      sessionStorage.removeItem(searchScrollKey);
+      window.scrollTo(0, savedPosition);
+      clearSearchScrollPosition();
     });
   }, []);
 
@@ -80,13 +109,13 @@ export default function Search(): ReactElement {
   };
 
   const rememberScroll = (): void => {
-    sessionStorage.setItem(searchScrollKey, String(window.scrollY));
+    saveSearchScrollPosition(window.scrollY);
   };
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+        <h1 className="display-heading">
           Search Books
         </h1>
         <p className="max-w-2xl text-sm text-primary-gray leading-relaxed">

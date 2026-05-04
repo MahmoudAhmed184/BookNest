@@ -9,7 +9,7 @@ export default function PublicFeed(): ReactElement {
   return (
     <div className="py-12 flex flex-col gap-8 animate-fade-up">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+        <h1 className="display-heading">
           Public Feed
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">

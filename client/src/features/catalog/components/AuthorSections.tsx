@@ -19,7 +19,7 @@ export function AuthorHeader({
 }: AuthorHeaderProps): ReactElement {
   return (
     <section className="flex flex-col items-center gap-6 md:flex-row md:items-end">
-      <div className="w-64 aspect-square overflow-hidden rounded-xl bg-secondary-black shadow-xl">
+      <div className="aspect-square w-64 overflow-hidden rounded-xl bg-secondary-black shadow-xl">
         <img
           src={profileImage}
           alt="Portrait of William Shakespeare"
@@ -31,7 +31,7 @@ export function AuthorHeader({
         />
       </div>
       <div className="flex flex-col items-center gap-4 md:items-start">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+        <h1 className="display-heading text-4xl md:text-5xl">
           William Shakespeare
         </h1>
         <button
@@ -107,12 +107,13 @@ export function AuthorBooks({ books }: AuthorBooksProps): ReactElement {
         >
           {books.map((book) => (
             <SwiperSlide key={book.isbn13}>
-              <BookCard
+            <BookCard
                 to={routeBuilders.book(book.isbn13)}
                 title={book.title}
                 author={book.author}
                 coverSrc={book.cover_img}
                 rating={book.average_rate}
+                variant="trending"
               />
             </SwiperSlide>
           ))}

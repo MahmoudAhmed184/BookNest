@@ -2,18 +2,8 @@ import { useState, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import { routeBuilders } from "../../../routes/paths";
+import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
 import type { FeedActivity } from "../data/feedData";
-
-function getInitials(value: string): string {
-  return (
-    value
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "BN"
-  );
-}
 
 interface ActivityCoverProps {
   src: string;
@@ -25,7 +15,10 @@ function ActivityCover({ src, title }: ActivityCoverProps): ReactElement {
 
   if (failed || !src) {
     return (
-      <div className="flex aspect-[2/3] h-[120px] w-[80px] shrink-0 items-center justify-center rounded-xl bg-secondary-gray px-2 text-center text-lg font-semibold text-primary-white">
+      <div
+        className="fallback-gradient flex aspect-[2/3] h-[120px] w-[80px] shrink-0 items-center justify-center rounded-xl px-2 text-center text-lg font-bold text-primary-white"
+        style={getFallbackHueStyle(title)}
+      >
         <span aria-hidden="true">{getInitials(title)}</span>
         <span className="sr-only">Cover unavailable for {title}</span>
       </div>
@@ -36,7 +29,7 @@ function ActivityCover({ src, title }: ActivityCoverProps): ReactElement {
     <img
       src={src}
       alt={`Cover of ${title}`}
-      className="aspect-[2/3] h-[120px] w-[80px] shrink-0 rounded-xl object-cover shadow-md transition-transform duration-200 ease-out in-hover:-translate-y-1"
+      className="aspect-[2/3] h-[120px] w-[80px] shrink-0 rounded-xl object-cover shadow-md transition-transform duration-200 ease-out group-hover:-translate-y-1"
       width="80"
       height="120"
       loading="lazy"
@@ -59,11 +52,14 @@ export function FeedActivityList({
         <Link
           key={activity.id}
           to={routeBuilders.book(activity.book.id)}
-          className="group grid grid-cols-[1fr_auto] items-center gap-4 rounded-xl bg-secondary-black p-4 text-primary-white shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl [will-change:transform]"
+          className="glass-card card-lift group grid grid-cols-[1fr_auto] items-center gap-4 p-4 text-primary-white"
           aria-label={`${activity.username} ${activity.action} ${activity.book.title}`}
         >
           <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-black text-sm font-semibold text-primary-white">
+            <div
+              className="fallback-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-primary-white"
+              style={getFallbackHueStyle(activity.username)}
+            >
               {getInitials(activity.username)}
             </div>
             <div className="min-w-0">

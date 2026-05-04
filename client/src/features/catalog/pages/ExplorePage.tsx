@@ -1,18 +1,30 @@
-import type { ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import {
   ExploreBooksSection,
   GenreCarousel,
   PopularBooksGrid,
   RecommendationsSection,
 } from "../components/ExploreSections";
+import { FilterSidebar } from "../components/FilterSidebar";
 import {
   exploreCategories,
   popularBooks,
 } from "../data/exploreData";
 import { useExploreCatalog } from "../hooks/useExploreCatalog";
+import type { CatalogFilters } from "../types/filters";
+import { filterBooksByCatalogFilters } from "../utils/bookFacets";
+
+const initialFilters: CatalogFilters = {
+  genres: [],
+  moods: [],
+  pace: [],
+};
 
 export default function Explore(): ReactElement {
+  const { token } = useOptionalAuth();
+  const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
   const {
     books,
     recommendations,
@@ -24,12 +36,20 @@ export default function Explore(): ReactElement {
     isRecommendationsError,
     refetchBooks,
     refetchRecommendations,
-  } = useExploreCatalog();
+  } = useExploreCatalog(token);
+  const filteredBooks = useMemo(
+    () => filterBooksByCatalogFilters(books, filters),
+    [books, filters]
+  );
+  const genreOptions = useMemo(
+    () => exploreCategories.slice(0, 10).map((category) => category.title),
+    []
+  );
 
   return (
     <div className="flex flex-col gap-12 py-12 animate-fade-up">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+        <h1 className="display-heading">
           Explore
         </h1>
         <p className="max-w-2xl text-sm text-primary-gray leading-relaxed">
@@ -46,13 +66,21 @@ export default function Explore(): ReactElement {
         isError={isRecommendationsError}
         onRetry={refetchRecommendations}
       />
-      <ExploreBooksSection
-        books={books}
-        isLoading={isBooksLoading}
-        isFetching={isBooksFetching}
-        isError={isBooksError}
-        onRetry={refetchBooks}
-      />
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        <FilterSidebar
+          filters={filters}
+          genreOptions={genreOptions}
+          resultCount={filteredBooks.length}
+          onChange={setFilters}
+        />
+        <ExploreBooksSection
+          books={filteredBooks}
+          isLoading={isBooksLoading}
+          isFetching={isBooksFetching}
+          isError={isBooksError}
+          onRetry={refetchBooks}
+        />
+      </div>
       <PopularBooksGrid books={popularBooks} />
     </div>
   );
