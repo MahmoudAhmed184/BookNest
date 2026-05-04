@@ -2,8 +2,10 @@ import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import { routePaths } from "../../../routes/paths";
 import {
+  CollectionsShelf,
   ProfileBio,
   ProfileBooksSection,
   ProfileHeader,
@@ -15,6 +17,7 @@ import { useProfileActions } from "../hooks/useProfileActions";
 import { useProfilePageData } from "../hooks/useProfilePageData";
 
 export default function Profile(): ReactElement {
+  const { token } = useOptionalAuth();
   const {
     user,
     reviews,
@@ -34,8 +37,8 @@ export default function Profile(): ReactElement {
     refetchReviews,
     refetchRatings,
     refetchCollections,
-  } = useProfilePageData();
-  const profileActions = useProfileActions();
+  } = useProfilePageData(token);
+  const profileActions = useProfileActions(token);
 
   if (isUserLoading || isCollectionsLoading) return <ProfileSkeleton />;
 
@@ -58,6 +61,7 @@ export default function Profile(): ReactElement {
   const primaryCollection = collections?.[0];
   const books = primaryCollection?.books || [];
   const bookCount = books.length || primaryCollection?.book_count || 0;
+  const favoriteGenre = books[0]?.genres?.[0] ?? "Eclectic";
 
   return (
     <div className="flex flex-col gap-12 py-12 animate-fade-up">
@@ -77,8 +81,10 @@ export default function Profile(): ReactElement {
         bookCount={bookCount}
         reviewCount={reviews?.length ?? 0}
         ratingCount={ratings?.length ?? 0}
+        favoriteGenre={favoriteGenre}
       />
       <ProfileBio bio={user.bio} />
+      <CollectionsShelf collections={collections} />
       <ProfileBooksSection
         title="My Books"
         books={books}

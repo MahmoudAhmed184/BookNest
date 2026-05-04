@@ -2,7 +2,9 @@ import { useState, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import {
+  CollectionsShelf,
   ProfileBio,
   ProfileBooksSection,
   ProfileHeader,
@@ -15,6 +17,7 @@ import type { UserProfileRouteParams } from "../../../routes/paths";
 
 export default function UserProfile(): ReactElement {
   const { id } = useParams<UserProfileRouteParams>();
+  const { token } = useOptionalAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const {
     user,
@@ -35,7 +38,7 @@ export default function UserProfile(): ReactElement {
     refetchReviews,
     refetchRatings,
     refetchCollections,
-  } = useUserProfilePageData(id);
+  } = useUserProfilePageData(id, token);
 
   if (isUserLoading || isCollectionsLoading) return <ProfileSkeleton />;
 
@@ -57,6 +60,7 @@ export default function UserProfile(): ReactElement {
 
   const primaryCollection = collections?.[0];
   const books = primaryCollection?.books || [];
+  const favoriteGenre = books[0]?.genres?.[0] ?? "Eclectic";
 
   return (
     <div className="flex flex-col gap-12 py-12 animate-fade-up">
@@ -81,8 +85,10 @@ export default function UserProfile(): ReactElement {
         bookCount={books.length || primaryCollection?.book_count || 0}
         reviewCount={reviews?.length ?? 0}
         ratingCount={ratings?.length ?? 0}
+        favoriteGenre={favoriteGenre}
       />
       <ProfileBio bio={user.bio} />
+      <CollectionsShelf collections={collections} />
       <ProfileBooksSection
         title="Books"
         books={books}
