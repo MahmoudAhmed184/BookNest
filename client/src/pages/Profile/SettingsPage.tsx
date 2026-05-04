@@ -157,7 +157,7 @@ export default function Settings() {
               )}
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-primary-white text-xs font-medium">
                   Change Picture
                 </span>
