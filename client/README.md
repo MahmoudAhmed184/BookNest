@@ -81,73 +81,65 @@ export const API_BASE_URL = "http://localhost:8000";
 
 ```text
 src/
+|-- app/
+|   |-- App.tsx
+|   `-- providers.tsx
 |-- assets/
-|   |-- .gitkeep
-|   `-- react.svg
 |-- components/
-|   |-- BookCard.tsx
-|   |-- BookCardSkeleton.tsx
-|   |-- EmptyState.tsx
-|   |-- ErrorBoundary.tsx
-|   |-- ErrorState.tsx
-|   |-- FieldError.tsx
-|   |-- Footer.tsx
-|   |-- InlineSpinner.tsx
-|   `-- Navbar.tsx
+|   |-- layout/
+|   |   |-- ErrorBoundary/
+|   |   |-- Footer/
+|   |   |-- Layout/
+|   |   `-- Navbar/
+|   `-- ui/
+|       |-- BookCard/
+|       |-- BookCardSkeleton/
+|       |-- EmptyState/
+|       |-- ErrorState/
+|       |-- FieldError/
+|       `-- InlineSpinner/
 |-- config/
-|   `-- index.ts
+|   `-- env.ts
 |-- features/
 |   |-- auth/
+|   |   |-- components/
+|   |   |-- hooks/
+|   |   |-- pages/
+|   |   |-- services/
+|   |   |-- store/
+|   |   |-- types/
+|   |   `-- index.ts
 |   |-- catalog/
-|   `-- profile/
+|   |   |-- components/
+|   |   |-- data/
+|   |   |-- hooks/
+|   |   |-- pages/
+|   |   |-- services/
+|   |   |-- types/
+|   |   `-- index.ts
+|   |-- collections/
+|   |-- errors/
+|   |-- home/
+|   |-- notifications/
+|   |-- profile/
+|   `-- settings/
 |-- hooks/
-|-- layouts/
-|   `-- Layout.tsx
-|-- pages/
-|   |-- Auth/
-|   |   |-- LoginPage.tsx
-|   |   |-- RegisterPage.tsx
-|   |   `-- ResetPasswordPage.tsx
-|   |-- Catalog/
-|   |   |-- AuthorPage.tsx
-|   |   |-- BookPage.tsx
-|   |   |-- CategoriesPage.tsx
-|   |   |-- ExplorePage.tsx
-|   |   |-- FeedPage.tsx
-|   |   `-- SearchPage.tsx
-|   |-- Errors/
-|   |   `-- NotFoundPage.tsx
-|   |-- Home/
-|   |   |-- LandingPage.test.tsx
-|   |   `-- LandingPage.tsx
-|   `-- Profile/
-|       |-- NotificationsPage.tsx
-|       |-- ProfilePage.tsx
-|       |-- SettingsPage.tsx
-|       `-- UserProfilePage.tsx
+|-- lib/
+|   |-- axios.ts
+|   `-- queryClient.ts
+|-- routes/
+|   |-- AppRouter.tsx
+|   |-- index.ts
+|   `-- paths.ts
 |-- services/
-|   |-- apiClient.ts
-|   |-- authService.ts
-|   |-- bookService.ts
-|   |-- collectionService.ts
-|   |-- notificationService.ts
-|   `-- userService.ts
 |-- store/
-|   `-- AuthContext.tsx
 |-- styles/
 |   |-- App.css
 |   `-- index.css
 |-- types/
-|   |-- api.ts
-|   |-- auth.ts
-|   |-- book.ts
-|   |-- collection.ts
-|   |-- notification.ts
-|   `-- user.ts
+|   `-- api.ts
 |-- utils/
-|-- app.tsx
-|-- index.tsx
-|-- router.tsx
+|-- main.tsx
 `-- vite-env.d.ts
 ```
 
@@ -155,10 +147,11 @@ src/
 
 ### Application Entry
 
-- `src/index.tsx` mounts the app with React DOM `createRoot`.
-- `src/app.tsx` returns the router.
-- `src/router.tsx` owns the route table and lazy-loads page modules through React `lazy` and `Suspense`.
-- `src/layouts/Layout.tsx` provides the persistent shell with `Navbar`, global toast configuration, an error boundary, page outlet, and `Footer`.
+- `src/main.tsx` mounts the app with React DOM `createRoot`.
+- `src/app/App.tsx` returns the router.
+- `src/app/providers.tsx` composes application providers.
+- `src/routes/AppRouter.tsx` owns the React Router DOM route table and lazy-loads page modules through React `lazy` and `Suspense`.
+- `src/components/layout/Layout/Layout.tsx` provides the persistent shell with `Navbar`, global toast configuration, an error boundary, page outlet, and `Footer`.
 
 ### Routing
 
@@ -166,41 +159,40 @@ Current routes:
 
 | Path | Page |
 | --- | --- |
-| `/` | `pages/Home/LandingPage.tsx` |
-| `/login` | `pages/Auth/LoginPage.tsx` |
-| `/register` | `pages/Auth/RegisterPage.tsx` |
-| `/resetpassword` | `pages/Auth/ResetPasswordPage.tsx` |
-| `/explore` | `pages/Catalog/ExplorePage.tsx` |
-| `/search` | `pages/Catalog/SearchPage.tsx` |
-| `/search/:query` | `pages/Catalog/SearchPage.tsx` |
-| `/author` | `pages/Catalog/AuthorPage.tsx` |
-| `/profile/me` | `pages/Profile/ProfilePage.tsx` |
-| `/profile/:id` | `pages/Profile/UserProfilePage.tsx` |
-| `/categories` | `pages/Catalog/CategoriesPage.tsx` |
-| `/feed` | `pages/Catalog/FeedPage.tsx` |
-| `/settings` | `pages/Profile/SettingsPage.tsx` |
-| `/book/:id` | `pages/Catalog/BookPage.tsx` |
-| `/notifications` | `pages/Profile/NotificationsPage.tsx` |
-| `*` | `pages/Errors/NotFoundPage.tsx` |
+| `/` | `features/home/pages/LandingPage.tsx` |
+| `/login` | `features/auth/pages/LoginPage.tsx` |
+| `/register` | `features/auth/pages/RegisterPage.tsx` |
+| `/resetpassword` | `features/auth/pages/ResetPasswordPage.tsx` |
+| `/explore` | `features/catalog/pages/ExplorePage.tsx` |
+| `/search` | `features/catalog/pages/SearchPage.tsx` |
+| `/search/:query` | `features/catalog/pages/SearchPage.tsx` |
+| `/author` | `features/catalog/pages/AuthorPage.tsx` |
+| `/profile/me` | `features/profile/pages/ProfilePage.tsx` |
+| `/profile/:id` | `features/profile/pages/UserProfilePage.tsx` |
+| `/categories` | `features/catalog/pages/CategoriesPage.tsx` |
+| `/feed` | `features/catalog/pages/FeedPage.tsx` |
+| `/settings` | `features/settings/pages/SettingsPage.tsx` |
+| `/book/:id` | `features/catalog/pages/BookPage.tsx` |
+| `/notifications` | `features/notifications/pages/NotificationsPage.tsx` |
+| `*` | `features/errors/pages/NotFoundPage.tsx` |
 
-The route path union in `src/router.tsx` keeps route definitions typed and centralized.
+Route paths and builders live in `src/routes/paths.ts`. Routing uses React Router DOM; the project does not use TanStack Router or generated route trees.
 
 ### API Layer
 
-All Axios calls are isolated under `src/services/`.
+Axios setup and typed request helpers live in `src/lib/axios.ts`. Domain API calls live with their feature.
 
-- `apiClient.ts` creates the shared Axios client and typed helpers.
-- `authService.ts` handles login, registration, and profile creation calls.
-- `bookService.ts` handles book, category, author, search, feed, and interaction calls.
-- `collectionService.ts` handles reading collections.
-- `notificationService.ts` handles notifications.
-- `userService.ts` handles profile and settings requests.
+- `features/auth/services/authService.ts` handles login, registration, and profile creation calls.
+- `features/catalog/services/bookService.ts` handles book, search, review, rating, and recommendation calls.
+- `features/collections/services/collectionService.ts` handles reading collections.
+- `features/notifications/services/notificationService.ts` handles notifications.
+- `features/profile/services/userService.ts` handles profile and settings-backed user requests.
 
-Shared request and response contracts live under `src/types/`. Service files avoid `any`; unknown API errors are narrowed through helper functions in `apiClient.ts`.
+Shared API envelopes live under `src/types/`. Feature-specific request and response contracts live under `features/{domain}/types/`. Service files avoid `any`; unknown API errors are narrowed through helper functions in `src/lib/axios.ts`.
 
 ### State
 
-Global frontend state currently lives in `src/store/AuthContext.tsx`.
+Auth state lives in `src/features/auth/store/AuthContext.tsx`. The root `src/store/` folder is reserved for cross-feature client state only.
 
 The auth context tracks:
 
@@ -209,7 +201,7 @@ The auth context tracks:
 - login state updates
 - logout behavior
 
-The token is read from and written to `localStorage`. Authenticated service calls use bearer headers from `apiClient.ts`.
+The token is read from and written to `localStorage`. Authenticated service calls use bearer headers from `src/lib/axios.ts`.
 
 ### UI and Styling
 
@@ -217,7 +209,7 @@ Styling is split between:
 
 - `src/styles/index.css`: Tailwind v4 theme tokens, global element styles, theme utilities, and shared visual primitives.
 - `src/styles/App.css`: reserved stylesheet placeholder retained from the existing project.
-- `@fontsource/montserrat`: local font package imports in `src/index.tsx`.
+- `@fontsource/montserrat`: local font package imports in `src/main.tsx`.
 
 Tailwind configuration is CSS-first through `@theme` and `@utility` in `src/styles/index.css`. The current palette is defined there and should not be duplicated or changed in page files.
 
@@ -245,10 +237,14 @@ Data-backed pages use TanStack Query loading, fetching, error, and retry states 
 
 The frontend uses Vitest with jsdom and React Testing Library.
 
-Current test file:
+Current test files:
 
 ```text
-src/pages/Home/LandingPage.test.tsx
+src/features/home/pages/LandingPage.test.tsx
+src/features/auth/hooks/authHooks.test.tsx
+src/features/catalog/hooks/catalogHooks.test.tsx
+src/features/profile/hooks/profileHooks.test.tsx
+src/test/QueryBackedPages.test.tsx
 ```
 
 Run tests:
@@ -299,17 +295,18 @@ The production build is emitted to `dist/`.
 
 ## Development Conventions
 
-- Keep reusable, generic UI in `src/components/`.
-- Keep route-level views in `src/pages/`, grouped by domain.
-- Keep domain-specific implementation details in `src/features/{domain}/`.
-- Keep API calls in `src/services/`; keep shared data contracts in `src/types/`.
-- Keep global state in `src/store/`.
+- Keep reusable, generic UI in `src/components/ui/`.
+- Keep app shell components in `src/components/layout/`.
+- Keep route-level views inside `src/features/{domain}/pages/`.
+- Keep domain-specific hooks, services, types, data, and components in `src/features/{domain}/`.
+- Keep shared infrastructure wrappers in `src/lib/`.
+- Keep root `src/services/`, `src/store/`, `src/hooks/`, and `src/types/` for cross-feature concerns only.
 - Keep app-level config in `src/config/`.
 - Prefer typed `Props` interfaces and explicit component return types.
 - Avoid `any`; use `unknown` with runtime narrowing when a value is genuinely unknown.
 - Use shared `BookCard`, `BookCardSkeleton`, `EmptyState`, `ErrorState`, `FieldError`, and `InlineSpinner` before adding page-local variants.
 - Preserve the existing color palette in `src/styles/index.css`; do not introduce one-off hex colors in page markup.
-- Keep API calls in `src/services/`; UI pages should consume existing service functions through TanStack Query or mutations.
+- Keep API calls in feature services; UI pages should consume existing service functions through TanStack Query hooks or mutations.
 
 ## Troubleshooting
 

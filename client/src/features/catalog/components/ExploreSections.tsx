@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { A11y, Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { BookCard } from "../../../components/BookCard";
-import { BookCardSkeleton } from "../../../components/BookCardSkeleton";
-import { EmptyState } from "../../../components/EmptyState";
-import { ErrorState } from "../../../components/ErrorState";
-import { routeBuilders, routePaths } from "../../../routes";
-import type { Book, RecommendedBook } from "../../../types/book";
+import {
+  BookCard,
+  BookCardSkeleton,
+  EmptyState,
+  ErrorState,
+} from "../../../components/ui";
+import { routeBuilders, routePaths } from "../../../routes/paths";
+import type { Book, RecommendedBook } from "../types/book";
 import type { CatalogCategory } from "../data/exploreData";
 
 interface SectionTitleProps {

@@ -2,10 +2,9 @@ import type { ReactElement } from "react";
 import { A11y, Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { BookCard } from "../../../components/BookCard";
-import { EmptyState } from "../../../components/EmptyState";
-import { routeBuilders, routePaths } from "../../../routes";
-import type { Book } from "../../../types/book";
+import { BookCard, EmptyState } from "../../../components/ui";
+import { routeBuilders, routePaths } from "../../../routes/paths";
+import type { Book } from "../types/book";
 
 interface AuthorHeaderProps {
   isLiked: boolean;

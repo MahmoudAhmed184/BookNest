@@ -1,36 +1,36 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getCollections, getUserCollections } from "../../../services/collectionService";
-import { getNotifications } from "../../../services/notificationService";
+import { getCollections, getUserCollections } from "../../collections/services/collectionService";
+import { getNotifications } from "../../notifications/services/notificationService";
 import {
   getMyProfile,
   getProfile,
   getUserRatings,
   getUserReviews,
-} from "../../../services/userService";
+} from "../services/userService";
 import { createQueryWrapper } from "../../../test/renderHookWithClient";
 import { useNavbarProfile } from "./useNavbarProfile";
-import { useNotifications } from "./useNotifications";
+import { useNotifications } from "../../notifications/hooks/useNotifications";
 import { useProfileActions } from "./useProfileActions";
 import { useProfilePageData } from "./useProfilePageData";
-import { useSettingsProfile } from "./useSettingsProfile";
+import { useSettingsProfile } from "../../settings/hooks/useSettingsProfile";
 import { useUserProfilePageData } from "./useUserProfilePageData";
 
-vi.mock("../../../services/collectionService", () => ({
+vi.mock("../../collections/services/collectionService", () => ({
   getCollections: vi.fn(),
   getUserCollections: vi.fn(),
 }));
 
-vi.mock("../../../services/notificationService", () => ({
+vi.mock("../../notifications/services/notificationService", () => ({
   getNotifications: vi.fn(),
 }));
 
-vi.mock("../../../services/bookService", () => ({
+vi.mock("../../catalog/services/bookService", () => ({
   deleteBook: vi.fn(),
 }));
 
-vi.mock("../../../services/userService", () => ({
+vi.mock("../services/userService", () => ({
   deleteReview: vi.fn(),
   getMyProfile: vi.fn(),
   getProfile: vi.fn(),

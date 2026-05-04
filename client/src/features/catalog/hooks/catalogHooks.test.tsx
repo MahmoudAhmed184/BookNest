@@ -8,14 +8,14 @@ import {
   getBooks,
   getRecommendedBooks,
   getReviews,
-} from "../../../services/bookService";
-import { getCollections } from "../../../services/collectionService";
+} from "../services/bookService";
+import { getCollections } from "../../collections/services/collectionService";
 import { useBookActions } from "./useBookActions";
 import { useBookPageData } from "./useBookPageData";
 import { useExploreCatalog } from "./useExploreCatalog";
 import { useSearchBooks } from "./useSearchBooks";
 
-vi.mock("../../../services/bookService", () => ({
+vi.mock("../services/bookService", () => ({
   createRating: vi.fn(),
   createReview: vi.fn(),
   getBook: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock("../../../services/bookService", () => ({
   searchBooks: vi.fn(),
 }));
 
-vi.mock("../../../services/collectionService", () => ({
+vi.mock("../../collections/services/collectionService", () => ({
   addToCollection: vi.fn(),
   getCollections: vi.fn(),
 }));
@@ -50,7 +50,7 @@ describe("catalog hooks", () => {
   });
 
   it("loads search results", async () => {
-    const { searchBooks } = await import("../../../services/bookService");
+    const { searchBooks } = await import("../services/bookService");
     vi.mocked(searchBooks).mockResolvedValue({
       results: [{ isbn13: "2", title: "Search Result" }],
     });

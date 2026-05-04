@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 import {
   createRating,
   createReview,
-} from "../../../services/bookService";
-import { addToCollection } from "../../../services/collectionService";
+} from "../services/bookService";
+import { addToCollection } from "../../collections/services/collectionService";
 import { catalogKeys } from "./catalog.keys";
 
 interface UseBookActionsOptions {

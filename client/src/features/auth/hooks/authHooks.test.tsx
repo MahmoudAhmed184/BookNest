@@ -4,11 +4,11 @@ import { renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
-import { AuthContext } from "../../../store/AuthContext";
+import { AuthContext } from "../store/AuthContext";
 import { useLoginMutation } from "./useLoginMutation";
 import { useRegisterMutation } from "./useRegisterMutation";
 
-vi.mock("../../../services/authService", () => ({
+vi.mock("../services/authService", () => ({
   createProfile: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),

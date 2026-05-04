@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
-import { routeBuilders } from "../../../routes";
+import { routeBuilders } from "../../../routes/paths";
 import type { FeedActivity } from "../data/feedData";
 
 function getInitials(value: string): string {

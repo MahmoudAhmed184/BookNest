@@ -3,14 +3,11 @@ import { Link } from "react-router-dom";
 import { A11y, Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { BookCard } from "../../../components/BookCard";
-import { EmptyState } from "../../../components/EmptyState";
-import { ErrorState } from "../../../components/ErrorState";
-import { InlineSpinner } from "../../../components/InlineSpinner";
-import { routeBuilders, routePaths } from "../../../routes";
-import type { Book, BookRating, BookReview } from "../../../types/book";
-import type { ReadingList } from "../../../types/collection";
-import type { UserProfile } from "../../../types/user";
+import { BookCard, EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
+import { routeBuilders, routePaths } from "../../../routes/paths";
+import type { Book, BookRating, BookReview } from "../../catalog/types/book";
+import type { ReadingList } from "../../collections/types/collection";
+import type { UserProfile } from "../types/user";
 
 export function resolveProfileImage(src?: string | null): string | undefined {
   if (!src) return undefined;

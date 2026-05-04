@@ -1,8 +1,7 @@
 import type { ChangeEventHandler, FocusEventHandler, ReactElement } from "react";
 import { Link } from "react-router-dom";
 
-import { FieldError } from "../../../components/FieldError";
-import { InlineSpinner } from "../../../components/InlineSpinner";
+import { FieldError, InlineSpinner } from "../../../components/ui";
 
 interface PasswordToggleIconProps {
   className?: string | undefined;

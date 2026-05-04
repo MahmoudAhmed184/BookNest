@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { searchBooks } from "../../../services/bookService";
-import type { Book } from "../../../types/book";
+import { searchBooks } from "../services/bookService";
+import type { Book } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 
 interface UseSearchBooksResult {

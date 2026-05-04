@@ -6,8 +6,8 @@ import type {
   EmailResetPayload,
   OtpResetPayload,
   PasswordResetPayload,
-} from "../../../types/auth";
-import { routePaths } from "../../../routes";
+} from "../types/auth";
+import { routePaths } from "../../../routes/paths";
 import {
   AuthNavLink,
   AuthPasswordField,

@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
-import { deleteBook } from "../../../services/bookService";
-import { deleteReview } from "../../../services/userService";
-import type { DeleteBookPayload } from "../../../types/book";
+import { deleteBook } from "../../catalog/services/bookService";
+import type { DeleteBookPayload } from "../../catalog/types/book";
+import { deleteReview } from "../services/userService";
 import { profileKeys } from "./profile.keys";
 
 interface UseProfileActionsResult {

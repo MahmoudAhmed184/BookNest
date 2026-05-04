@@ -1,12 +1,14 @@
 import type { FormEvent, ReactElement } from "react";
 
-import { BookCard } from "../../../components/BookCard";
-import { BookCardSkeleton } from "../../../components/BookCardSkeleton";
-import { EmptyState } from "../../../components/EmptyState";
-import { ErrorState } from "../../../components/ErrorState";
-import { InlineSpinner } from "../../../components/InlineSpinner";
-import { routeBuilders, routePaths } from "../../../routes";
-import type { Book } from "../../../types/book";
+import {
+  BookCard,
+  BookCardSkeleton,
+  EmptyState,
+  ErrorState,
+  InlineSpinner,
+} from "../../../components/ui";
+import { routeBuilders, routePaths } from "../../../routes/paths";
+import type { Book } from "../types/book";
 
 export type SortMode = "relevance" | "title";
 

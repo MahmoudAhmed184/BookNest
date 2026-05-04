@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getCollections } from "../../../services/collectionService";
+import { getCollections } from "../../collections/services/collectionService";
 import {
   getMyProfile,
   getUserRatings,
   getUserReviews,
-} from "../../../services/userService";
-import type { BookRating, BookReview } from "../../../types/book";
-import type { ReadingList } from "../../../types/collection";
-import type { UserProfile } from "../../../types/user";
+} from "../services/userService";
+import type { BookRating, BookReview } from "../../catalog/types/book";
+import type { ReadingList } from "../../collections/types/collection";
+import type { UserProfile } from "../types/user";
 import { profileKeys } from "./profile.keys";
 
 interface UseProfilePageDataResult {

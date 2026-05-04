@@ -1,12 +1,14 @@
 import type { FormEvent, ReactElement } from "react";
 import { Link } from "react-router-dom";
 
-import { BookCardSkeleton } from "../../../components/BookCardSkeleton";
-import { EmptyState } from "../../../components/EmptyState";
-import { ErrorState } from "../../../components/ErrorState";
-import { InlineSpinner } from "../../../components/InlineSpinner";
-import { routeBuilders, routePaths } from "../../../routes";
-import type { Book, BookRating, BookReview } from "../../../types/book";
+import {
+  BookCardSkeleton,
+  EmptyState,
+  ErrorState,
+  InlineSpinner,
+} from "../../../components/ui";
+import { routeBuilders, routePaths } from "../../../routes/paths";
+import type { Book, BookRating, BookReview } from "../types/book";
 
 export function getInitials(value?: string | null): string {
   if (!value) return "BN";

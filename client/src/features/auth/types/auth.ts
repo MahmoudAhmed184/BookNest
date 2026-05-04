@@ -1,0 +1,32 @@
+import type { UserProfile } from "../../profile/types/user";
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password1: string;
+  password2: string;
+}
+
+export interface AuthTokens {
+  access: string;
+  refresh?: string;
+  user?: UserProfile;
+}
+
+export interface EmailResetPayload {
+  email: string;
+}
+
+export interface OtpResetPayload {
+  otp: string;
+}
+
+export interface PasswordResetPayload {
+  password: string;
+  confirmPassword: string;
+}

@@ -4,10 +4,10 @@ import {
   getBook,
   getBookRatings,
   getReviews,
-} from "../../../services/bookService";
-import { getCollections } from "../../../services/collectionService";
-import type { Book, BookRating, BookReview } from "../../../types/book";
-import type { ReadingList } from "../../../types/collection";
+} from "../services/bookService";
+import { getCollections } from "../../collections/services/collectionService";
+import type { ReadingList } from "../../collections/types/collection";
+import type { Book, BookRating, BookReview } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 

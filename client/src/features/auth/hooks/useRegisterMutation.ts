@@ -2,10 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../hooks/useAuth";
-import { routePaths } from "../../../routes";
-import { createProfile, register } from "../../../services/authService";
-import type { RegisterPayload } from "../../../types/auth";
+import { useAuth } from "./useAuth";
+import { routePaths } from "../../../routes/paths";
+import { createProfile, register } from "../services/authService";
+import type { RegisterPayload } from "../types/auth";
 import { authKeys } from "./auth.keys";
 
 interface UseRegisterMutationResult {

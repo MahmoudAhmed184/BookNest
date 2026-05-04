@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getMyProfile } from "../../../services/userService";
-import type { UserProfile } from "../../../types/user";
+import { getMyProfile } from "../services/userService";
+import type { UserProfile } from "../types/user";
 import { profileKeys } from "./profile.keys";
 
 interface UseNavbarProfileResult {
