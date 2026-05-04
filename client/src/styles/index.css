@@ -82,6 +82,41 @@
   padding-inline: 16px;
 }
 
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-up {
+  animation: fadeUp 300ms ease-out both;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 1.4s ease-out infinite;
+  background-image: linear-gradient(
+    90deg,
+    var(--color-secondary-black) 0%,
+    var(--color-secondary-gray) 50%,
+    var(--color-secondary-black) 100%
+  );
+  background-size: 200% 100%;
+}
+
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -109,6 +144,29 @@
 
   body {
     font-family: var(--font-montserrat);
+  }
+
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke,
+      opacity, box-shadow, transform, filter;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   nav,
@@ -166,14 +224,32 @@
       var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
   }
 
+  .btn-accent-v:disabled,
+  .btn-accent-h:disabled,
+  .btn-primary-v:disabled,
+  .btn-primary-h:disabled,
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    filter: none;
+  }
+
   .field {
     border-radius: var(--radius-lg);
+    border-width: 1px;
+    border-color: transparent;
     background-color: var(--color-secondary-black);
+    min-height: 44px;
     padding-block: 8px;
     padding-inline: 16px;
     color: var(--color-primary-gray);
     --tw-outline-style: none;
     outline-style: none;
+    transition:
+      border-color 200ms ease-out,
+      box-shadow 200ms ease-out,
+      color 200ms ease-out,
+      background-color 200ms ease-out;
   }
 
   .field::placeholder {
@@ -272,5 +348,14 @@
 @keyframes l13 {
   100% {
     transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
