@@ -2,6 +2,13 @@ export interface Author {
   author_id?: number;
   name: string;
   number_of_books?: number;
+  description?: string | null;
+}
+
+export interface CatalogGenre {
+  id: number;
+  name: string;
+  description?: string | null;
 }
 
 export interface Book {
@@ -30,6 +37,13 @@ export interface BookSearchResponse {
   next?: string | null;
   previous?: string | null;
   results: Book[];
+}
+
+export interface GenreSearchResponse {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results: CatalogGenre[];
 }
 
 export interface BookReview {
@@ -65,6 +79,18 @@ export interface RecommendedBook {
   book: string;
   book_title: string;
   book_cover?: string | null;
+}
+
+export interface FeedActivity {
+  id: string;
+  username: string;
+  action: string;
+  timestamp: string;
+  book: {
+    id: string;
+    title: string;
+    cover?: string | null;
+  };
 }
 
 export interface CreateReviewPayload {

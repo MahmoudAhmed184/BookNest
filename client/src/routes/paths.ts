@@ -6,7 +6,7 @@ export const routePaths = {
   explore: "/explore",
   search: "/search",
   searchQuery: "/search/:query",
-  author: "/author",
+  author: "/author/:id",
   myProfile: "/profile/me",
   userProfile: "/profile/:id",
   categories: "/categories",
@@ -20,6 +20,7 @@ export const routePaths = {
 export type AppRoutePath = (typeof routePaths)[keyof typeof routePaths];
 export type SearchRoute = `/search/${string}`;
 export type BookRoute = `/book/${string}`;
+export type AuthorRoute = `/author/${string}`;
 export type UserProfileRoute = `/profile/${string}`;
 
 export interface BookRouteParams {
@@ -41,6 +42,7 @@ export const routeBuilders = {
   searchQuery: (query: string): SearchRoute =>
     `/search/${encodeURIComponent(query)}`,
   book: (id: string | number | undefined): BookRoute => `/book/${String(id)}`,
+  author: (id: string | number | undefined): AuthorRoute => `/author/${String(id)}`,
   userProfile: (id: string | number | null | undefined): UserProfileRoute =>
     `/profile/${String(id)}`,
 } as const;

@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import { MoodBadge, StarRating } from "../../../../components/ui";
-import { moodColorTokens } from "../../data/moodColors";
+import { moodColorTokens } from "../../constants/moodColors";
 import type { Book } from "../../types/book";
 import { getBookGenres, getBookMoodTags, getBookPace } from "../../utils/bookFacets";
 

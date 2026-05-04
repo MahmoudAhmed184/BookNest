@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { A11y, Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { BookCard } from "../../../components/ui";
+import { BookCard, BookCardSkeleton, EmptyState, ErrorState } from "../../../components/ui";
 import { routeBuilders, routePaths } from "../../../routes/paths";
-import { popularBooks } from "../../catalog/data/exploreData";
+import { useLandingCatalog } from "../../catalog/hooks/useLandingCatalog";
 import { getAuthorNames } from "../../catalog/utils/bookFacets";
 
 const valueCards = [
@@ -15,8 +15,7 @@ const valueCards = [
 ] as const;
 
 export default function Landing(): ReactElement | null {
-  const featuredBook = popularBooks.find((book) => book.title === "1984") ?? popularBooks[0];
-  if (!featuredBook) return null;
+  const { books, featuredBook, isLoading, isFetching, isError, refetch } = useLandingCatalog();
 
   return (
     <div className="flex flex-col gap-16 py-10">
@@ -55,24 +54,56 @@ export default function Landing(): ReactElement | null {
             </div>
           </div>
           <div className="bento-grid animate-fade-up" style={{ animationDelay: "200ms" }}>
-            <BookCard
-              to={routeBuilders.book(featuredBook.isbn13)}
-              title={featuredBook.title}
-              author={getAuthorNames(featuredBook)}
-              coverSrc={featuredBook.cover_img}
-              variant="featured"
-              className="md:col-span-2 md:row-span-2"
-            />
-            {popularBooks.slice(0, 3).map((book) => (
-              <BookCard
-                key={book.isbn13}
-                to={routeBuilders.book(book.isbn13)}
-                title={book.title}
-                author={getAuthorNames(book)}
-                coverSrc={book.cover_img}
-                variant="trending"
-              />
-            ))}
+            {isLoading ? (
+              <>
+                <BookCardSkeleton className="md:col-span-2 md:row-span-2" />
+                <BookCardSkeleton />
+                <BookCardSkeleton />
+                <BookCardSkeleton />
+              </>
+            ) : null}
+            {isError ? (
+              <div className="md:col-span-2">
+                <ErrorState
+                  title="Featured books could not be loaded"
+                  message="We could not load the discovery shelf right now."
+                  onRetry={refetch}
+                  isRetrying={isFetching}
+                />
+              </div>
+            ) : null}
+            {!isLoading && !isError && !featuredBook ? (
+              <div className="md:col-span-2">
+                <EmptyState
+                  title="No featured books yet"
+                  description="Books will appear here when the catalog is available."
+                  actionLabel="Search books"
+                  actionTo={routePaths.search}
+                />
+              </div>
+            ) : null}
+            {!isLoading && !isError && featuredBook ? (
+              <>
+                <BookCard
+                  to={routeBuilders.book(featuredBook.isbn13)}
+                  title={featuredBook.title}
+                  author={getAuthorNames(featuredBook)}
+                  coverSrc={featuredBook.cover_img}
+                  variant="featured"
+                  className="md:col-span-2 md:row-span-2"
+                />
+                {books.slice(1, 4).map((book) => (
+                  <BookCard
+                    key={book.isbn13}
+                    to={routeBuilders.book(book.isbn13)}
+                    title={book.title}
+                    author={getAuthorNames(book)}
+                    coverSrc={book.cover_img}
+                    variant="trending"
+                  />
+                ))}
+              </>
+            ) : null}
           </div>
         </div>
       </section>
@@ -100,7 +131,7 @@ export default function Landing(): ReactElement | null {
           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
           className="w-full"
         >
-          {popularBooks.slice(3, 11).map((book) => (
+          {books.slice(4, 12).map((book) => (
             <SwiperSlide key={book.isbn13}>
               <BookCard
                 to={routeBuilders.book(book.isbn13)}

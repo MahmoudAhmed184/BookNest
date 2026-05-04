@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { MoodBadge, StarRating } from "../../../../components/ui";
 import { routeBuilders } from "../../../../routes/paths";
 import { getFallbackHueStyle, getInitials, colorFromString } from "../../../../utils/colorFromString";
-import { moodColorTokens, moodOptions } from "../../data/moodColors";
+import { moodColorTokens, moodOptions } from "../../constants/moodColors";
 import type { BookReview } from "../../types/book";
 import type { MoodTag } from "../../types/filters";
 

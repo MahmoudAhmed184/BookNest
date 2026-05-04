@@ -4,11 +4,11 @@ import { A11y, Autoplay, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { routeBuilders } from "../../../../routes/paths";
-import type { CatalogCategory } from "../../data/exploreData";
+import type { CatalogGenre } from "../../types/book";
 import { SectionTitle } from "./SectionTitle";
 
 export interface GenreCarouselProps {
-  categories: CatalogCategory[];
+  categories: CatalogGenre[];
 }
 
 export function GenreCarousel({ categories }: GenreCarouselProps): ReactElement {
@@ -31,10 +31,10 @@ export function GenreCarousel({ categories }: GenreCarouselProps): ReactElement 
         {categories.map((category) => (
           <SwiperSlide key={category.id}>
             <Link
-              to={routeBuilders.searchQuery(category.title)}
+              to={routeBuilders.searchQuery(category.name)}
               className="glass-card card-lift flex min-h-[56px] items-center justify-center px-4 py-2 text-center text-base font-semibold text-primary-white"
             >
-              {category.title}
+              {category.name}
             </Link>
           </SwiperSlide>
         ))}

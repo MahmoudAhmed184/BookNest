@@ -1,5 +1,5 @@
 import { colorFromString } from "../../../utils/colorFromString";
-import { moodOptions, paceOptions } from "../data/moodColors";
+import { moodOptions, paceOptions } from "../constants/moodColors";
 import type { Book, Author } from "../types/book";
 import type { CatalogFilters, MoodTag, PaceTag } from "../types/filters";
 

@@ -6,7 +6,7 @@ import type { AuthTokens, LoginPayload, RegisterPayload } from "../types/auth";
 export async function createProfile(token?: string | null): Promise<UserProfile> {
   try {
     return await postData<UserProfile, Record<string, never>>(
-      "/api/users/profile/",
+      "/api/v1/profiles/",
       {},
       {
         headers: authHeaders(token),
@@ -22,7 +22,7 @@ export async function login(
 ): Promise<AuthTokens> {
   try {
     const response = await postData<ApiEnvelope<AuthTokens>, LoginPayload>(
-      "/api/users/login/",
+      "/api/v1/auth/sessions/",
       formData
     );
 
@@ -37,7 +37,7 @@ export async function register(
 ): Promise<AuthTokens> {
   try {
     const response = await postData<ApiEnvelope<AuthTokens>, RegisterPayload>(
-      "/api/users/register/",
+      "/api/v1/users/",
       formData
     );
 

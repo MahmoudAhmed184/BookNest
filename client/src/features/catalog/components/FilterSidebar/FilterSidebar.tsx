@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from "react";
 
-import { moodOptions, paceOptions } from "../../data/moodColors";
+import { moodOptions, paceOptions } from "../../constants/moodColors";
 import type { CatalogFilters, MoodTag, PaceTag } from "../../types/filters";
 import { FilterOption } from "./FilterOption";
 

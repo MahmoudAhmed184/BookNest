@@ -15,7 +15,7 @@ export async function getCollections(
 ): Promise<ReadingList[]> {
   try {
     const response = await getData<ReadingList[]>(
-      "/api/books/reading-lists/",
+      "/api/v1/reading-lists/",
       {
         headers: authHeaders(tokenOverride),
       }
@@ -32,7 +32,7 @@ export async function createCollection(
 ): Promise<ReadingList> {
   try {
     const response = await postData<ReadingList, CreateCollectionPayload>(
-      "/api/books/reading-lists/create/",
+      "/api/v1/reading-lists/",
       data,
       {
         headers: authHeaders(token),
@@ -49,9 +49,9 @@ export async function addToCollection(
   token?: string | null
 ): Promise<ReadingList> {
   try {
-    const response = await postData<ReadingList, AddToCollectionPayload>(
-      "/api/books/reading-lists/books/",
-      data,
+    const response = await postData<ReadingList, Record<string, never>>(
+      `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
+      {},
       {
         headers: authHeaders(token),
       }
@@ -68,7 +68,7 @@ export async function getUserCollections(
 ): Promise<ReadingList[]> {
   try {
     const response = await getData<ReadingList[]>(
-      `/api/books/users/${id}/reading-lists/`,
+      `/api/v1/users/${id}/reading-lists/`,
       {
         headers: authHeaders(token),
       }

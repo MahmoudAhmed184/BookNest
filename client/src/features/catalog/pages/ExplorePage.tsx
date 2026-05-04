@@ -8,10 +8,6 @@ import {
   RecommendationsSection,
 } from "../components/ExploreSections";
 import { FilterSidebar } from "../components/FilterSidebar";
-import {
-  exploreCategories,
-  popularBooks,
-} from "../data/exploreData";
 import { useExploreCatalog } from "../hooks/useExploreCatalog";
 import type { CatalogFilters } from "../types/filters";
 import { filterBooksByCatalogFilters } from "../utils/bookFacets";
@@ -27,6 +23,8 @@ export default function Explore(): ReactElement {
   const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
   const {
     books,
+    categories = [],
+    popularBooks = [],
     recommendations,
     isBooksLoading,
     isBooksFetching,
@@ -42,8 +40,8 @@ export default function Explore(): ReactElement {
     [books, filters]
   );
   const genreOptions = useMemo(
-    () => exploreCategories.slice(0, 10).map((category) => category.title),
-    []
+    () => categories.slice(0, 10).map((category) => category.name),
+    [categories]
   );
 
   return (
@@ -58,7 +56,7 @@ export default function Explore(): ReactElement {
         </p>
       </header>
 
-      <GenreCarousel categories={exploreCategories} />
+      <GenreCarousel categories={categories.slice(0, 10)} />
       <RecommendationsSection
         recommendations={recommendations}
         isLoading={isRecommendationsLoading}
@@ -81,7 +79,7 @@ export default function Explore(): ReactElement {
           onRetry={refetchBooks}
         />
       </div>
-      <PopularBooksGrid books={popularBooks} />
+      {popularBooks.length > 0 ? <PopularBooksGrid books={popularBooks} /> : null}
     </div>
   );
 }

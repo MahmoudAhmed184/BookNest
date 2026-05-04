@@ -11,18 +11,27 @@ import type {
   BookRating,
   BookReview,
   BookSearchResponse,
+  Author,
+  CatalogGenre,
   CreateRatingPayload,
   CreateReviewPayload,
   DeleteBookPayload,
+  FeedActivity,
+  GenreSearchResponse,
   RecommendedBook,
 } from "../types/book";
 
 export async function getBooks(
   query: string
 ): Promise<BookSearchResponse> {
+  const params = new URLSearchParams({
+    q: query,
+    page_size: "50",
+  });
+
   try {
     const response = await getData<BookSearchResponse>(
-      `/api/books/search/?q=${query}&page_size=50`
+      `/api/v1/books/search-results/?${params.toString()}`
     );
 
     return response;
@@ -31,9 +40,73 @@ export async function getBooks(
   }
 }
 
+export async function getPopularBooks(limit = 12): Promise<Book[]> {
+  try {
+    const response = await getData<BookSearchResponse>(
+      `/api/v1/books/?limit=${limit}`
+    );
+    return response.results || [];
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getGenres(limit = 50): Promise<CatalogGenre[]> {
+  try {
+    const response = await getData<GenreSearchResponse>(
+      `/api/v1/genres/?limit=${limit}`
+    );
+    return response.results || [];
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function getBook(id: string | undefined): Promise<Book> {
   try {
-    const response = await getData<Book>(`/api/books/books/${id}/`);
+    const response = await getData<Book>(`/api/v1/books/${id}/`);
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getAuthor(id: string | undefined): Promise<Author> {
+  try {
+    const response = await getData<Author>(`/api/v1/authors/${id}/`);
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getAuthorBooks(id: string | undefined): Promise<Book[]> {
+  try {
+    const response = await getData<BookSearchResponse>(
+      `/api/v1/authors/${id}/books/?limit=24`
+    );
+    return response.results || [];
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getRelatedBooks(id: string | undefined): Promise<Book[]> {
+  try {
+    const response = await getData<Book[]>(
+      `/api/v1/books/${id}/related-books/?limit=8`
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getFeedActivities(limit = 20): Promise<FeedActivity[]> {
+  try {
+    const response = await getData<FeedActivity[]>(
+      `/api/v1/feed-activities/?limit=${limit}`
+    );
     return response;
   } catch (error: unknown) {
     throwApiError(error);
@@ -43,9 +116,14 @@ export async function getBook(id: string | undefined): Promise<Book> {
 export async function searchBooks(
   query: string
 ): Promise<BookSearchResponse> {
+  const params = new URLSearchParams({
+    q: query,
+    page_size: "100",
+  });
+
   try {
     const response = await getData<BookSearchResponse>(
-      `/api/books/search/?q=${query}&page_size=100`
+      `/api/v1/books/search-results/?${params.toString()}`
     );
     return response;
   } catch (error: unknown) {
@@ -58,7 +136,7 @@ export async function getReviews(
 ): Promise<BookReview[]> {
   try {
     const response = await getData<BookReview[]>(
-      `/api/books/books/${id}/reviews/`
+      `/api/v1/books/${id}/reviews/`
     );
     return response;
   } catch (error: unknown) {
@@ -72,7 +150,7 @@ export async function createReview(
 ): Promise<BookReview> {
   try {
     const response = await postData<BookReview, CreateReviewPayload>(
-      "/api/books/review/create/",
+      "/api/v1/reviews/",
       data,
       {
         headers: authHeaders(token),
@@ -90,7 +168,7 @@ export async function createRating(
 ): Promise<BookRating> {
   try {
     const response = await postData<BookRating, CreateRatingPayload>(
-      "/api/books/rating/create/",
+      "/api/v1/ratings/",
       data,
       {
         headers: authHeaders(token),
@@ -112,7 +190,7 @@ export async function deleteBook(
 
   try {
     const response = await deleteData<ApiDetailResponse, DeleteBookPayload>(
-      "/api/books/reading-lists/books/",
+      `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
       {
         headers: authHeaders(token),
         data,
@@ -129,7 +207,7 @@ export async function getRecommendedBooks(
 ): Promise<RecommendedBook[]> {
   try {
     const response = await getData<RecommendedBook[]>(
-      "/api/recommendation/user-recommendations/",
+      "/api/v1/recommendations/",
       {
         headers: authHeaders(token),
       }
@@ -147,7 +225,7 @@ export async function getBookRatings(
 ): Promise<BookRating[]> {
   try {
     const response = await getData<BookRating[]>(
-      `/api/books/books/${id}/ratings/`,
+      `/api/v1/books/${id}/ratings/`,
       {
         headers: authHeaders(token),
       }

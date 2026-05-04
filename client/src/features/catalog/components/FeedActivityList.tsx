@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 
 import { routeBuilders } from "../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
-import type { FeedActivity } from "../data/feedData";
+import type { FeedActivity } from "../types/book";
 
 interface ActivityCoverProps {
-  src: string;
+  src?: string | null | undefined;
   title: string;
 }
 

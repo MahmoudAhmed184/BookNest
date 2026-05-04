@@ -6,6 +6,8 @@ import {
   getBook,
   getBookRatings,
   getBooks,
+  getGenres,
+  getPopularBooks,
   getRecommendedBooks,
   getReviews,
 } from "../services/bookService";
@@ -21,6 +23,8 @@ vi.mock("../services/bookService", () => ({
   getBook: vi.fn(),
   getBookRatings: vi.fn(),
   getBooks: vi.fn(),
+  getGenres: vi.fn(),
+  getPopularBooks: vi.fn(),
   getRecommendedBooks: vi.fn(),
   getReviews: vi.fn(),
   searchBooks: vi.fn(),
@@ -39,8 +43,12 @@ describe("catalog hooks", () => {
     vi.mocked(getRecommendedBooks).mockResolvedValue([
       { book: "1", book_title: "Python 101" },
     ]);
+    vi.mocked(getGenres).mockResolvedValue([{ id: 1, name: "Fiction" }]);
+    vi.mocked(getPopularBooks).mockResolvedValue([
+      { isbn13: "1", title: "Python 101" },
+    ]);
 
-    const { result } = renderHook(() => useExploreCatalog(), {
+    const { result } = renderHook(() => useExploreCatalog("token"), {
       wrapper: createQueryWrapper(),
     });
 

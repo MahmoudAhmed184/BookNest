@@ -17,7 +17,7 @@ import {
   SettingsSkeleton,
   type SettingsTab,
 } from "../components/SettingsSections";
-import { settingsTabs } from "../data/settingsTabs";
+import { settingsTabs } from "../constants/settingsTabs";
 import { useSettingsProfile } from "../hooks/useSettingsProfile";
 import { getPasswordUpdateError } from "../utils/settingsValidation";
 

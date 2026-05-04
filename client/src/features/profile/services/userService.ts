@@ -20,7 +20,7 @@ import type {
 export async function getMyProfile(token?: string | null): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
-      "/api/users/profile/me/",
+      "/api/v1/profiles/me/",
       {
         headers: authHeaders(token),
       }
@@ -38,7 +38,7 @@ export async function getProfile(
 ): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
-      `/api/users/profile/${id}/`,
+      `/api/v1/profiles/${id}/`,
       {
         headers: authHeaders(token),
       }
@@ -56,7 +56,7 @@ export async function getUserProfile(
 ): Promise<ProfileResponseEnvelope> {
   try {
     const response = await getData<ProfileResponseEnvelope>(
-      `/api/users/profile/${id}/`,
+      `/api/v1/profiles/${id}/`,
       {
         headers: authHeaders(token),
       }
@@ -73,7 +73,7 @@ export async function updateUser(
 ): Promise<UserProfile> {
   try {
     const response = await patchData<UserProfile, UpdateUserPayload>(
-      "/api/users/user/",
+      "/api/v1/users/me/",
       data,
       {
         headers: authHeaders(token),
@@ -91,7 +91,7 @@ export async function updateBio(
 ): Promise<UserProfile> {
   try {
     const response = await patchData<UserProfile, UpdateBioPayload>(
-      "/api/users/profile/me/",
+      "/api/v1/profiles/me/",
       data,
       {
         headers: authHeaders(token),
@@ -112,7 +112,7 @@ export async function uploadProfilePicture(
 
   try {
     const response = await postData<UploadProfilePictureResponse, FormData>(
-      "/api/users/profile/upload_picture/",
+      "/api/v1/profiles/me/picture/",
       formData,
       {
         headers: authHeaders(tokenOverride),
@@ -130,7 +130,7 @@ export async function getUserReviews(
 ): Promise<UserReviewsResponse> {
   try {
     const response = await getData<UserReviewsResponse>(
-      `/api/books/users/${id}/reviews/`,
+      `/api/v1/users/${id}/reviews/`,
       {
         headers: authHeaders(token),
       }
@@ -147,7 +147,7 @@ export async function getUserRatings(
 ): Promise<UserRatingsResponse> {
   try {
     const response = await getData<UserRatingsResponse>(
-      `/api/books/users/${id}/ratings/`,
+      `/api/v1/users/${id}/ratings/`,
       {
         headers: authHeaders(token),
       }
@@ -164,7 +164,7 @@ export async function deleteReview(
 ): Promise<ApiDetailResponse> {
   try {
     const response = await deleteData<ApiDetailResponse>(
-      `/api/books/reviews/${id}/delete/`,
+      `/api/v1/reviews/${id}/`,
       {
         headers: authHeaders(token),
       }

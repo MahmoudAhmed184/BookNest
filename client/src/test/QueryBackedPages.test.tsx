@@ -13,6 +13,7 @@ import UserProfile from "../features/profile/pages/UserProfilePage";
 import { useBookActions } from "../features/catalog/hooks/useBookActions";
 import { useBookPageData } from "../features/catalog/hooks/useBookPageData";
 import { useExploreCatalog } from "../features/catalog/hooks/useExploreCatalog";
+import { useRelatedBooks } from "../features/catalog/hooks/useRelatedBooks";
 import { useSearchBooks } from "../features/catalog/hooks/useSearchBooks";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useProfileActions } from "../features/profile/hooks/useProfileActions";
@@ -28,6 +29,9 @@ vi.mock("../features/catalog/hooks/useSearchBooks", () => ({
 }));
 vi.mock("../features/catalog/hooks/useBookPageData", () => ({
   useBookPageData: vi.fn(),
+}));
+vi.mock("../features/catalog/hooks/useRelatedBooks", () => ({
+  useRelatedBooks: vi.fn(),
 }));
 vi.mock("../features/catalog/hooks/useBookActions", () => ({
   useBookActions: vi.fn(),
@@ -72,6 +76,13 @@ describe("query-backed pages", () => {
       isSubmittingReview: false,
       addBook: vi.fn(),
       submitReview: vi.fn(),
+    });
+    vi.mocked(useRelatedBooks).mockReturnValue({
+      books: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      refetch,
     });
     vi.mocked(useProfileActions).mockReturnValue({
       isDeletingBook: false,

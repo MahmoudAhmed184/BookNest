@@ -4,36 +4,39 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 import { BookCard, EmptyState } from "../../../components/ui";
 import { routeBuilders, routePaths } from "../../../routes/paths";
-import type { Book } from "../types/book";
+import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
+import type { Author, Book } from "../types/book";
+import { getAuthorNames } from "../utils/bookFacets";
 
 interface AuthorHeaderProps {
+  author: Author;
   isLiked: boolean;
   onToggleLike: () => void;
-  profileImage: string;
 }
 
 export function AuthorHeader({
+  author,
   isLiked,
   onToggleLike,
-  profileImage,
 }: AuthorHeaderProps): ReactElement {
   return (
     <section className="flex flex-col items-center gap-6 md:flex-row md:items-end">
-      <div className="aspect-square w-64 overflow-hidden rounded-xl bg-secondary-black shadow-xl">
-        <img
-          src={profileImage}
-          alt="Portrait of William Shakespeare"
-          className="h-full w-full object-cover transition-transform duration-200 ease-out hover:scale-[1.03]"
-          width="256"
-          height="256"
-          loading="lazy"
-          decoding="async"
-        />
+      <div
+        className="fallback-gradient flex aspect-square w-64 items-center justify-center overflow-hidden rounded-xl px-6 text-center text-6xl font-bold text-primary-white shadow-xl"
+        style={getFallbackHueStyle(author.name)}
+      >
+        <span aria-hidden="true">{getInitials(author.name)}</span>
+        <span className="sr-only">Portrait unavailable for {author.name}</span>
       </div>
       <div className="flex flex-col items-center gap-4 md:items-start">
         <h1 className="display-heading text-4xl md:text-5xl">
-          William Shakespeare
+          {author.name}
         </h1>
+        {typeof author.number_of_books === "number" ? (
+          <p className="text-sm text-primary-gray">
+            {author.number_of_books} books in BookNest
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={onToggleLike}
@@ -41,7 +44,7 @@ export function AuthorHeader({
             isLiked ? "btn-primary-v" : "btn-accent-v"
           }`}
           aria-pressed={isLiked}
-          aria-label="Like William Shakespeare's profile"
+          aria-label={`Like ${author.name}'s profile`}
         >
           {isLiked ? "Liked" : "Like"}
         </button>
@@ -50,21 +53,18 @@ export function AuthorHeader({
   );
 }
 
-export function AuthorBio(): ReactElement {
+interface AuthorBioProps {
+  author: Author;
+}
+
+export function AuthorBio({ author }: AuthorBioProps): ReactElement {
   return (
     <section className="flex flex-col gap-3" aria-labelledby="author-bio-title">
       <h2 id="author-bio-title" className="text-xl font-semibold text-primary-white">
         Bio
       </h2>
       <p className="max-w-2xl text-base leading-relaxed text-primary-white">
-        William Shakespeare (1564-1616) was an English playwright, poet, and
-        actor, widely regarded as one of the greatest writers in the English
-        language. His iconic plays, including <em>Hamlet</em>,{" "}
-        <em>Romeo and Juliet</em>, <em>Macbeth</em>, and{" "}
-        <em>A Midsummer Night's Dream</em>, explore themes of love, power,
-        jealousy, betrayal, and the human condition. Known for rich language and
-        complex characters, he wrote approximately 39 plays and 154 sonnets,
-        profoundly influencing English literature and drama.
+        {author.description || "No biography is available for this author yet."}
       </p>
     </section>
   );
@@ -110,7 +110,7 @@ export function AuthorBooks({ books }: AuthorBooksProps): ReactElement {
             <BookCard
                 to={routeBuilders.book(book.isbn13)}
                 title={book.title}
-                author={book.author}
+                author={getAuthorNames(book)}
                 coverSrc={book.cover_img}
                 rating={book.average_rate}
                 variant="trending"

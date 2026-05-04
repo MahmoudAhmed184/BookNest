@@ -1,7 +1,18 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import Landing from "./LandingPage";
+
+vi.mock("../../catalog/hooks/useLandingCatalog", () => ({
+  useLandingCatalog: () => ({
+    books: [{ isbn13: "1", title: "Featured Book" }],
+    featuredBook: { isbn13: "1", title: "Featured Book" },
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
 
 describe("LandingPage", () => {
   it("renders the primary landing links", () => {

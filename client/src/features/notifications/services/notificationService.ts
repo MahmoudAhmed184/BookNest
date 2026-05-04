@@ -5,7 +5,7 @@ export async function getNotifications(
   token: string | null
 ): Promise<Notification[]> {
   try {
-    const response = await getData<Notification[]>("/api/notifications/", {
+    const response = await getData<Notification[]>("/api/v1/notifications/", {
       headers: authHeaders(token),
     });
     return response;
