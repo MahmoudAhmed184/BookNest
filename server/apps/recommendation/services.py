@@ -1,10 +1,10 @@
 import logging
 import pickle
-import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
+
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Count
 
@@ -13,6 +13,9 @@ from .recommendation_engine import RecommendationEngine
 from .selectors import active_recommendation_model
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_MIN_RATINGS_FOR_RECOMMENDATIONS = 5
+
 
 class RecommendationService:
     """
@@ -34,10 +37,20 @@ class RecommendationService:
         data = {
             'user_id': [rating.user.id for rating in ratings],
             'isbn13': [rating.book.isbn13 for rating in ratings],
-            'rate': [rating.rate for rating in ratings]
+            'rate': [float(rating.rate) for rating in ratings]
         }
         
         return pd.DataFrame(data)
+
+    @staticmethod
+    def _save_model_artifact(engine, model_type):
+        model_data = pickle.dumps(engine)
+        model_filename = f"{model_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+        model_file_name = f"recommendation_models/{model_filename}"
+        model_file_path = Path(settings.MEDIA_ROOT) / model_file_name
+        model_file_path.parent.mkdir(parents=True, exist_ok=True)
+        model_file_path.write_bytes(model_data)
+        return model_file_name
     
     @staticmethod
     def train_recommendation_model(model_type='svd', min_ratings_per_user=5, n_factors=100, knn_k=40):
@@ -69,6 +82,8 @@ class RecommendationService:
             logger.error("Model training failed")
             return None
             
+        model_file_name = RecommendationService._save_model_artifact(engine, model_type)
+
         # Create model record
         with transaction.atomic():
             # Deactivate all existing models of the same type
@@ -82,13 +97,9 @@ class RecommendationService:
                 knn_k=knn_k,
                 rmse=eval_metrics.get('rmse'),
                 mae=eval_metrics.get('mae'),
-                is_active=True
+                is_active=True,
+                model_file=model_file_name,
             )
-            
-            # Serialize and save the model
-            model_data = pickle.dumps(engine)
-            model_filename = f"{model_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
-            model_record.model_file.save(model_filename, ContentFile(model_data))
             
         logger.info(f"Successfully trained and saved {model_type} model with id {model_record.id}")
         return model_record
@@ -109,8 +120,12 @@ class RecommendationService:
                 logger.error("No valid recommendation model found")
                 return None
                 
-            model_path = os.path.join(settings.MEDIA_ROOT, model_record.model_file.name)
-            with open(model_path, 'rb') as f:
+            model_path = Path(settings.MEDIA_ROOT) / model_record.model_file.name
+            if not model_path.exists():
+                logger.error(f"Recommendation model file does not exist: {model_path}")
+                return None
+
+            with model_path.open('rb') as f:
                 engine = pickle.load(f)
                 
             return engine, model_record
@@ -119,12 +134,30 @@ class RecommendationService:
             return None
     
     @staticmethod
-    def generate_recommendations_for_user(user_id, n_recommendations=10, model_id=None):
+    def generate_recommendations_for_user(
+        user_id,
+        n_recommendations=10,
+        model_id=None,
+        train_if_missing=True,
+        min_ratings_per_user=DEFAULT_MIN_RATINGS_FOR_RECOMMENDATIONS,
+    ):
         """
         Generate book recommendations for a specific user
         """
         # Load the recommendation model
         model_data = RecommendationService.load_recommendation_model(model_id)
+        if not model_data and train_if_missing:
+            try:
+                model_record = RecommendationService.train_recommendation_model(
+                    min_ratings_per_user=min_ratings_per_user,
+                )
+            except Exception as exc:
+                logger.exception(f"Could not train recommendation model for user {user_id}: {exc}")
+                model_record = None
+
+            if model_record:
+                model_data = RecommendationService.load_recommendation_model(model_record.id)
+
         if not model_data:
             logger.error(f"Could not generate recommendations for user {user_id}: No model available")
             return []

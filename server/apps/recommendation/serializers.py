@@ -13,7 +13,7 @@ class RecommendationModelSerializer(serializers.ModelSerializer):
 
 class UserRecommendationSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source='book.title', read_only=True)
-    book_author = serializers.CharField(source='book.author', read_only=True)
+    book_author = serializers.SerializerMethodField()
     book_cover = serializers.SerializerMethodField()
     recommended_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
     
@@ -24,3 +24,8 @@ class UserRecommendationSerializer(serializers.ModelSerializer):
         
     def get_book_cover(self, obj):
         return obj.book.cover_img if obj.book else None
+
+    def get_book_author(self, obj):
+        if not obj.book:
+            return None
+        return ", ".join(obj.book.authors.values_list("name", flat=True))

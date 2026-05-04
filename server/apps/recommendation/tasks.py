@@ -1,8 +1,30 @@
 import logging
+import socket
+from urllib.parse import urlparse
+
 from celery import shared_task
+from django.conf import settings
+
 from .services import RecommendationService
 
 logger = logging.getLogger(__name__)
+
+
+def _celery_broker_is_reachable(timeout=0.2):
+    broker_url = getattr(settings, 'CELERY_BROKER_URL', '')
+    parsed_url = urlparse(broker_url)
+
+    if parsed_url.scheme not in {'redis', 'rediss'}:
+        return True
+
+    host = parsed_url.hostname or 'localhost'
+    port = parsed_url.port or 6379
+
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 @shared_task
 def train_recommendation_model_task(model_type='svd', min_ratings_per_user=5, n_factors=100, knn_k=40):
@@ -38,6 +60,20 @@ def generate_recommendations_for_user_task(user_id, n_recommendations=10, model_
     except Exception as e:
         logger.error(f"Error in generate_recommendations_for_user_task: {str(e)}")
         return f"Error generating recommendations: {str(e)}"
+
+
+def enqueue_generate_recommendations_for_user(user_id, n_recommendations=10, model_id=None):
+    if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False) and not _celery_broker_is_reachable():
+        raise ConnectionError('Celery broker is not reachable')
+
+    return generate_recommendations_for_user_task.apply_async(
+        kwargs={
+            'user_id': user_id,
+            'n_recommendations': n_recommendations,
+            'model_id': model_id,
+        },
+        retry=False,
+    )
 
 @shared_task
 def generate_recommendations_for_all_users_task(n_recommendations=10, model_id=None, min_ratings=3):

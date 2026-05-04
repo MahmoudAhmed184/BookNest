@@ -123,6 +123,11 @@ class RecommendationEngine:
             test_df = filtered_ratings.iloc[0:0]
 
         self._fit_scores(train_df)
+        self.user_seen_items = (
+            self.full_ratings_df.groupby(self.user_id_col)[self.item_id_col]
+            .apply(lambda values: set(values))
+            .to_dict()
+        )
         return self._evaluate(test_df)
 
     def recommend_for_user(
