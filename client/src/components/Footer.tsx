@@ -1,16 +1,17 @@
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import { Link } from "react-router-dom";
 import Logo from "/logo.svg";
+import { routePaths } from "../routes";
 
-export interface FooterProps {}
+export interface FooterProps extends ComponentProps<"footer"> {}
 
-export default function Footer({}: FooterProps): ReactElement {
+export function Footer({ className = "", ...footerProps }: FooterProps): ReactElement {
   return (
-    <footer className="mt-12">
+    <footer className={`mt-12 ${className}`} {...footerProps}>
       <div className="bg-secondary-black text-primary-white py-5">
         <div className="container mx-auto flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
           <Link
-            to="/"
+            to={routePaths.root}
             className="group flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl transition-all duration-200 ease-out hover:-translate-y-0.5"
             aria-label="BookNest Homepage"
           >
@@ -25,19 +26,19 @@ export default function Footer({}: FooterProps): ReactElement {
           </Link>
           <nav aria-label="Footer navigation" className="flex flex-wrap justify-center gap-2 text-sm">
             <Link
-              to="/explore"
+              to={routePaths.explore}
               className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
             >
               Explore
             </Link>
             <Link
-              to="/categories"
+              to={routePaths.categories}
               className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
             >
               Categories
             </Link>
             <Link
-              to="/search"
+              to={routePaths.search}
               className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
             >
               Search

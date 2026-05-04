@@ -1,18 +1,19 @@
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 
-interface BookCardSkeletonProps {
-  className?: string;
+interface BookCardSkeletonProps extends ComponentProps<"div"> {
   showAuthor?: boolean;
 }
 
-export default function BookCardSkeleton({
+export function BookCardSkeleton({
   className = "",
   showAuthor = true,
+  ...divProps
 }: BookCardSkeletonProps): ReactElement {
   return (
     <div
       className={`rounded-xl bg-secondary-black shadow-md overflow-hidden p-4 sm:p-6 ${className}`}
       aria-hidden="true"
+      {...divProps}
     >
       <div className="flex flex-col items-center gap-4 sm:gap-5">
         <div className="w-[180px] aspect-[2/3] rounded-xl animate-shimmer" />

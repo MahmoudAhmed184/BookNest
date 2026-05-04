@@ -1,14 +1,13 @@
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-interface EmptyStateProps {
+interface EmptyStateProps extends ComponentProps<"div"> {
   title: string;
   description: string;
-  actionLabel?: string;
-  actionTo?: string;
+  actionLabel?: string | undefined;
+  actionTo?: string | undefined;
   onAction?: () => void;
-  icon?: ReactNode;
-  className?: string;
+  icon?: ReactNode | undefined;
 }
 
 function DefaultIcon(): ReactElement {
@@ -41,7 +40,7 @@ function DefaultIcon(): ReactElement {
   );
 }
 
-export default function EmptyState({
+export function EmptyState({
   title,
   description,
   actionLabel,
@@ -49,6 +48,7 @@ export default function EmptyState({
   onAction,
   icon = <DefaultIcon />,
   className = "",
+  ...divProps
 }: EmptyStateProps): ReactElement {
   const actionClasses =
     "btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm";
@@ -56,6 +56,7 @@ export default function EmptyState({
   return (
     <div
       className={`flex flex-col items-center justify-center gap-4 py-16 text-center animate-fade-up ${className}`}
+      {...divProps}
     >
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary-black">
         {icon}

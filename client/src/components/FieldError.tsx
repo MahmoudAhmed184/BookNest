@@ -1,14 +1,22 @@
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 
-interface FieldErrorProps {
+interface FieldErrorProps extends ComponentProps<"p"> {
   message?: string | undefined;
 }
 
-export default function FieldError({ message }: FieldErrorProps): ReactElement | null {
+export function FieldError({
+  message,
+  className = "",
+  ...paragraphProps
+}: FieldErrorProps): ReactElement | null {
   if (!message) return null;
 
   return (
-    <p className="mt-2 flex items-start gap-2 text-sm text-red-500" role="alert">
+    <p
+      className={`mt-2 flex items-start gap-2 text-sm text-accent ${className}`}
+      role="alert"
+      {...paragraphProps}
+    >
       <svg
         className="mt-0.5 h-4 w-4 shrink-0"
         viewBox="0 0 20 20"

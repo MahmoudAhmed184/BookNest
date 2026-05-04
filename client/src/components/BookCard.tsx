@@ -1,15 +1,12 @@
-import { useState, type ReactElement } from "react";
+import { useState, type ComponentProps, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
-interface BookCardProps {
-  to: string;
+interface BookCardProps extends Omit<ComponentProps<typeof Link>, "children"> {
   title: string;
   author?: string | null | undefined;
   coverSrc?: string | null | undefined;
   rating?: number | string | null | undefined;
   showAuthor?: boolean;
-  onClick?: () => void;
-  className?: string;
 }
 
 function getInitials(title: string): string {
@@ -18,7 +15,7 @@ function getInitials(title: string): string {
   return initials.join("") || "BN";
 }
 
-export default function BookCard({
+export function BookCard({
   to,
   title,
   author,
@@ -27,6 +24,7 @@ export default function BookCard({
   showAuthor = true,
   onClick,
   className = "",
+  ...linkProps
 }: BookCardProps): ReactElement {
   const [hasImageError, setHasImageError] = useState(false);
   const canShowImage = Boolean(coverSrc) && !hasImageError;
@@ -36,6 +34,7 @@ export default function BookCard({
       to={to}
       onClick={onClick}
       className={`group block overflow-hidden rounded-xl bg-secondary-black shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl focus-visible:outline-accent [will-change:transform] ${className}`}
+      {...linkProps}
     >
       <figure className="relative flex flex-col items-center gap-4 p-4 sm:gap-5 sm:p-6">
         <div

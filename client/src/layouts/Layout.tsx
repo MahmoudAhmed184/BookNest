@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import { Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import ErrorBoundary from "../components/ErrorBoundary";
+import { Navbar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 const toastPosition =
   typeof window !== "undefined" &&
@@ -41,7 +41,7 @@ const errorIcon = (
   </svg>
 );
 
-function Layout(): ReactElement {
+export function Layout(): ReactElement {
   return (
     <div className="min-h-screen flex flex-col bg-primary-black text-primary-white">
       <Toaster
@@ -52,12 +52,7 @@ function Layout(): ReactElement {
             role: "status",
             "aria-live": "polite",
           },
-          style: {
-            borderRadius: "10px",
-            background: "var(--color-secondary-black)",
-            color: "var(--color-primary-white)",
-            border: "1px solid var(--color-secondary-gray)",
-          },
+          className: "booknest-toast",
           success: {
             duration: 3000,
             icon: successIcon,
@@ -78,5 +73,3 @@ function Layout(): ReactElement {
     </div>
   );
 }
-
-export default Layout;

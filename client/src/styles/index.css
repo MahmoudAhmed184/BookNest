@@ -259,9 +259,16 @@
   @media (forced-colors: active) {
     .field {
       outline-offset: 2px;
-      outline: 2px solid #0000;
+      outline: 2px solid transparent;
     }
   }
+}
+
+.booknest-toast {
+  border-radius: 10px;
+  background: var(--color-secondary-black);
+  color: var(--color-primary-white);
+  border: 1px solid var(--color-secondary-gray);
 }
 
 .btn {
@@ -285,9 +292,9 @@
 
 .swiper-button-prev,
 .swiper-button-next {
-  color: #cfc8b8 !important;
+  color: var(--color-accent) !important;
   z-index: 20 !important;
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--color-primary-black) 30%, transparent);
   border-radius: 50%;
   width: 40px !important;
   height: 40px !important;
@@ -298,19 +305,19 @@
 }
 .swiper-button-prev:hover,
 .swiper-button-next:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--color-primary-black) 50%, transparent);
 }
 .swiper-button-prev:after,
 .swiper-button-next:after {
   font-size: 20px !important;
 }
 .swiper-pagination-bullet {
-  background: #cfc8b8 !important;
+  background: var(--color-accent) !important;
   opacity: 0.4;
 }
 .swiper-pagination-bullet-active {
   opacity: 1;
-  background: #cfc8b8 !important;
+  background: var(--color-accent) !important;
 }
 .swiper-pagination {
   position: relative !important;
@@ -339,10 +346,14 @@
   width: 30px;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(farthest-side, #cfc8b8 94%, #0000) top/8px 8px
-      no-repeat,
-    conic-gradient(#0000 30%, #cfc8b8);
-  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 8px), #000 0);
+  background: radial-gradient(farthest-side, var(--color-accent) 94%, transparent)
+      top/8px 8px no-repeat,
+    conic-gradient(transparent 30%, var(--color-accent));
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 8px),
+    black 0
+  );
   animation: l13 1s infinite linear;
 }
 @keyframes l13 {

@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import AppRouter from "./router";
+import { AppRouter } from "./router";
 
-export default function App(): ReactElement {
+export function App(): ReactElement {
   return <AppRouter />;
 }

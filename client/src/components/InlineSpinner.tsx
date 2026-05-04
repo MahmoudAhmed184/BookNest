@@ -1,11 +1,10 @@
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 
-interface InlineSpinnerProps {
-  className?: string;
-}
+interface InlineSpinnerProps extends ComponentProps<"svg"> {}
 
-export default function InlineSpinner({
+export function InlineSpinner({
   className = "h-4 w-4",
+  ...svgProps
 }: InlineSpinnerProps): ReactElement {
   return (
     <svg
@@ -13,6 +12,7 @@ export default function InlineSpinner({
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
+      {...svgProps}
     >
       <circle
         className="opacity-25"

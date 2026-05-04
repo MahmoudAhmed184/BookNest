@@ -1,25 +1,26 @@
-import type { ReactElement } from "react";
-import InlineSpinner from "./InlineSpinner";
+import type { ComponentProps, ReactElement } from "react";
+import { InlineSpinner } from "./InlineSpinner";
 
-interface ErrorStateProps {
+interface ErrorStateProps extends ComponentProps<"div"> {
   title?: string;
   message?: string;
   onRetry?: () => void;
   isRetrying?: boolean;
-  className?: string;
 }
 
-export default function ErrorState({
+export function ErrorState({
   title = "Something went wrong",
   message = "We could not load this section. Please try again.",
   onRetry,
   isRetrying = false,
   className = "",
+  ...divProps
 }: ErrorStateProps): ReactElement {
   return (
     <div
       className={`flex flex-col items-center justify-center gap-4 rounded-xl bg-secondary-black p-6 py-12 text-center animate-fade-up ${className}`}
       role="alert"
+      {...divProps}
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-black text-accent">
         <svg
