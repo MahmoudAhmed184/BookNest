@@ -1,13 +1,16 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { EmptyState, ErrorState } from "../../../components/ui";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import { routePaths } from "../../../routes/paths";
 import { useNotifications } from "../hooks/useNotifications";
+
+const skeletonKeys = ["notification-skeleton-1", "notification-skeleton-2", "notification-skeleton-3"];
 
 function NotificationsSkeleton(): ReactElement {
   return (
     <div className="flex flex-col gap-4" role="status" aria-live="polite">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="rounded-xl bg-secondary-black p-5">
+      {skeletonKeys.map((key) => (
+        <div key={key} className="rounded-xl bg-secondary-black p-5">
           <div className="mb-3 h-5 w-1/2 rounded-full animate-shimmer" />
           <div className="h-4 w-1/3 rounded-full animate-shimmer" />
         </div>
@@ -17,21 +20,23 @@ function NotificationsSkeleton(): ReactElement {
 }
 
 export default function Notifications(): ReactElement {
+  const { token } = useOptionalAuth();
+  const [readIds, setReadIds] = useState<ReadonlySet<number>>(new Set());
   const {
     notifications,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = useNotifications(localStorage.getItem("token"));
+  } = useNotifications(token, Boolean(token));
 
   const unreadNotifications =
-    notifications.filter((notification) => notification.read === false);
+    notifications.filter((notification) => notification.read === false && !readIds.has(notification.id));
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-primary-white text-balance">
+        <h1 className="display-heading">
           Notifications
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">
@@ -61,12 +66,24 @@ export default function Notifications(): ReactElement {
       ) : null}
 
       {!isLoading && !isError && unreadNotifications.length > 0 ? (
+        <div className="sticky top-24 z-30 flex justify-end">
+          <button
+            type="button"
+            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm shadow-md"
+            onClick={() => setReadIds(new Set(unreadNotifications.map((notification) => notification.id)))}
+          >
+            Mark all as read
+          </button>
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && unreadNotifications.length > 0 ? (
         <div className="flex flex-col gap-4" role="list">
           {unreadNotifications.map((notification) => (
             <article
               key={notification.id}
               role="listitem"
-              className="flex items-start gap-4 rounded-xl bg-secondary-black p-5 text-primary-white shadow-md transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl"
+              className="unread-surface card-lift flex items-start gap-4 rounded-xl p-5 text-primary-white shadow-md"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-black text-accent">
                 <svg
