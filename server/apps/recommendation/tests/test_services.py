@@ -1,11 +1,15 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from django.test import SimpleTestCase, override_settings
+from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
+from django.test import SimpleTestCase, TestCase, override_settings
 import pandas as pd
 
+from apps.books.models import Book, BookRating
 from apps.recommendation import services
 from apps.recommendation.recommendation_engine import RecommendationEngine
+from apps.recommendation.signals import trigger_recommendations_after_rating
 from apps.recommendation.tasks import enqueue_generate_recommendations_for_user
 
 
@@ -53,3 +57,37 @@ class RecommendationServiceImportTests(SimpleTestCase):
         with override_settings(CELERY_BROKER_URL="redis://127.0.0.1:1/0"):
             with self.assertRaises(ConnectionError):
                 enqueue_generate_recommendations_for_user(1)
+
+
+class RecommendationFallbackTests(TestCase):
+    def setUp(self):
+        post_save.disconnect(trigger_recommendations_after_rating, sender=BookRating)
+        self.user = get_user_model().objects.create_user(
+            username="reader",
+            email="reader@example.com",
+            password="password",
+        )
+        self.rated_book = Book.objects.create(
+            isbn13="9780000000001",
+            title="Already Rated",
+        )
+        self.unrated_book = Book.objects.create(
+            isbn13="9780000000002",
+            title="Recommended Candidate",
+            average_rate=4.5,
+            number_of_ratings=20,
+        )
+        BookRating.objects.create(user=self.user, book=self.rated_book, rate=5)
+
+    def tearDown(self):
+        post_save.connect(trigger_recommendations_after_rating, sender=BookRating)
+
+    def test_catalog_fallback_excludes_rated_books(self):
+        recommendations = services.RecommendationService._fallback_catalog_recommendations(
+            user_id=self.user.id,
+            n_recommendations=10,
+        )
+
+        recommended_isbns = {isbn for isbn, _score in recommendations}
+        self.assertIn(self.unrated_book.isbn13, recommended_isbns)
+        self.assertNotIn(self.rated_book.isbn13, recommended_isbns)

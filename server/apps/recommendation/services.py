@@ -6,7 +6,8 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, FloatField, Value
+from django.db.models.functions import Coalesce
 
 from .models import RecommendationModel, UserRecommendation
 from .recommendation_engine import RecommendationEngine
@@ -132,6 +133,21 @@ class RecommendationService:
         except Exception as e:
             logger.error(f"Error loading recommendation model: {str(e)}")
             return None
+
+    @staticmethod
+    def _fallback_catalog_recommendations(user_id, n_recommendations=10):
+        from apps.books.models import Book
+
+        books = (
+            Book.objects.exclude(ratings__user_id=user_id)
+            .annotate(recommendation_score=Coalesce("average_rate", Value(0), output_field=FloatField()))
+            .order_by("-recommendation_score", "-number_of_ratings", "title")[:n_recommendations]
+        )
+
+        return [
+            (book.isbn13, float(book.recommendation_score or 0))
+            for book in books
+        ]
     
     @staticmethod
     def generate_recommendations_for_user(
@@ -144,6 +160,7 @@ class RecommendationService:
         """
         Generate book recommendations for a specific user
         """
+        model_record = None
         # Load the recommendation model
         model_data = RecommendationService.load_recommendation_model(model_id)
         if not model_data and train_if_missing:
@@ -158,17 +175,26 @@ class RecommendationService:
             if model_record:
                 model_data = RecommendationService.load_recommendation_model(model_record.id)
 
-        if not model_data:
-            logger.error(f"Could not generate recommendations for user {user_id}: No model available")
-            return []
-            
-        engine, model_record = model_data
-        
-        # Generate recommendations
-        recommendations = engine.recommend_for_user(user_id=user_id, n_recommendations=n_recommendations)
+        if model_data:
+            engine, model_record = model_data
+            recommendations = engine.recommend_for_user(
+                user_id=user_id,
+                n_recommendations=n_recommendations,
+            )
+        else:
+            logger.info(
+                f"No recommendation model available for user {user_id}; using catalog fallback"
+            )
+            recommendations = []
         
         if not recommendations:
-            logger.info(f"No recommendations generated for user {user_id}")
+            recommendations = RecommendationService._fallback_catalog_recommendations(
+                user_id=user_id,
+                n_recommendations=n_recommendations,
+            )
+
+        if not recommendations:
+            logger.info(f"No recommendation candidates available for user {user_id}")
             return []
             
         # Save recommendations to database
