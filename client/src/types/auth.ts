@@ -17,3 +17,16 @@ export interface AuthTokens {
   refresh?: string;
   user?: UserProfile;
 }
+
+export interface EmailResetPayload {
+  email: string;
+}
+
+export interface OtpResetPayload {
+  otp: string;
+}
+
+export interface PasswordResetPayload {
+  password: string;
+  confirmPassword: string;
+}
