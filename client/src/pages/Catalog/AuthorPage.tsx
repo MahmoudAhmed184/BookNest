@@ -1,11 +1,14 @@
-import React from "react";
+import { useState } from "react";
 import ProfileImage from "/william_shakespere.jpg";
-import { Link } from "react-router-dom";
-
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y, Autoplay } from "swiper/modules";
 
+import BookCard from "../../components/BookCard";
+import EmptyState from "../../components/EmptyState";
+
 export default function Author() {
+  const [isLiked, setIsLiked] = useState(false);
+
   const books = [
     {
       id: 1,
@@ -67,118 +70,100 @@ export default function Author() {
         "A witty romance exploring class, family, and personal growth.",
     },
   ];
+
   return (
-    <div className="container py-8 flex flex-col gap-8">
-      <div className="flex flex-col items-center md:flex-row gap-4 md:items-end">
-        <div className="w-64 md:w-64 aspect-square overflow-hidden rounded-lg bg-secondary-black">
+    <div className="py-12 flex flex-col gap-12 animate-fade-up">
+      <section className="flex flex-col items-center gap-6 md:flex-row md:items-end">
+        <div className="w-64 aspect-square overflow-hidden rounded-xl bg-secondary-black shadow-xl">
           <img
             src={ProfileImage}
-            alt="William Shakespeare profile image"
-            className="w-full h-full object-cover"
+            alt="Portrait of William Shakespeare"
+            className="h-full w-full object-cover transition-transform duration-200 ease-out hover:scale-[1.03]"
+            width="256"
+            height="256"
             loading="lazy"
             decoding="async"
           />
         </div>
-        <div className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold">William Shakespeare</h2>
+        <div className="flex flex-col items-center gap-4 md:items-start">
+          <h1 className="text-3xl font-semibold text-primary-white text-balance">
+            William Shakespeare
+          </h1>
           <button
             type="button"
-            className="btn btn-accent-v px-4 py-2 text-sm font-medium rounded-md"
+            onClick={() => setIsLiked((current) => !current)}
+            className={`btn inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg ${
+              isLiked ? "btn-primary-v" : "btn-accent-v"
+            }`}
+            aria-pressed={isLiked}
             aria-label="Like William Shakespeare's profile"
           >
-            Like
+            {isLiked ? "Liked" : "Like"}
           </button>
         </div>
-      </div>
-      <p className="text-base leading-relaxed">
-        William Shakespeare (1564–1616) was an English playwright, poet, and
-        actor, widely regarded as one of the greatest writers in the English
-        language. His iconic plays, including <em>Hamlet</em>,{" "}
-        <em>Romeo and Juliet</em>,<em>Macbeth</em>, and{" "}
-        <em>A Midsummer Night's Dream</em>, explore themes of love, power,
-        jealousy, betrayal, and the human condition. Known for rich language and
-        complex characters, he wrote approximately 39 plays and 154 sonnets,
-        profoundly influencing English literature and drama.
-      </p>
-      <h2 className="text-md sm:text-xl font-semibold">Author Books</h2>
-      <Swiper
-        modules={[Navigation, Pagination, A11y, Autoplay]}
-        spaceBetween={20}
-        slidesPerView={1}
-        navigation={{
-          prevEl: ".swiper-button-prev",
-          nextEl: ".swiper-button-next",
-        }}
-        pagination={{ clickable: true }}
-        autoplay={{ delay: 3000, disableOnInteraction: false }}
-        breakpoints={{
-          640: {
-            slidesPerView: 2,
-            spaceBetween: 20,
-          },
-          1024: {
-            slidesPerView: 3,
-            spaceBetween: 30,
-          },
-          1280: {
-            slidesPerView: 4,
-            spaceBetween: 40,
-          },
-        }}
-        className="w-full relative"
-      >
-        {books.map((book) => (
-          <SwiperSlide key={book.id}>
-            <Link
-              to={`/book/${book.id}`}
-              className="group rounded-2xl shadow-md overflow-hidden relative block"
-              style={{ pointerEvents: "auto" }}
-            >
-              {/* Blurred Background Image */}
-              <div
-                className="absolute inset-0 bg-secondary-black transition-opacity duration-300 opacity-100 group-hover:opacity-0 z-0"
-                aria-hidden="true"
-              />
-              <img
-                src={book.cover}
-                className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0 peer"
-                aria-hidden="true"
-              />
-              <figure className="flex flex-col justify-center items-center gap-4 sm:gap-5 p-4 sm:p-6 relative z-10">
-                {/* Book Cover */}
-                <div className="book-cover h-[256px] sm:h-[280px] relative">
-                  <img
-                    src={book.cover}
-                    alt={`${book.title} cover`}
-                    className="h-full w-full object-cover rounded-2xl relative transition-transform duration-300 group-hover:-translate-y-4 z-20 peer"
-                  />
-                </div>
-                {/* Book Info */}
-                <figcaption className="flex flex-col justify-center items-center gap-2 sm:gap-3">
-                  <h4 className="text-base sm:text-lg text-primary-white font-semibold text-center line-clamp-1">
-                    {book.title}
-                  </h4>
-                  <h5 className="text-sm sm:text-base text-primary-gray text-center">
-                    {book.author}
-                  </h5>
-                  <div className="flex items-center">
-                    <span className="text-yellow-400 text-sm sm:text-base">
-                      {"★".repeat(Math.floor(book.rating))}
-                      {book.rating % 1 !== 0 && "☆"}
-                    </span>
-                    <span className="text-primary-gray text-sm ml-2">
-                      ({book.rating})
-                    </span>
-                  </div>
-                </figcaption>
-              </figure>
-            </Link>
-          </SwiperSlide>
-        ))}
-        {/* Custom Navigation Buttons */}
-        <div className="swiper-button-prev"></div>
-        <div className="swiper-button-next"></div>
-      </Swiper>
+      </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="author-bio-title">
+        <h2 id="author-bio-title" className="text-xl font-semibold text-primary-white">
+          Bio
+        </h2>
+        <p className="max-w-2xl text-base leading-relaxed text-primary-white">
+          William Shakespeare (1564-1616) was an English playwright, poet, and
+          actor, widely regarded as one of the greatest writers in the English
+          language. His iconic plays, including <em>Hamlet</em>,{" "}
+          <em>Romeo and Juliet</em>, <em>Macbeth</em>, and{" "}
+          <em>A Midsummer Night's Dream</em>, explore themes of love, power,
+          jealousy, betrayal, and the human condition. Known for rich language and
+          complex characters, he wrote approximately 39 plays and 154 sonnets,
+          profoundly influencing English literature and drama.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-5" aria-labelledby="author-books-title">
+        <h2 id="author-books-title" className="text-xl font-semibold text-primary-white sm:text-2xl">
+          Author Books
+        </h2>
+        {books.length === 0 ? (
+          <EmptyState
+            title="No books listed yet"
+            description="This author's books will appear here when they are available."
+            actionLabel="Browse books"
+            actionTo="/explore"
+          />
+        ) : (
+          <Swiper
+            modules={[Navigation, Pagination, A11y, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1}
+            navigation={{
+              prevEl: ".author-books-prev",
+              nextEl: ".author-books-next",
+            }}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            breakpoints={{
+              640: { slidesPerView: 2, spaceBetween: 20 },
+              1024: { slidesPerView: 3, spaceBetween: 24 },
+              1280: { slidesPerView: 4, spaceBetween: 28 },
+            }}
+            className="w-full relative"
+          >
+            {books.map((book) => (
+              <SwiperSlide key={book.id}>
+                <BookCard
+                  to={`/book/${book.id}`}
+                  title={book.title}
+                  author={book.author}
+                  coverSrc={book.cover}
+                  rating={book.rating}
+                />
+              </SwiperSlide>
+            ))}
+            <div className="swiper-button-prev author-books-prev"></div>
+            <div className="swiper-button-next author-books-next"></div>
+          </Swiper>
+        )}
+      </section>
     </div>
   );
 }
