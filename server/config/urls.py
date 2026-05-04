@@ -18,17 +18,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# from books.home_view import HomeView
+# from apps.books.home_view import HomeView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
-    path('api/books/', include('books.urls')),
-    path('api/follow/', include('follows.urls')),
-    path('api/notifications/', include('notifications.urls')),
-    path('api/recommendation/', include('recommendation.urls')),
+    path('api/users/', include('apps.users.urls')),
+    path('api/books/', include('apps.books.urls')),
+    path('api/follow/', include('apps.follows.urls')),
+    path('api/notifications/', include('apps.notifications.urls')),
+    path('api/recommendation/', include('apps.recommendation.urls')),
     
     
     # API Schema documentation

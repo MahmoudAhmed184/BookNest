@@ -83,13 +83,12 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     "corsheaders",
-    'users',
-    'books',
-    'follows',
-    'notifications',
+    'apps.users',
+    'apps.books',
+    'apps.follows',
+    'apps.notifications',
     'drf_spectacular',
-
-    'recommendation.apps.RecommendationsConfig',
+    'apps.recommendation.apps.RecommendationsConfig',
 
 ]
 
@@ -116,7 +115,7 @@ REST_FRAMEWORK = {
 REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,
-    'REGISTER_SERIALIZER': 'users.serializers.auth_serializer.CustomRegisterSerializer'
+    'REGISTER_SERIALIZER': 'apps.users.serializers.auth_serializer.CustomRegisterSerializer'
 }
 
 
@@ -130,7 +129,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'users.middleware.ProfileRequiredMiddleware'
+    'apps.users.middleware.ProfileRequiredMiddleware'
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -251,7 +250,7 @@ EMAIL_SUBJECT_PREFIX = f'[{SITE_NAME}] '
 # Timeout settings
 EMAIL_TIMEOUT = 60
 
-ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
+ACCOUNT_ADAPTER = 'apps.users.adapter.CustomAccountAdapter'
 # END EMAIL SERVER CONFIGURATION 
 
 

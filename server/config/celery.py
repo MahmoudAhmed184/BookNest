@@ -17,11 +17,11 @@ app.autodiscover_tasks()
 # Configure periodic tasks
 app.conf.beat_schedule = {
     'sync-external-books': {
-        'task': 'books.tasks.sync_external_books',
+        'task': 'apps.books.tasks.sync_external_books',
         'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
     },
     'update-book-metadata': {
-        'task': 'books.tasks.update_book_metadata',
+        'task': 'apps.books.tasks.update_book_metadata',
         'schedule': crontab(hour='*/6'),  # Run every 6 hours
     },
 }
