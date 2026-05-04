@@ -19,3 +19,13 @@ EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend',
 )
+
+USE_REDIS_CACHE = os.environ.get('USE_REDIS_CACHE', 'False').lower() == 'true'
+
+if not USE_REDIS_CACHE:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'booknest-development',
+        }
+    }
