@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { Footer } from "../Footer";
 import { Navbar } from "../Navbar";
+import { useSearchShortcut } from "../../../hooks/useSearchShortcut";
 
 const toastPosition =
   typeof window !== "undefined" &&
@@ -43,8 +44,10 @@ const errorIcon = (
 );
 
 export function Layout(): ReactElement {
+  useSearchShortcut();
+
   return (
-    <div className="min-h-screen flex flex-col bg-primary-black text-primary-white">
+    <div className="flex min-h-screen flex-col bg-primary-black text-primary-white">
       <Toaster
         position={toastPosition}
         toastOptions={{
@@ -65,7 +68,7 @@ export function Layout(): ReactElement {
         }}
       />
       <Navbar />
-      <main className="container grow flex flex-col z-0">
+      <main className="container z-0 flex grow flex-col">
         <ErrorBoundary>
           <Outlet />
         </ErrorBoundary>

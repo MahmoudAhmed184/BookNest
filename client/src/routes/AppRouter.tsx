@@ -19,6 +19,7 @@ const Landing = lazy(() => import("../features/home/pages/LandingPage"));
 const Notifications = lazy(() => import("../features/notifications/pages/NotificationsPage"));
 const NotFound = lazy(() => import("../features/errors/pages/NotFoundPage"));
 const UserProfile = lazy(() => import("../features/profile/pages/UserProfilePage"));
+const fallbackSkeletonKeys = ["route-skeleton-1", "route-skeleton-2", "route-skeleton-3", "route-skeleton-4"];
 
 const routeFallback = (
   <div className="grow py-12 animate-fade-up" role="status" aria-live="polite">
@@ -27,8 +28,8 @@ const routeFallback = (
       <div className="h-4 w-full max-w-md rounded-full animate-shimmer" />
     </div>
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <BookCardSkeleton key={index} />
+      {fallbackSkeletonKeys.map((key) => (
+        <BookCardSkeleton key={key} />
       ))}
     </div>
   </div>

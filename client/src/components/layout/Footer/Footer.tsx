@@ -5,14 +5,22 @@ import { routePaths } from "../../../routes/paths";
 
 export interface FooterProps extends ComponentProps<"footer"> {}
 
+const footerLinks = [
+  { to: routePaths.explore, label: "Explore" },
+  { to: routePaths.categories, label: "Categories" },
+  { to: routePaths.search, label: "Search" },
+] as const;
+
+const socialLinks = ["Instagram", "Threads", "RSS"] as const;
+
 export function Footer({ className = "", ...footerProps }: FooterProps): ReactElement {
   return (
-    <footer className={`mt-12 ${className}`} {...footerProps}>
-      <div className="bg-secondary-black text-primary-white py-5">
-        <div className="container mx-auto flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+    <footer className={`mt-16 border-t border-secondary-gray/40 bg-secondary-black/70 ${className}`} {...footerProps}>
+      <div className="container grid gap-8 py-10 text-primary-white md:grid-cols-[1.2fr_1fr_1fr]">
+        <div className="flex flex-col gap-4">
           <Link
             to={routePaths.root}
-            className="group flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl transition-all duration-200 ease-out hover:-translate-y-0.5"
+            className="group flex min-h-[44px] w-fit shrink-0 items-center gap-2 rounded-xl hover:-translate-y-0.5"
             aria-label="BookNest Homepage"
           >
             <img
@@ -24,32 +32,43 @@ export function Footer({ className = "", ...footerProps }: FooterProps): ReactEl
               BookNest
             </span>
           </Link>
-          <nav aria-label="Footer navigation" className="flex flex-wrap justify-center gap-2 text-sm">
-            <Link
-              to={routePaths.explore}
-              className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
-            >
-              Explore
-            </Link>
-            <Link
-              to={routePaths.categories}
-              className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
-            >
-              Categories
-            </Link>
-            <Link
-              to={routePaths.search}
-              className="rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
-            >
-              Search
-            </Link>
-          </nav>
+          <p className="max-w-sm text-sm leading-relaxed text-primary-gray">
+            A warmer place to discover, track, and remember the books that stay
+            with you.
+          </p>
         </div>
-      </div>
-      <div className="bg-primary-black text-primary-white py-4 sm:py-5">
-        <div className="container mx-auto flex items-center justify-center">
-          <p className="text-center text-sm text-primary-gray sm:text-base">
-            All copyrights are reserved for BookNest © 2025
+        <nav aria-label="Footer navigation" className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase text-primary-white">Navigation</h2>
+          <div className="flex flex-col gap-2 text-sm">
+            {footerLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="flex min-h-[44px] w-fit items-center rounded-full px-3 py-2 text-primary-gray hover:bg-primary-black hover:text-primary-white"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase text-primary-white">Social</h2>
+          <div className="flex gap-2">
+            {socialLinks.map((label) => (
+              <button
+                key={label}
+                type="button"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary-black text-primary-gray hover:text-accent"
+                aria-label={label}
+              >
+                <span aria-hidden="true" className="text-sm font-bold">
+                  {label.slice(0, 1)}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-primary-gray">
+            BookNest © 2026
           </p>
         </div>
       </div>
