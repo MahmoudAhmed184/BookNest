@@ -156,12 +156,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 ```
 
-For Docker Compose:
-
-```dotenv
-DB_HOST=db
-DB_PORT=3306
-```
+Docker Compose overrides `DB_HOST`, `REDIS_URL`, `CELERY_BROKER_URL`, and `CELERY_RESULT_BACKEND` inside the `web` and `celery` containers, so `.env.example` can stay safe for host-based development.
 
 ## Local Development
 
