@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { searchBooks } from "../../services/bookService";
@@ -10,6 +10,7 @@ export default function Search() {
 
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [, startSearchTransition] = useTransition();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["books", searchTerm],
@@ -23,16 +24,20 @@ export default function Search() {
     setSearchInput(e.target.value);
   };
 
-  const handleSearch = () => {
-    setSearchTerm(searchInput);
+  const handleSearch = (): void => {
+    startSearchTransition(() => {
+      setSearchTerm(searchInput);
+    });
   };
 
   useEffect(() => {
     if (query) {
       setSearchInput(query);
-      setSearchTerm(query); // this alone is enough
+      startSearchTransition(() => {
+        setSearchTerm(query);
+      });
     }
-  }, [query]);
+  }, [query, startSearchTransition]);
 
   return (
     <div className="flex flex-col gap-md py-md">

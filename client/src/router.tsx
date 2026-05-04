@@ -1,21 +1,22 @@
-import type { ReactElement } from "react";
+import { lazy, Suspense, type ReactElement } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./layouts/Layout";
-import Login from "./pages/Auth/LoginPage";
-import Register from "./pages/Auth/RegisterPage";
-import ResetPassword from "./pages/Auth/ResetPasswordPage";
-import Explore from "./pages/Catalog/ExplorePage";
-import Search from "./pages/Catalog/SearchPage";
-import Author from "./pages/Catalog/AuthorPage";
-import Profile from "./pages/Profile/ProfilePage";
-import Categories from "./pages/Catalog/CategoriesPage";
-import Feed from "./pages/Catalog/FeedPage";
-import Settings from "./pages/Profile/SettingsPage";
-import Book from "./pages/Catalog/BookPage";
-import Landing from "./pages/Home/LandingPage";
-import Notifications from "./pages/Profile/NotificationsPage";
-import NotFound from "./pages/Errors/NotFoundPage";
-import UserProfile from "./pages/Profile/UserProfilePage";
+
+const Login = lazy(() => import("./pages/Auth/LoginPage"));
+const Register = lazy(() => import("./pages/Auth/RegisterPage"));
+const ResetPassword = lazy(() => import("./pages/Auth/ResetPasswordPage"));
+const Explore = lazy(() => import("./pages/Catalog/ExplorePage"));
+const Search = lazy(() => import("./pages/Catalog/SearchPage"));
+const Author = lazy(() => import("./pages/Catalog/AuthorPage"));
+const Profile = lazy(() => import("./pages/Profile/ProfilePage"));
+const Categories = lazy(() => import("./pages/Catalog/CategoriesPage"));
+const Feed = lazy(() => import("./pages/Catalog/FeedPage"));
+const Settings = lazy(() => import("./pages/Profile/SettingsPage"));
+const Book = lazy(() => import("./pages/Catalog/BookPage"));
+const Landing = lazy(() => import("./pages/Home/LandingPage"));
+const Notifications = lazy(() => import("./pages/Profile/NotificationsPage"));
+const NotFound = lazy(() => import("./pages/Errors/NotFoundPage"));
+const UserProfile = lazy(() => import("./pages/Profile/UserProfilePage"));
 
 type AppRoutePath =
   | "/login"
@@ -52,27 +53,50 @@ const routes = {
   notFound: "*",
 } as const satisfies Record<string, AppRoutePath>;
 
+const routeFallback = (
+  <div className="flex-grow flex justify-center items-center">
+    <div className="spinner"></div>
+  </div>
+);
+
+function withSuspense(element: ReactElement): ReactElement {
+  return <Suspense fallback={routeFallback}>{element}</Suspense>;
+}
+
 function AppRouter(): ReactElement {
   return (
     <Router>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Landing />} /> {/* Default route */}
-          <Route path={routes.login} element={<Login />} />
-          <Route path={routes.register} element={<Register />} />
-          <Route path={routes.resetPassword} element={<ResetPassword />} />
-          <Route path={routes.explore} element={<Explore />} />
-          <Route path={routes.search} element={<Search />} />
-          <Route path={routes.searchQuery} element={<Search />} />
-          <Route path={routes.author} element={<Author />} />
-          <Route path={routes.myProfile} element={<Profile />} />
-          <Route path={routes.userProfile} element={<UserProfile />} />
-          <Route path={routes.categories} element={<Categories />} />
-          <Route path={routes.feed} element={<Feed />} />
-          <Route path={routes.settings} element={<Settings />} />
-          <Route path={routes.book} element={<Book />} />
-          <Route path={routes.notifications} element={<Notifications />} />
-          <Route path={routes.notFound} element={<NotFound />} />{" "}
+          <Route index element={withSuspense(<Landing />)} />
+          {/* Default route */}
+          <Route path={routes.login} element={withSuspense(<Login />)} />
+          <Route path={routes.register} element={withSuspense(<Register />)} />
+          <Route
+            path={routes.resetPassword}
+            element={withSuspense(<ResetPassword />)}
+          />
+          <Route path={routes.explore} element={withSuspense(<Explore />)} />
+          <Route path={routes.search} element={withSuspense(<Search />)} />
+          <Route path={routes.searchQuery} element={withSuspense(<Search />)} />
+          <Route path={routes.author} element={withSuspense(<Author />)} />
+          <Route path={routes.myProfile} element={withSuspense(<Profile />)} />
+          <Route
+            path={routes.userProfile}
+            element={withSuspense(<UserProfile />)}
+          />
+          <Route
+            path={routes.categories}
+            element={withSuspense(<Categories />)}
+          />
+          <Route path={routes.feed} element={withSuspense(<Feed />)} />
+          <Route path={routes.settings} element={withSuspense(<Settings />)} />
+          <Route path={routes.book} element={withSuspense(<Book />)} />
+          <Route
+            path={routes.notifications}
+            element={withSuspense(<Notifications />)}
+          />
+          <Route path={routes.notFound} element={withSuspense(<NotFound />)} />
           {/* Catch-all route for 404 */}
         </Route>
       </Routes>
