@@ -1,11 +1,15 @@
+from __future__ import annotations
+
+from typing import Any
+
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from apps.follows.models import Follow
 from apps.follows.selectors import (
     follow_relationships_for_user,
     followers_for_profile,
     following_for_profile,
+    follows_created_by_user,
     get_profile,
 )
 from apps.follows.serializers import (
@@ -20,15 +24,15 @@ from apps.follows.services import create_follow
 class FollowCollectionAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         if self.request.method == "POST":
             return FollowCreateSerializer
         return FollowSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return follow_relationships_for_user(user=self.request.user)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         follower_profile = self.request.user.profile
         followed_id = serializer.validated_data["followed"].id
         followed_profile = get_profile(profile_id=followed_id)
@@ -43,8 +47,8 @@ class FollowResourceAPIView(generics.RetrieveDestroyAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = "id"
 
-    def get_queryset(self):
-        return Follow.objects.filter(follower__user=self.request.user)
+    def get_queryset(self) -> Any:
+        return follows_created_by_user(user=self.request.user)
 
 
 class FollowerListAPIView(generics.ListAPIView):
@@ -55,7 +59,7 @@ class FollowerListAPIView(generics.ListAPIView):
     serializer_class = FollowerListSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return followers_for_profile(profile=self.request.user.profile)
 
 
@@ -67,7 +71,7 @@ class FollowingListAPIView(generics.ListAPIView):
     serializer_class = FollowingListSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return following_for_profile(profile=self.request.user.profile)
 
 
@@ -79,7 +83,7 @@ class UserFollowersAPIView(generics.ListAPIView):
     serializer_class = FollowerListSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         user_id = self.kwargs.get("user_id")
         profile = get_profile(profile_id=user_id)
         return followers_for_profile(profile=profile)
@@ -93,7 +97,7 @@ class UserFollowingAPIView(generics.ListAPIView):
     serializer_class = FollowingListSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         user_id = self.kwargs.get("user_id")
         profile = get_profile(profile_id=user_id)
         return following_for_profile(profile=profile)

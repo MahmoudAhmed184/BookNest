@@ -22,6 +22,10 @@ def follow_relationships_for_user(*, user: Any) -> FollowQuerySet:
     )
 
 
+def follows_created_by_user(*, user: Any) -> FollowQuerySet:
+    return following_for_profile(profile=user.profile)
+
+
 def followers_for_profile(*, profile: Profile) -> FollowQuerySet:
     return (
         Follow.objects.followers_of(profile)
