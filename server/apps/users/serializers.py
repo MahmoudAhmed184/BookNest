@@ -1,114 +1,113 @@
 # users/serializers/auth.py
-from rest_framework import serializers
+from __future__ import annotations
+
+from typing import Any
+
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
-from allauth.account.adapter import get_adapter
-from allauth.account.utils import filter_users_by_email
-from django.contrib.auth import get_user_model
+from rest_framework import serializers
+
+from apps.books.models import Author, Book, BookRating, BookReview, Genre, ReadingList, ReadingListBooks
+from apps.follows.models import Follow
+from apps.users.models.profile import Profile, ProfileInterest, ProfileSocialLink
+from apps.users.models.user import CustomUser
 
 User = get_user_model()
+
 
 class CustomRegisterSerializer(RegisterSerializer):
     # Remove fields we don't want
     first_name = None
     last_name = None
-    
+
     # Define fields we want
     username = serializers.CharField(required=True, max_length=150)
     email = serializers.EmailField(required=True)
     password1 = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True, min_length=8)
-    
-    def validate_email(self, email):
+
+    def validate_email(self, email: str) -> str:
         """Validate email uniqueness"""
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(_("Email already exists."))
         return email
-    
-    def validate_username(self, username):
+
+    def validate_username(self, username: str) -> str:
         """Validate username uniqueness"""
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError(_("Username in not avalible."))
         return username
 
-    def get_cleaned_data(self):
+    def get_cleaned_data(self) -> dict[str, Any]:
         return {
-            'username': self.validated_data.get('username', ''),
-            'email': self.validated_data.get('email', ''),
-            'password1': self.validated_data.get('password1', ''),
-            'password2': self.validated_data.get('password2', ''),
+            "username": self.validated_data.get("username", ""),
+            "email": self.validated_data.get("email", ""),
+            "password1": self.validated_data.get("password1", ""),
+            "password2": self.validated_data.get("password2", ""),
         }
-    
-    def validate(self, data):
+
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Validate password confirmation"""
-        if data['password1'] != data['password2']:
-            raise serializers.ValidationError({
-                "password": _("The two password fields didn't match.")
-            })
+        if data["password1"] != data["password2"]:
+            raise serializers.ValidationError({"password": _("The two password fields didn't match.")})
         return data
-
-
 
 
 class CustomLoginSerializer(LoginSerializer):
     # Remove username field, use email only
     username = None
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
+    password = serializers.CharField(required=True, write_only=True, style={"input_type": "password"})
 
-    def authenticate(self, **kwargs):
+    def authenticate(self, **kwargs: Any) -> Any:
         """Custom authentication using email instead of username"""
-        return authenticate(self.context['request'], **kwargs)
+        return authenticate(self.context["request"], **kwargs)
 
-    def validate(self, attrs):
-        email = attrs.get('email').lower()
-        password = attrs.get('password')
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         if email and password:
+            email = email.lower()
             # Try to find user by email
             try:
                 user = User.objects.get(email=email)
                 # Authenticate using the user's username and password
                 user_authenticated = authenticate(
-                    request=self.context.get('request'),
+                    request=self.context.get("request"),
                     username=user.username,  # Django's authenticate still uses username
-                    password=password
+                    password=password,
                 )
-                
+
                 if not user_authenticated:
-                    msg = _('Unable to log in with provided credentials.')
-                    raise serializers.ValidationError(msg, code='authorization')
-                    
+                    msg = _("Unable to log in with provided credentials.")
+                    raise serializers.ValidationError(msg, code="authorization")
+
                 if not user_authenticated.is_active:
-                    msg = _('User account is disabled.')
-                    raise serializers.ValidationError(msg, code='authorization')
-                    
-                attrs['user'] = user_authenticated
+                    msg = _("User account is disabled.")
+                    raise serializers.ValidationError(msg, code="authorization")
+
+                attrs["user"] = user_authenticated
                 return attrs
-                
-            except User.DoesNotExist:
-                msg = _('Unable to log in with provided credentials.')
-                raise serializers.ValidationError(msg, code='authorization')
+
+            except User.DoesNotExist as exc:
+                msg = _("Unable to log in with provided credentials.")
+                raise serializers.ValidationError(msg, code="authorization") from exc
         else:
             msg = _('Must include "email" and "password".')
-            raise serializers.ValidationError(msg, code='authorization')
+            raise serializers.ValidationError(msg, code="authorization")
 
-# users/serializers/profile.py
-from rest_framework import serializers
-from apps.users.models.profile import Profile, ProfileInterest, ProfileSocialLink
-from django.core.validators import FileExtensionValidator
-from django.core.exceptions import ValidationError
 
 class ProfileInterestSerializer(serializers.ModelSerializer):
     """Serializer for profile interests"""
-    
+
     class Meta:
         model = ProfileInterest
-        fields = ['interest']
-        
-    def validate_interest(self, value):
+        fields = ["interest"]
+
+    def validate_interest(self, value: str) -> str:
         """Validate interest field"""
         if not value.strip():
             raise serializers.ValidationError("Interest cannot be empty")
@@ -117,111 +116,119 @@ class ProfileInterestSerializer(serializers.ModelSerializer):
 
 class ProfileSocialLinkSerializer(serializers.ModelSerializer):
     """Serializer for profile social links"""
-    
+
     class Meta:
         model = ProfileSocialLink
-        fields = ['platform', 'url']
-        
-    def validate_url(self, value):
+        fields = ["platform", "url"]
+
+    def validate_url(self, value: str) -> str:
         """Validate URL format"""
-        if not value.startswith(('http://', 'https://')):
+        if not value.startswith(("http://", "https://")):
             raise serializers.ValidationError("URL must start with http:// or https://")
         return value
 
 
 class ProfileSerializer(serializers.ModelSerializer):
     """Enhanced serializer for user profiles"""
-    
+
     interests = ProfileInterestSerializer(many=True, required=False)
     social_links = ProfileSocialLinkSerializer(many=True, required=False)
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
     profile_pic = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    updated_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+    updated_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
 
     class Meta:
         model = Profile
         fields = [
-            'id', 'user_id', 'username', 'email', 'full_name', 'profile_pic', 'bio', 
-            'profile_type', 'interests', 'social_links', 
-            'created_at', 'updated_at'
+            "id",
+            "user_id",
+            "username",
+            "email",
+            "full_name",
+            "profile_pic",
+            "bio",
+            "profile_type",
+            "interests",
+            "social_links",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'user']
+        read_only_fields = ("id", "created_at", "updated_at", "user")
 
-    def get_profile_pic(self, obj):
+    def get_profile_pic(self, obj: Profile) -> str | None:
         """Get profile picture URL with proper formatting"""
         if obj.profile_pic:
             # Convert Cloudinary field to string and clean URL
             url = str(obj.profile_pic)
-            
+
             # Remove 'image/upload/' prefix if present
-            if url.startswith('image/upload/'):
-                url = url.replace('image/upload/', '', 1)
-            
+            if url.startswith("image/upload/"):
+                url = url.replace("image/upload/", "", 1)
+
             # Ensure HTTPS
-            if url.startswith('http://'):
-                url = url.replace('http://', 'https://', 1)
-                
+            if url.startswith("http://"):
+                url = url.replace("http://", "https://", 1)
+
             return url
         return None
 
-    def get_full_name(self, obj):
+    def get_full_name(self, obj: Profile) -> str | None:
         """Get user's full name if available"""
         user = obj.user
         if user.first_name or user.last_name:
             return f"{user.first_name} {user.last_name}".strip()
         return None
 
-    def validate_interests(self, value):
+    def validate_interests(self, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Validate interests list"""
         if value and len(value) > 10:
             raise serializers.ValidationError("Maximum 10 interests allowed")
-        
+
         # Check for duplicate interests
-        interests = [item['interest'].lower() for item in value if 'interest' in item]
+        interests = [item["interest"].lower() for item in value if "interest" in item]
         if len(interests) != len(set(interests)):
             raise serializers.ValidationError("Duplicate interests are not allowed")
-            
+
         return value
 
-    def validate_social_links(self, value):
+    def validate_social_links(self, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Validate social links"""
         if value and len(value) > 6:
             raise serializers.ValidationError("Maximum 6 social links allowed")
-            
+
         # Check for duplicate platforms
-        platforms = [item['platform'] for item in value if 'platform' in item]
+        platforms = [item["platform"] for item in value if "platform" in item]
         if len(platforms) != len(set(platforms)):
             raise serializers.ValidationError("Duplicate platforms are not allowed")
-            
+
         return value
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Profile:
         """Create profile with nested relationships"""
-        interests_data = validated_data.pop('interests', [])
-        social_links_data = validated_data.pop('social_links', [])
-        
+        interests_data = validated_data.pop("interests", [])
+        social_links_data = validated_data.pop("social_links", [])
+
         # Create profile
         profile = Profile.objects.create(**validated_data)
-        
+
         # Create interests
         for interest_data in interests_data:
             ProfileInterest.objects.create(profile=profile, **interest_data)
-            
+
         # Create social links
         for link_data in social_links_data:
             ProfileSocialLink.objects.create(profile=profile, **link_data)
-            
+
         return profile
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Profile, validated_data: dict[str, Any]) -> Profile:
         """Update profile with nested relationships"""
         # Handle nested interests
-        interests_data = validated_data.pop('interests', None)
+        interests_data = validated_data.pop("interests", None)
         if interests_data is not None:
             # Clear existing interests and create new ones
             instance.interests.all().delete()
@@ -229,7 +236,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 ProfileInterest.objects.create(profile=instance, **interest_data)
 
         # Handle nested social links
-        social_links_data = validated_data.pop('social_links', None)
+        social_links_data = validated_data.pop("social_links", None)
         if social_links_data is not None:
             # Clear existing social links and create new ones
             instance.social_links.all().delete()
@@ -239,167 +246,162 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Update the remaining fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-            
+
         instance.save()
         return instance
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: Profile) -> dict[str, Any]:
         """Customize the serialized output"""
-        data = super().to_representation(instance)
-        
+        data: dict[str, Any] = super().to_representation(instance)
+
         # Add computed fields
-        data['interests_count'] = instance.interests.count()
-        data['social_links_count'] = instance.social_links.count()
-        data['is_complete'] = self._is_profile_complete(instance)
-        
+        data["interests_count"] = instance.interests.count()
+        data["social_links_count"] = instance.social_links.count()
+        data["is_complete"] = self._is_profile_complete(instance)
+
         return data
 
-    def _is_profile_complete(self, instance):
+    def _is_profile_complete(self, instance: Profile) -> bool:
         """Check if profile is considered complete"""
-        required_fields = ['bio', 'profile_pic']
-        
+        required_fields = ["bio", "profile_pic"]
+
         for field in required_fields:
             if not getattr(instance, field):
                 return False
-                
-        # Check if at least one interest exists
-        if instance.interests.count() == 0:
-            return False
-            
-        return True
+
+        return instance.interests.count() != 0
 
 
 class ProfileCreateSerializer(ProfileSerializer):
     """Simplified serializer for profile creation"""
-    
+
     class Meta(ProfileSerializer.Meta):
-        fields = [
-            'bio', 'profile_type', 'interests', 'social_links'
-        ]
-        
-    def validate(self, data):
+        fields = ["bio", "profile_type", "interests", "social_links"]
+
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Additional validation for profile creation"""
         # Ensure required fields for profile creation
-        if not data.get('bio'):
-            raise serializers.ValidationError({
-                'bio': 'Bio is required when creating a profile'
-            })
-            
+        if not data.get("bio"):
+            raise serializers.ValidationError({"bio": "Bio is required when creating a profile"})
+
         return data
 
 
 class ProfileUpdateSerializer(ProfileSerializer):
     """Serializer for profile updates with more flexibility"""
-    
+
     class Meta(ProfileSerializer.Meta):
-        fields = [
-            'bio', 'profile_type', 'interests', 'social_links'
-        ]
-        
-    def validate_bio(self, value):
+        fields = ["bio", "profile_type", "interests", "social_links"]
+
+    def validate_bio(self, value: str | None) -> str | None:
         """More lenient bio validation for updates"""
         if value is not None and len(value.strip()) < 5:
             raise serializers.ValidationError("Bio must be at least 5 characters long")
         return value.strip() if value else value
 
-# serializers.py
-from rest_framework import serializers
-from apps.users.models.profile import Profile, ProfileInterest, ProfileSocialLink
-from apps.users.models.user import CustomUser
-from apps.follows.models import Follow
-from apps.books.models import (
-    Book, Author, ReadingList, ReadingListBooks, 
-    BookRating, BookReview, Genre
-)
-
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['author_id', 'name', 'number_of_books']
+        fields = ["author_id", "name", "number_of_books"]
 
 
 class BookGenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
-        fields = ['name']
+        fields = ["name"]
 
 
 class BookBasicSerializer(serializers.ModelSerializer):
     authors = AuthorSerializer(many=True, read_only=True)
     genres = BookGenreSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Book
         fields = [
-            'isbn13', 'isbn', 'title', 'cover_img', 'description',
-            'publication_date', 'number_of_pages', 'number_of_ratings',
-            'average_rate', 'authors', 'genres'
+            "isbn13",
+            "isbn",
+            "title",
+            "cover_img",
+            "description",
+            "publication_date",
+            "number_of_pages",
+            "number_of_ratings",
+            "average_rate",
+            "authors",
+            "genres",
         ]
 
 
 class UserDataProfileInterestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileInterest
-        fields = ['interest']
+        fields = ["interest"]
 
 
 class UserDataProfileSocialLinkSerializer(serializers.ModelSerializer):
-    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
-    
+    platform_display = serializers.CharField(source="get_platform_display", read_only=True)
+
     class Meta:
         model = ProfileSocialLink
-        fields = ['platform', 'platform_display', 'url']
+        fields = ["platform", "platform_display", "url"]
 
 
 class ReadingListBooksSerializer(serializers.ModelSerializer):
     book = BookBasicSerializer(read_only=True)
-    
+
     class Meta:
         model = ReadingListBooks
-        fields = ['book']
+        fields = ["book"]
 
 
 class UserDataReadingListSerializer(serializers.ModelSerializer):
-    books_detail = ReadingListBooksSerializer(source='reading_list_books', many=True, read_only=True)
+    books_detail = ReadingListBooksSerializer(source="reading_list_books", many=True, read_only=True)
     books_count = serializers.SerializerMethodField()
-    type_display = serializers.CharField(source='get_type_display', read_only=True)
-    privacy_display = serializers.CharField(source='get_privacy_display', read_only=True)
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    type_display = serializers.CharField(source="get_type_display", read_only=True)
+    privacy_display = serializers.CharField(source="get_privacy_display", read_only=True)
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+
     class Meta:
         model = ReadingList
         fields = [
-            'list_id', 'name', 'type', 'type_display', 'privacy', 
-            'privacy_display', 'created_at', 'books_count', 'books_detail'
+            "list_id",
+            "name",
+            "type",
+            "type_display",
+            "privacy",
+            "privacy_display",
+            "created_at",
+            "books_count",
+            "books_detail",
         ]
-        read_only_fields = ['list_id', 'created_at']
-    
-    def get_books_count(self, obj):
+        read_only_fields = ("list_id", "created_at")
+
+    def get_books_count(self, obj: ReadingList) -> int:
         return obj.reading_list_books.count()
 
 
 class UserDataBookRatingSerializer(serializers.ModelSerializer):
     book = BookBasicSerializer(read_only=True)
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+
     class Meta:
         model = BookRating
-        fields = ['rate_id', 'rate', 'created_at', 'book']
-        read_only_fields = ['rate_id', 'created_at']
+        fields = ["rate_id", "rate", "created_at", "book"]
+        read_only_fields = ("rate_id", "created_at")
 
 
 class UserDataBookReviewSerializer(serializers.ModelSerializer):
     book = BookBasicSerializer(read_only=True)
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
     book_cover = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = BookReview
-        fields = ['review_id', 'review_text', 'created_at', 'book', 'book_cover']
-        read_only_fields = ['review_id', 'created_at']
-    
-    def get_book_cover(self, obj):
+        fields = ["review_id", "review_text", "created_at", "book", "book_cover"]
+        read_only_fields = ("review_id", "created_at")
+
+    def get_book_cover(self, obj: BookReview) -> str | None:
         """Get the book's cover image URL"""
         return obj.book.cover_img if obj.book else None
 
@@ -407,22 +409,22 @@ class UserDataBookReviewSerializer(serializers.ModelSerializer):
 class FollowingSerializer(serializers.ModelSerializer):
     followed_user = serializers.SerializerMethodField()
     followed_profile_pic = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+
     class Meta:
         model = Follow
-        fields = ['followed_user', 'followed_profile_pic', 'created_at']
-        read_only_fields = ['followed_user', 'followed_profile_pic', 'created_at']
-    
-    def get_followed_user(self, obj):
+        fields = ["followed_user", "followed_profile_pic", "created_at"]
+        read_only_fields = ("followed_user", "followed_profile_pic", "created_at")
+
+    def get_followed_user(self, obj: Follow) -> dict[str, Any]:
         return {
-            'id': obj.followed.user.id,
-            'username': obj.followed.user.username,
-            'email': obj.followed.user.email,
-            'profile_type': obj.followed.get_profile_type_display()
+            "id": obj.followed.user.id,
+            "username": obj.followed.user.username,
+            "email": obj.followed.user.email,
+            "profile_type": obj.followed.get_profile_type_display(),
         }
-    
-    def get_followed_profile_pic(self, obj):
+
+    def get_followed_profile_pic(self, obj: Follow) -> str | None:
         if obj.followed.profile_pic:
             return obj.followed.profile_pic.url
         return None
@@ -431,22 +433,22 @@ class FollowingSerializer(serializers.ModelSerializer):
 class FollowerSerializer(serializers.ModelSerializer):
     follower_user = serializers.SerializerMethodField()
     follower_profile_pic = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+
     class Meta:
         model = Follow
-        fields = ['follower_user', 'follower_profile_pic', 'created_at']
-        read_only_fields = ['follower_user', 'follower_profile_pic', 'created_at']
-    
-    def get_follower_user(self, obj):
+        fields = ["follower_user", "follower_profile_pic", "created_at"]
+        read_only_fields = ("follower_user", "follower_profile_pic", "created_at")
+
+    def get_follower_user(self, obj: Follow) -> dict[str, Any]:
         return {
-            'id': obj.follower.user.id,
-            'username': obj.follower.user.username,
-            'email': obj.follower.user.email,
-            'profile_type': obj.follower.get_profile_type_display()
+            "id": obj.follower.user.id,
+            "username": obj.follower.user.username,
+            "email": obj.follower.user.email,
+            "profile_type": obj.follower.get_profile_type_display(),
         }
-    
-    def get_follower_profile_pic(self, obj):
+
+    def get_follower_profile_pic(self, obj: Follow) -> str | None:
         if obj.follower.profile_pic:
             return obj.follower.profile_pic.url
         return None
@@ -455,55 +457,74 @@ class FollowerSerializer(serializers.ModelSerializer):
 class UserDataProfileSerializer(serializers.ModelSerializer):
     interests = UserDataProfileInterestSerializer(many=True, read_only=True)
     social_links = UserDataProfileSocialLinkSerializer(many=True, read_only=True)
-    profile_type_display = serializers.CharField(source='get_profile_type_display', read_only=True)
+    profile_type_display = serializers.CharField(source="get_profile_type_display", read_only=True)
     following = FollowingSerializer(many=True, read_only=True)
     followers = FollowerSerializer(many=True, read_only=True)
     following_count = serializers.SerializerMethodField()
     followers_count = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    updated_at = serializers.DateTimeField(format='%a %b %d %Y at %I:%M %p', read_only=True)
-    
+    created_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+    updated_at = serializers.DateTimeField(format="%a %b %d %Y at %I:%M %p", read_only=True)
+
     class Meta:
         model = Profile
         fields = [
-            'id','bio', 'profile_type', 'profile_type_display', 'profile_pic',
-            'settings', 'created_at', 'updated_at', 'interests',
-            'social_links', 'following', 'followers', 'following_count',
-            'followers_count'
+            "id",
+            "bio",
+            "profile_type",
+            "profile_type_display",
+            "profile_pic",
+            "settings",
+            "created_at",
+            "updated_at",
+            "interests",
+            "social_links",
+            "following",
+            "followers",
+            "following_count",
+            "followers_count",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_following_count(self, obj):
+        read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_following_count(self, obj: Profile) -> int:
         return obj.following.count()
-    
-    def get_followers_count(self, obj):
+
+    def get_followers_count(self, obj: Profile) -> int:
         return obj.followers.count()
-    
-    
+
+
 class UserDataSerializer(serializers.ModelSerializer):
     profile = UserDataProfileSerializer(read_only=True)
-    reading_lists = UserDataReadingListSerializer(source='profile.reading_lists', many=True, read_only=True)
+    reading_lists = UserDataReadingListSerializer(source="profile.reading_lists", many=True, read_only=True)
     ratings = UserDataBookRatingSerializer(many=True, read_only=True)
     reviews = UserDataBookReviewSerializer(many=True, read_only=True)
     total_books_rated = serializers.SerializerMethodField()
     total_books_reviewed = serializers.SerializerMethodField()
     total_reading_lists = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = CustomUser
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name', 'profile',
-            'reading_lists', 'ratings', 'reviews', 'total_books_rated',
-            'total_books_reviewed', 'total_reading_lists'
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "profile",
+            "reading_lists",
+            "ratings",
+            "reviews",
+            "total_books_rated",
+            "total_books_reviewed",
+            "total_reading_lists",
         ]
-    
-    def get_total_books_rated(self, obj):
+
+    def get_total_books_rated(self, obj: CustomUser) -> int:
         return obj.ratings.count()
-    
-    def get_total_books_reviewed(self, obj):
+
+    def get_total_books_reviewed(self, obj: CustomUser) -> int:
         return obj.reviews.count()
-    
-    def get_total_reading_lists(self, obj):
-        if hasattr(obj, 'profile'):
+
+    def get_total_reading_lists(self, obj: CustomUser) -> int:
+        if hasattr(obj, "profile"):
             return obj.profile.reading_lists.count()
         return 0
