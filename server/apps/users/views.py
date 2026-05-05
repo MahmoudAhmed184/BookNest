@@ -1,9 +1,15 @@
 # users/views/register.py
-import logging
+from __future__ import annotations
 
+import logging
+from typing import TYPE_CHECKING, Any
+
+from cloudinary.exceptions import Error as CloudinaryError
 from dj_rest_auth.registration.views import RegisterView
 from dj_rest_auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
-from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import DatabaseError, IntegrityError
+from django.http import Http404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
@@ -13,10 +19,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated as DRFIsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.models.profile import Profile
 from apps.users.permissions import IsAuthenticated as ProfileIsAuthenticated
 from apps.users.permissions import IsOwnerOrReadOnly
 from apps.users.selectors import (
@@ -34,13 +38,16 @@ from apps.users.serializers import (
     UserDataSerializer,
 )
 from apps.users.services import (
+    blacklist_logout_tokens,
     create_profile,
     update_profile,
     upload_profile_picture,
     validate_profile_image,
 )
 
-User = get_user_model()
+if TYPE_CHECKING:
+    from rest_framework.request import Request
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +55,7 @@ class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
     permission_classes = [AllowAny]
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Create a new user account
         """
@@ -85,7 +92,7 @@ class CustomRegisterView(RegisterView):
         }
         return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-    def _format_validation_errors(self, errors):
+    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
         """Format validation errors for consistent response"""
         formatted_errors = {}
         for field, error_list in errors.items():
@@ -100,7 +107,7 @@ class CustomLoginView(LoginView):
     serializer_class = CustomLoginSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Login user with email and password
         """
@@ -114,7 +121,7 @@ class CustomLoginView(LoginView):
             # Get the login response from parent
             response = super().post(request, *args, **kwargs)
 
-            if response.status_code == 200:
+            if response.status_code == status.HTTP_200_OK:
                 # Customize the response data
                 original_data = response.data
                 access_token = original_data.get("access")
@@ -150,7 +157,7 @@ class CustomLoginView(LoginView):
         }
         return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-    def _format_validation_errors(self, errors):
+    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
         """Format validation errors for consistent response"""
         formatted_errors = {}
         for field, error_list in errors.items():
@@ -166,24 +173,13 @@ class CustomLogoutView(LogoutView):
     Custom logout view with token blacklisting
     """
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Logout user and blacklist refresh token
         """
         try:
-            # Get refresh token from request
             refresh_token = request.data.get("refresh")
-
-            if refresh_token:
-                # Blacklist the refresh token
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-            else:
-                # If no refresh token provided, blacklist all user tokens
-                if request.user.is_authenticated:
-                    tokens = OutstandingToken.objects.filter(user=request.user)
-                    for token in tokens:
-                        BlacklistedToken.objects.get_or_create(token=token)
+            blacklist_logout_tokens(user=request.user, refresh_token=refresh_token)
 
             response_data = {"success": True, "message": "Logout successful", "data": None}
             return Response(response_data, status=status.HTTP_200_OK)
@@ -198,7 +194,7 @@ class CurrentSessionAPIView(CustomLogoutView):
         request=None,
         responses={200: OpenApiResponse(description="Current session ended.")},
     )
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return self.post(request, *args, **kwargs)
 
 
@@ -207,18 +203,17 @@ class ProfileViewSet(viewsets.ModelViewSet):
     ViewSet for managing user profiles
     """
 
-    queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [ProfileIsAuthenticated, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         """Return appropriate serializer class based on action"""
         if self.action in ["update", "partial_update"]:
             return ProfileUpdateSerializer
         return ProfileSerializer
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new profile for the authenticated user"""
         try:
             # Check if user already has a profile
@@ -247,7 +242,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
+        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
             logger.error(f"Profile creation error for user {request.user.id}: {str(e)}")
             error_response = {
                 "success": False,
@@ -256,7 +251,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Retrieve a specific profile"""
         try:
             instance = self.get_object()
@@ -269,7 +264,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
-        except Profile.DoesNotExist:
+        except Http404:
             error_response = {
                 "success": False,
                 "message": "Profile not found",
@@ -277,7 +272,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_404_NOT_FOUND)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Update profile (full update)"""
         try:
             partial = kwargs.pop("partial", False)
@@ -300,7 +295,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-        except Profile.DoesNotExist:
+        except Http404:
             error_response = {
                 "success": False,
                 "message": "Profile not found",
@@ -309,7 +304,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response(error_response, status=status.HTTP_404_NOT_FOUND)
         except PermissionDenied:
             raise
-        except Exception as e:
+        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
             logger.error(f"Profile update error for user {request.user.id}: {str(e)}")
             error_response = {
                 "success": False,
@@ -318,12 +313,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Partial update of profile"""
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """List profiles with optional filtering"""
         try:
             queryset = self.filter_queryset(self.get_queryset())
@@ -356,7 +351,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except (DatabaseError, TypeError, ValueError) as e:
             logger.error(f"Profile list error: {str(e)}")
             error_response = {
                 "success": False,
@@ -365,7 +360,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         """Filter queryset based on query parameters"""
         return profile_list(
             username=self.request.query_params.get("username"),
@@ -373,7 +368,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["get", "patch"])
-    def me(self, request):
+    def me(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Endpoint to get or update the current user's profile"""
         try:
             profile = profile_for_user(user=request.user)
@@ -395,7 +390,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
 
-            elif request.method == "PATCH":
+            if request.method == "PATCH":
                 serializer = self.get_serializer(profile, data=request.data, partial=True)
                 if serializer.is_valid():
                     update_profile(profile=profile, serializer=serializer)
@@ -413,7 +408,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }
                 return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Unsupported method",
+                    "errors": {"detail": "Method not allowed"},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
             logger.error(f"Profile me endpoint error for user {request.user.id}: {str(e)}")
             error_response = {
                 "success": False,
@@ -423,7 +427,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=["post"])
-    def upload_picture(self, request):
+    def upload_picture(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Upload profile picture to Cloudinary"""
         try:
             # Check if user has a profile
@@ -468,7 +472,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except (AttributeError, CloudinaryError, DatabaseError, DjangoValidationError, TypeError, ValueError) as e:
             logger.error(f"Profile picture upload error for user {request.user.id}: {str(e)}")
             error_response = {
                 "success": False,
@@ -477,7 +481,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def _format_validation_errors(self, errors):
+    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
         """Format validation errors for consistent response"""
         formatted_errors = {}
         for field, error_list in errors.items():
@@ -496,10 +500,10 @@ class CustomPasswordResetView(PasswordResetView):
 
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response = super().post(request, *args, **kwargs)
 
-        if response.status_code == 200:
+        if response.status_code == status.HTTP_200_OK:
             response_data = {
                 "success": True,
                 "message": "Password reset email sent successfully",
@@ -515,10 +519,10 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response = super().post(request, *args, **kwargs)
 
-        if response.status_code == 200:
+        if response.status_code == status.HTTP_200_OK:
             response_data = {
                 "success": True,
                 "message": "Password reset successful",
@@ -527,16 +531,15 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
-        else:
-            # Handle validation errors
-            error_response = {
-                "success": False,
-                "message": "Password reset failed",
-                "errors": response.data
-                if hasattr(response, "data")
-                else {"detail": "Invalid token or passwords don't match"},
-            }
-            return Response(error_response, status=response.status_code)
+        # Handle validation errors
+        error_response = {
+            "success": False,
+            "message": "Password reset failed",
+            "errors": (
+                response.data if hasattr(response, "data") else {"detail": "Invalid token or passwords don't match"}
+            ),
+        }
+        return Response(error_response, status=response.status_code)
 
 
 class UserDataDetailView(generics.RetrieveAPIView):
@@ -549,13 +552,13 @@ class UserDataDetailView(generics.RetrieveAPIView):
     permission_classes = [DRFIsAuthenticated]
     lookup_field = "id"
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return user_data_queryset()
 
-    def get_object(self):
+    def get_object(self) -> Any:
         return get_user_data(user_id=self.kwargs.get("id"))
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance)
@@ -565,7 +568,12 @@ class UserDataDetailView(generics.RetrieveAPIView):
                 status=status.HTTP_200_OK,
             )
 
-        except Exception as e:
+        except Http404:
+            return Response(
+                {"success": False, "message": "User data not found", "data": None},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except (DatabaseError, TypeError, ValueError) as e:
             return Response(
                 {"success": False, "message": f"Error retrieving user data: {str(e)}", "data": None},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

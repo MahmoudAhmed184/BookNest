@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any
 
 import cloudinary.uploader
 from django.db import transaction
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.books.models import ReadingList
 
@@ -80,3 +82,15 @@ def upload_profile_picture(*, profile: Profile, image_file: Any) -> dict[str, An
         profile.full_clean(exclude=["settings"])
         profile.save(update_fields=["profile_pic"])
         return upload_result
+
+
+def blacklist_logout_tokens(*, user: Any, refresh_token: str | None = None) -> None:
+    if refresh_token:
+        refresh = RefreshToken(refresh_token)  # type: ignore[arg-type]
+        refresh.blacklist()
+        return
+
+    if user.is_authenticated:
+        tokens = OutstandingToken.objects.filter(user=user)
+        for outstanding_token in tokens:
+            BlacklistedToken.objects.get_or_create(token=outstanding_token)
