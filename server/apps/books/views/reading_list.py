@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.books.serializers.book import ReadingListSerializer
 from apps.books.selectors import reading_lists_owned_by_user, reading_lists_visible_to_user
+from apps.books.serializers.book import ReadingListSerializer
 from apps.books.services import add_book_to_reading_list, remove_book_from_reading_list
 from apps.users.permissions import IsOwnerOrReadOnly
 
@@ -31,8 +31,8 @@ class ReadingListCollectionAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return reading_lists_owned_by_user(self.request.user)
-        return reading_lists_visible_to_user(self.request.user)
+            return reading_lists_owned_by_user(user=self.request.user)
+        return reading_lists_visible_to_user(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(profile=self.request.user.profile)
@@ -49,8 +49,8 @@ class ReadingListResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
-            return reading_lists_owned_by_user(self.request.user)
-        return reading_lists_visible_to_user(self.request.user)
+            return reading_lists_owned_by_user(user=self.request.user)
+        return reading_lists_visible_to_user(user=self.request.user)
 
 
 class ReadingListBookMembershipAPIView(APIView):
@@ -129,10 +129,11 @@ class AdminUserReadingListsAPIView(generics.ListAPIView):
     API endpoint that allows admins to view any user's reading lists by user ID.
     Requires admin privileges.
     """
+
     serializer_class = ReadingListSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user_id = self.kwargs.get('user_id')
+        user_id = self.kwargs.get("user_id")
         user = get_object_or_404(get_user_model(), id=user_id)
-        return reading_lists_owned_by_user(user)
+        return reading_lists_owned_by_user(user=user)
