@@ -3,8 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.notifications.serializers import NotificationCreateSerializer, NotificationSerializer
 from apps.notifications.selectors import notifications_for_user
+from apps.notifications.serializers import NotificationCreateSerializer, NotificationSerializer
 from apps.notifications.services import NotificationService
 
 
@@ -32,7 +32,7 @@ class NotificationCollectionAPIView(generics.ListCreateAPIView):
         read = self.request.query_params.get("read")
         notification_type = self.request.query_params.get("type")
         return notifications_for_user(
-            self.request.user,
+            user=self.request.user,
             read=read.lower() == "true" if read is not None else None,
             notification_type=notification_type,
         )
@@ -44,26 +44,27 @@ class NotificationResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        return notifications_for_user(self.request.user)
+        return notifications_for_user(user=self.request.user)
 
 
 class NotificationUnreadCountAPIView(APIView):
     """
     API endpoint for getting the count of unread notifications.
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        count = NotificationService.get_unread_count(request.user)
-        return Response({'count': count})
+        count = NotificationService.get_unread_count(user=request.user)
+        return Response({"count": count})
 
 
 class NotificationMarkAllReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        updated = NotificationService.mark_all_as_read(request.user)
-        return Response({'updated': updated})
+        updated = NotificationService.mark_all_as_read(user=request.user)
+        return Response({"updated": updated})
 
 
 class NotificationMarkReadAPIView(APIView):
