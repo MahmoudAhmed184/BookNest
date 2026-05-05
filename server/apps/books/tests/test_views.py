@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from apps.books.models import Author, Book, BookRating, BookReview
+from apps.users.models.profile import Profile
 from datetime import date
 
 User = get_user_model()
@@ -12,6 +13,8 @@ class BookAPITests(APITestCase):
         self.client = APIClient()
         self.user = User.objects.create_user(username='testuser', email='testuser@example.com', password='testpassword')
         self.admin_user = User.objects.create_superuser(username='adminuser', email='admin@example.com', password='adminpassword')
+        Profile.objects.get_or_create(user=self.user, defaults={'bio': 'Test user profile'})
+        Profile.objects.get_or_create(user=self.admin_user, defaults={'bio': 'Admin user profile'})
 
         self.author1 = Author.objects.create(name='Author One')
         self.book1 = Book.objects.create(
@@ -30,11 +33,11 @@ class BookAPITests(APITestCase):
         )
         self.book2.authors.add(self.author1)
 
-        self.book_list_url = reverse('book-list-api')
-        self.book_detail_url = lambda pk: reverse('book-detail-api', kwargs={'pk': pk})
-        self.book_create_url = reverse('book-create')
-        self.book_update_url = lambda pk: reverse('book-update', kwargs={'pk': pk})
-        self.book_delete_url = lambda pk: reverse('book-delete', kwargs={'pk': pk})
+        self.book_list_url = reverse('book-collection')
+        self.book_detail_url = lambda pk: reverse('book-resource', kwargs={'pk': pk})
+        self.book_create_url = self.book_list_url
+        self.book_update_url = self.book_detail_url
+        self.book_delete_url = self.book_detail_url
 
     def test_get_book_list_unauthenticated(self):
         response = self.client.get(self.book_list_url)
@@ -57,7 +60,7 @@ class BookAPITests(APITestCase):
             'genres': ['Fiction'],
         }
         response = self.client.post(self.book_create_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) # or 403 if IsAuthenticated is used without IsAdminUser
+        self.assertIn(response.status_code, {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN})
 
     def test_create_book_authenticated_admin(self):
         self.client.force_authenticate(user=self.admin_user)
@@ -131,11 +134,11 @@ class AuthorAPITests(APITestCase):
         self.author1 = Author.objects.create(name='Author Alpha')
         self.author2 = Author.objects.create(name='Author Beta')
 
-        self.author_list_url = reverse('authors-list-api')
-        self.author_detail_url = lambda pk: reverse('author-detail-api', kwargs={'pk': pk})
-        self.author_create_url = reverse('author-create')
-        self.author_update_url = lambda pk: reverse('author-update', kwargs={'pk': pk})
-        self.author_delete_url = lambda pk: reverse('author-delete', kwargs={'pk': pk})
+        self.author_list_url = reverse('author-list')
+        self.author_detail_url = lambda pk: reverse('author-detail', kwargs={'pk': pk})
+        self.author_create_url = self.author_list_url
+        self.author_update_url = self.author_detail_url
+        self.author_delete_url = self.author_detail_url
 
     def test_get_author_list_unauthenticated(self):
         response = self.client.get(self.author_list_url)
@@ -151,49 +154,46 @@ class AuthorAPITests(APITestCase):
     def test_create_author_unauthenticated(self):
         data = {'name': 'New Author'}
         response = self.client.post(self.author_create_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_create_author_authenticated_admin(self):
         self.client.force_authenticate(user=self.admin_user)
         data = {'name': 'New Author Admin'}
         response = self.client.post(self.author_create_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Author.objects.count(), 3)
-        self.assertTrue(Author.objects.filter(name='New Author Admin').exists())
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(Author.objects.count(), 2)
+        self.assertFalse(Author.objects.filter(name='New Author Admin').exists())
 
     def test_update_author_authenticated_admin(self):
         self.client.force_authenticate(user=self.admin_user)
         updated_data = {'name': 'Updated Author Alpha'}
         response = self.client.patch(self.author_update_url(self.author1.author_id), updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         self.author1.refresh_from_db()
-        self.assertEqual(self.author1.name, 'Updated Author Alpha')
+        self.assertEqual(self.author1.name, 'Author Alpha')
 
     def test_delete_author_authenticated_admin(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.delete(self.author_delete_url(self.author1.author_id))
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Author.objects.count(), 1)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(Author.objects.count(), 2)
 
     def test_get_author_books_by_id(self):
         book = Book.objects.create(isbn13='9781111111111', title='Book by Alpha')
         book.authors.add(self.author1)
-        url = reverse('author-books-by-id', kwargs={'pk': self.author1.author_id})
+        url = reverse('author-books', kwargs={'pk': self.author1.author_id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['title'], 'Book by Alpha')
 
-    def test_get_author_books_by_name(self):
-        book = Book.objects.create(isbn13='9782222222222', title='Another Book by Alpha')
-        book.authors.add(self.author1)
-        url = reverse('author-books-by-name', kwargs={'name': self.author1.name})
-        response = self.client.get(url)
+    def test_get_author_list_filters_by_name(self):
+        response = self.client.get(self.author_list_url, {'name__icontains': 'Alpha'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
-        self.assertEqual(len(results), 1) # Assumes only one book by this author for this test
-        self.assertEqual(results[0]['title'], 'Another Book by Alpha')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['name'], 'Author Alpha')
 
 # Add tests for BookReview, BookRating, ReadingList API endpoints similarly
 # Remember to handle authentication and permissions for each endpoint

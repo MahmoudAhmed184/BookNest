@@ -12,12 +12,12 @@ User = get_user_model()
 class UserAuthAPITests(APITestCase):
     def setUp(self):
         self.client = APIClient()
-        self.register_url = reverse('custom_register')
-        self.login_url = reverse('rest_login')
-        self.logout_url = reverse('rest_logout')
-        self.user_details_url = reverse('rest_user_details')
-        self.token_verify_url = reverse('token_verify')
-        self.token_refresh_url = reverse('token_refresh')
+        self.register_url = reverse('user-collection')
+        self.login_url = reverse('session-collection')
+        self.logout_url = reverse('current-session')
+        self.user_details_url = reverse('current-user')
+        self.token_verify_url = reverse('token-verify')
+        self.token_refresh_url = reverse('token-refresh')
 
         self.user_data = {
             'username': 'testuser_api',
@@ -99,10 +99,10 @@ class ProfileAPITests(APITestCase):
         self.profile1, _ = Profile.objects.get_or_create(user=self.user1, defaults={'bio': 'User 1 Bio API'})
         self.profile2, _ = Profile.objects.get_or_create(user=self.user2, defaults={'bio': 'User 2 Bio API'})
 
-        self.profile_list_create_url = reverse('profile-list') # Corresponds to router.register('profile', ...)
-        self.my_profile_url = reverse('my-profile')
-        self.profile_detail_url = lambda pk: reverse('profile-detail', kwargs={'pk': pk})
-        self.profile_upload_pic_url = reverse('profile-picture-upload')
+        self.profile_list_create_url = reverse('profile-collection')
+        self.my_profile_url = reverse('current-profile')
+        self.profile_detail_url = lambda pk: reverse('profile-resource', kwargs={'pk': pk})
+        self.profile_upload_pic_url = reverse('current-profile-picture')
 
         # Authenticate user1 for most tests
         self.client.force_authenticate(user=self.user1)

@@ -20,12 +20,12 @@ class FollowAPITests(APITestCase):
         self.profile3, _ = Profile.objects.get_or_create(user=self.user3, defaults={'bio': 'Profile 3 Bio API'})
 
         # URLs
-        self.follow_create_url = reverse('follow-create')
-        self.unfollow_url = lambda followed_id: reverse('follow-delete', kwargs={'followed_id': followed_id})
-        self.follower_list_url = reverse('follower-list') # Lists followers of the authenticated user
-        self.following_list_url = reverse('following-list') # Lists who the authenticated user is following
-        self.user_followers_url = lambda user_id: reverse('user-followers', kwargs={'user_id': user_id})
-        self.user_following_url = lambda user_id: reverse('user-following', kwargs={'user_id': user_id})
+        self.follow_create_url = reverse('follow-collection')
+        self.unfollow_url = lambda follow_id: reverse('follow-resource', kwargs={'id': follow_id})
+        self.follower_list_url = reverse('current-profile-followers')
+        self.following_list_url = reverse('current-profile-following')
+        self.user_followers_url = lambda user_id: reverse('profile-followers', kwargs={'user_id': user_id})
+        self.user_following_url = lambda user_id: reverse('profile-following', kwargs={'user_id': user_id})
 
     def test_follow_user_unauthenticated(self):
         response = self.client.post(self.follow_create_url, {'followed': self.profile2.id}, format='json')
@@ -51,15 +51,15 @@ class FollowAPITests(APITestCase):
 
     def test_unfollow_user_authenticated(self):
         self.client.force_authenticate(user=self.user1)
-        Follow.objects.create(follower=self.profile1, followed=self.profile2)
+        follow = Follow.objects.create(follower=self.profile1, followed=self.profile2)
         self.assertTrue(Follow.objects.filter(follower=self.profile1, followed=self.profile2).exists())
-        response = self.client.delete(self.unfollow_url(self.profile2.id))
+        response = self.client.delete(self.unfollow_url(follow.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Follow.objects.filter(follower=self.profile1, followed=self.profile2).exists())
 
     def test_unfollow_user_not_following(self):
         self.client.force_authenticate(user=self.user1)
-        response = self.client.delete(self.unfollow_url(self.profile2.id))
+        response = self.client.delete(self.unfollow_url(999999))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND) # Or appropriate error for not found
 
     def test_get_my_followers_list_authenticated(self):

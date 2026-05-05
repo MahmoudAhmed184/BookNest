@@ -184,6 +184,9 @@ class DatabaseSearchService:
             )
 
             total_count = queryset.count()
+            if total_count == 0:
+                return DatabaseSearchService._search_prefix_index(query, page, page_size, filters)
+
             offset = (page - 1) * page_size
             page_items = queryset[offset:offset + page_size]
             books = [
