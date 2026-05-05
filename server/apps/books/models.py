@@ -33,7 +33,7 @@ class Author(models.Model):
             models.Index(fields=["name"], name="author_name_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -147,12 +147,8 @@ class Book(models.Model):
             models.Index(fields=["number_of_pages"], name="book_pages_idx"),
             models.Index(fields=["number_of_ratings"], name="book_ratings_count_idx"),
             # Composite indexes for common query patterns
-            models.Index(
-                fields=["average_rate", "publication_date"], name="book_rating_date_idx"
-            ),
-            models.Index(
-                fields=["title", "average_rate"], name="book_title_rating_idx"
-            ),
+            models.Index(fields=["average_rate", "publication_date"], name="book_rating_date_idx"),
+            models.Index(fields=["title", "average_rate"], name="book_title_rating_idx"),
             # New indexes for tracking
             models.Index(fields=["last_updated"], name="book_last_updated_idx"),
             models.Index(fields=["source"], name="book_source_idx"),
@@ -161,7 +157,7 @@ class Book(models.Model):
         ]
         ordering = ["-average_rate", "title"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -191,10 +187,10 @@ class BookAuthor(models.Model):
         unique_together = ("book", "author")
         ordering = ["-id"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.author.name
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Override save to update author book count"""
         # Check if this is a new instance (not in the database yet)
         is_new = self.pk is None
@@ -205,15 +201,16 @@ class BookAuthor(models.Model):
             self.author.number_of_books = models.F("number_of_books") + 1
             self.author.save(update_fields=["number_of_books"])
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs) -> tuple[int, dict[str, int]]:
         """Override delete to update author book count"""
         author = self.author
-        super().delete(*args, **kwargs)
+        deleted = super().delete(*args, **kwargs)
 
         # Decrement the author's book count, ensuring it doesn't go below 0
         if author.number_of_books > 0:
             author.number_of_books = models.F("number_of_books") - 1
             author.save(update_fields=["number_of_books"])
+        return deleted
 
 
 class BookSearchIndex(models.Model):
@@ -275,7 +272,7 @@ class BookSearchIndex(models.Model):
             models.Index(fields=["updated_at"], name="book_search_updated_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Search index for {self.book_id}"
 
 
@@ -335,7 +332,7 @@ class ReadingList(models.Model):
     class Meta:
         db_table = "Reading_List"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -364,7 +361,7 @@ class ReadingListBooks(models.Model):
     class Meta:
         db_table = "Reading_List_Books"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.book.title
 
 
@@ -414,7 +411,7 @@ class BookRating(models.Model):
         db_table = "Book_Rating"
         unique_together = ("user", "book")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username} rated {self.book.title} with {self.rate}"
 
 
@@ -470,16 +467,14 @@ class BookReview(models.Model):
         indexes = [
             models.Index(fields=["-upvotes_count"], name="review_upvotes_idx"),
             models.Index(fields=["-created_at"], name="review_created_idx"),
-            models.Index(
-                fields=["book", "-upvotes_count"], name="book_review_upvotes_idx"
-            ),
+            models.Index(fields=["book", "-upvotes_count"], name="book_review_upvotes_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username} review for {self.book.title}"
 
     @property
-    def has_upvoted(self):
+    def has_upvoted(self) -> bool:
         """Property to check if current user has upvoted this review"""
         # This will be set dynamically in the serializer
         return getattr(self, "_has_upvoted", False)
@@ -536,10 +531,10 @@ class ReviewVote(models.Model):
             models.Index(fields=["created_at"], name="vote_created_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username} {self.vote_type}d review {self.review.review_id}"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Override save to update review vote counts"""
         is_new = self.pk is None
         old_vote_type = None
@@ -569,11 +564,11 @@ class ReviewVote(models.Model):
                 self.review.upvotes_count = models.F("upvotes_count") + 1
             self.review.save(update_fields=["upvotes_count", "downvotes_count"])
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs) -> tuple[int, dict[str, int]]:
         """Override delete to update review vote counts"""
         review = self.review
         vote_type = self.vote_type
-        super().delete(*args, **kwargs)
+        deleted = super().delete(*args, **kwargs)
 
         # Decrement the appropriate vote count
         if vote_type == "upvote" and review.upvotes_count > 0:
@@ -581,6 +576,7 @@ class ReviewVote(models.Model):
         elif vote_type == "downvote" and review.downvotes_count > 0:
             review.downvotes_count = models.F("downvotes_count") - 1
         review.save(update_fields=["upvotes_count", "downvotes_count"])
+        return deleted
 
 
 # Keep the old ReviewUpvote model for backward compatibility
@@ -621,7 +617,7 @@ class ReviewUpvote(models.Model):
             models.Index(fields=["created_at"], name="upvote_created_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username} upvoted review {self.review.review_id}"
 
 
@@ -659,5 +655,5 @@ class Genre(models.Model):
             models.Index(fields=["name"], name="genre_name_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
