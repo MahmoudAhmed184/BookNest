@@ -2,7 +2,7 @@
 URL configuration for BookNest project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.0/topics/http/urls/
+    https://docs.djangoproject.com/en/6.0/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -14,23 +14,25 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
+
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/schema/', SpectacularAPIView.as_view(), name='v1-schema'),
-    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='v1-schema'), name='v1-swagger-ui'),
-    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='v1-schema'), name='v1-redoc'),
-    path('api/v1/', include('apps.users.urls')),
-    path('api/v1/', include('apps.books.urls')),
-    path('api/v1/', include('apps.follows.urls')),
-    path('api/v1/', include('apps.notifications.urls')),
-    path('api/v1/', include('apps.recommendation.urls')),
+    path("admin/", admin.site.urls),
+    path("api/v1/schema/", SpectacularAPIView.as_view(), name="v1-schema"),
+    path("api/v1/docs/", SpectacularSwaggerView.as_view(url_name="v1-schema"), name="v1-swagger-ui"),
+    path("api/v1/redoc/", SpectacularRedocView.as_view(url_name="v1-schema"), name="v1-redoc"),
+    # TODO: README lists unversioned `/api/...` prefixes; keep existing `/api/v1/...` public URLs
+    # until an API versioning migration is planned.
+    path("api/v1/", include("apps.users.urls")),
+    path("api/v1/", include("apps.books.urls")),
+    path("api/v1/", include("apps.follows.urls")),
+    path("api/v1/", include("apps.notifications.urls")),
+    path("api/v1/", include("apps.recommendation.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
