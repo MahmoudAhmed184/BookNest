@@ -399,9 +399,7 @@ CACHE_KEY_PREFIX = "booknest"
 # Celery settings
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
-CELERY_ACCEPT_CONTENT = [
-    content.strip() for content in os.environ.get("CELERY_ACCEPT_CONTENT", "json").split(",") if content.strip()
-]
-CELERY_TASK_SERIALIZER = os.environ.get("CELERY_TASK_SERIALIZER", "json")
-CELERY_RESULT_SERIALIZER = os.environ.get("CELERY_RESULT_SERIALIZER", "json")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = os.environ.get("CELERY_TIMEZONE", TIME_ZONE)

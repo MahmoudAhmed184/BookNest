@@ -1,16 +1,20 @@
 import logging
 import socket
+from typing import Any
 from urllib.parse import urlparse
 
 from celery import shared_task
 from django.conf import settings
+from django.db import DatabaseError
 
 from .services import RecommendationService
 
 logger = logging.getLogger(__name__)
 
+TASK_HANDLED_ERRORS = (DatabaseError, OSError, RuntimeError, TypeError, ValueError)
 
-def _celery_broker_is_reachable(timeout=0.2):
+
+def _celery_broker_is_reachable(timeout: float = 0.2) -> bool:
     broker_url = getattr(settings, "CELERY_BROKER_URL", "")
     parsed_url = urlparse(broker_url)
 
@@ -28,7 +32,9 @@ def _celery_broker_is_reachable(timeout=0.2):
 
 
 @shared_task
-def train_recommendation_model_task(model_type="svd", min_ratings_per_user=5, n_factors=100, knn_k=40):
+def train_recommendation_model_task(
+    model_type: str = "svd", min_ratings_per_user: int = 5, n_factors: int = 100, knn_k: int = 40
+) -> str:
     """
     Background task for training a recommendation model
     """
@@ -38,13 +44,15 @@ def train_recommendation_model_task(model_type="svd", min_ratings_per_user=5, n_
             model_type=model_type, min_ratings_per_user=min_ratings_per_user, n_factors=n_factors, knn_k=knn_k
         )
         return f"Successfully trained model ID: {model_record.id}" if model_record else "Model training failed"
-    except Exception as e:
-        logger.error(f"Error in train_recommendation_model_task: {str(e)}")
-        return f"Error training model: {str(e)}"
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error in train_recommendation_model_task: %s", exc)
+        return f"Error training model: {exc}"
 
 
 @shared_task
-def generate_recommendations_for_user_task(user_id, n_recommendations=10, model_id=None):
+def generate_recommendations_for_user_task(
+    user_id: int, n_recommendations: int = 10, model_id: int | None = None
+) -> str:
     """
     Background task for generating recommendations for a single user
     """
@@ -54,12 +62,14 @@ def generate_recommendations_for_user_task(user_id, n_recommendations=10, model_
             user_id=user_id, n_recommendations=n_recommendations, model_id=model_id
         )
         return f"Generated {len(recs)} recommendations for user {user_id}"
-    except Exception as e:
-        logger.error(f"Error in generate_recommendations_for_user_task: {str(e)}")
-        return f"Error generating recommendations: {str(e)}"
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error in generate_recommendations_for_user_task: %s", exc)
+        return f"Error generating recommendations: {exc}"
 
 
-def enqueue_generate_recommendations_for_user(user_id, n_recommendations=10, model_id=None):
+def enqueue_generate_recommendations_for_user(
+    user_id: int, n_recommendations: int = 10, model_id: int | None = None
+) -> Any:
     if not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False) and not _celery_broker_is_reachable():
         raise ConnectionError("Celery broker is not reachable")
 
@@ -74,7 +84,9 @@ def enqueue_generate_recommendations_for_user(user_id, n_recommendations=10, mod
 
 
 @shared_task
-def generate_recommendations_for_all_users_task(n_recommendations=10, model_id=None, min_ratings=3):
+def generate_recommendations_for_all_users_task(
+    n_recommendations: int = 10, model_id: int | None = None, min_ratings: int = 3
+) -> str:
     """
     Background task for generating recommendations for all eligible users
     """
@@ -84,6 +96,6 @@ def generate_recommendations_for_all_users_task(n_recommendations=10, model_id=N
             n_recommendations=n_recommendations, model_id=model_id, min_ratings=min_ratings
         )
         return f"Generated recommendations for multiple users, total count: {count}"
-    except Exception as e:
-        logger.error(f"Error in generate_recommendations_for_all_users_task: {str(e)}")
-        return f"Error generating recommendations for all users: {str(e)}"
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error in generate_recommendations_for_all_users_task: %s", exc)
+        return f"Error generating recommendations for all users: {exc}"

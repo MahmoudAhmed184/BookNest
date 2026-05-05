@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from celery import Celery
 from celery.schedules import crontab
@@ -15,7 +16,8 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Configure periodic tasks
+# TODO: Re-evaluate Django Tasks after a production backend with recurring schedules is selected.
+# Django 6.0's built-in backends are development/test only, so Celery Beat remains the scheduler here.
 app.conf.beat_schedule = {
     "sync-external-books": {
         "task": "apps.books.tasks.sync_external_books",
@@ -29,5 +31,5 @@ app.conf.beat_schedule = {
 
 
 @app.task(bind=True)
-def debug_task(self):
+def debug_task(self: Any) -> None:
     print(f"Request: {self.request!r}")

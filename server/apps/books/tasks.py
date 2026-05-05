@@ -1,10 +1,15 @@
 import logging
 import socket
+from typing import Any
 from urllib.parse import urlparse
 
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError
+from redis.exceptions import RedisError
+from requests import RequestException
 
 from apps.books.models import Book
 from apps.books.utils.book_service import save_external_book
@@ -12,8 +17,10 @@ from apps.books.utils.external_api_clients import search_external_apis
 
 logger = logging.getLogger(__name__)
 
+TASK_HANDLED_ERRORS = (DatabaseError, OSError, RedisError, RequestException, TypeError, ValidationError, ValueError)
 
-def _celery_broker_is_reachable(timeout=0.2):
+
+def _celery_broker_is_reachable(timeout: float = 0.2) -> bool:
     broker_url = getattr(settings, "CELERY_BROKER_URL", "")
     parsed_url = urlparse(broker_url)
 
@@ -31,7 +38,7 @@ def _celery_broker_is_reachable(timeout=0.2):
 
 
 @shared_task
-def sync_external_books():
+def sync_external_books() -> None:
     """
     Background task to sync books from external APIs.
     This task should be scheduled to run periodically (e.g., daily).
@@ -61,25 +68,25 @@ def sync_external_books():
                     for book_data in external_books:
                         try:
                             save_external_book(book_data)
-                        except Exception as e:
-                            logger.error(f"Error saving external book: {e}")
+                        except TASK_HANDLED_ERRORS as exc:
+                            logger.error("Error saving external book: %s", exc)
                             continue
 
                     logger.info(f"Successfully synced books for term: {term}")
 
-            except Exception as e:
-                logger.error(f"Error syncing books for term {term}: {e}")
+            except TASK_HANDLED_ERRORS as exc:
+                logger.error("Error syncing books for term %s: %s", term, exc)
                 continue
 
         # Update popular terms based on recent searches
         update_popular_terms()
 
-    except Exception as e:
-        logger.error(f"Error in sync_external_books task: {e}")
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error in sync_external_books task: %s", exc)
 
 
 @shared_task
-def sync_external_books_for_query(query: str, page_size: int = 20):
+def sync_external_books_for_query(query: str, page_size: int = 20) -> int:
     """
     Background task that enriches the local catalog for a user search query.
     Search requests never wait on this task.
@@ -92,17 +99,17 @@ def sync_external_books_for_query(query: str, page_size: int = 20):
             try:
                 if save_external_book(book_data):
                     saved_count += 1
-            except Exception as exc:
+            except TASK_HANDLED_ERRORS as exc:
                 logger.warning("Error saving external book for query '%s': %s", query, exc)
 
         logger.info("Saved %s external books for query: %s", saved_count, query)
         return saved_count
-    except Exception as exc:
+    except TASK_HANDLED_ERRORS as exc:
         logger.error("External book sync failed for query '%s': %s", query, exc, exc_info=True)
         return 0
 
 
-def enqueue_sync_external_books_for_query(query: str, page_size: int = 20):
+def enqueue_sync_external_books_for_query(query: str, page_size: int = 20) -> Any:
     if not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False) and not _celery_broker_is_reachable():
         raise ConnectionError("Celery broker is not reachable")
 
@@ -115,7 +122,7 @@ def enqueue_sync_external_books_for_query(query: str, page_size: int = 20):
     )
 
 
-def update_popular_terms():
+def update_popular_terms() -> None:
     """
     Update the list of popular search terms based on recent searches.
     """
@@ -125,7 +132,7 @@ def update_popular_terms():
 
         if recent_searches:
             # Count term frequencies
-            term_freq = {}
+            term_freq: dict[str, int] = {}
             for term in recent_searches:
                 term_freq[term] = term_freq.get(term, 0) + 1
 
@@ -143,12 +150,12 @@ def update_popular_terms():
             # Clear recent searches
             cache.delete(f"{settings.CACHE_KEY_PREFIX}:recent_searches")
 
-    except Exception as e:
-        logger.error(f"Error updating popular terms: {e}")
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error updating popular terms: %s", exc)
 
 
 @shared_task
-def update_book_metadata():
+def update_book_metadata() -> None:
     """
     Background task to update book metadata (ratings, reviews, etc.).
     This task should be scheduled to run periodically (e.g., weekly).
@@ -163,9 +170,9 @@ def update_book_metadata():
                 # Implementation depends on your external API structure
                 pass
 
-            except Exception as e:
-                logger.error(f"Error updating metadata for book {book.isbn13}: {e}")
+            except TASK_HANDLED_ERRORS as exc:
+                logger.error("Error updating metadata for book %s: %s", book.isbn13, exc)
                 continue
 
-    except Exception as e:
-        logger.error(f"Error in update_book_metadata task: {e}")
+    except TASK_HANDLED_ERRORS as exc:
+        logger.error("Error in update_book_metadata task: %s", exc)
