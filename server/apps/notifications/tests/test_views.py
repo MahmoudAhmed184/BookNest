@@ -129,19 +129,3 @@ class NotificationAPITests(APITestCase):
         response = self.client.get(self.type_detail_url(self.type1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.type1.name)
-
-    # Placeholder for create notification if it's a direct API endpoint
-    # def test_create_notification_authenticated(self):
-    #     self.client.login(username='testuser1', password='password123')
-    #     actor_ct = ContentType.objects.get_for_model(self.user2)
-    #     data = {
-    #         'recipient': self.user1.pk,
-    #         'actor_content_type': actor_ct.pk,
-    #         'actor_object_id': self.user2.pk,
-    #         'verb': 'tested creation',
-    #         'notification_type': self.type1.pk
-    #     }
-    #     create_url = reverse('notification-create') # Assuming this URL exists
-    #     response = self.client.post(create_url, data, format='json')
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    #     self.assertEqual(Notification.objects.filter(recipient=self.user1, verb='tested creation').count(), 1)

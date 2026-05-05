@@ -1,18 +1,12 @@
 from typing import Dict, Any, Optional, List
 import requests
 import logging
-from datetime import datetime, timedelta
 from urllib.parse import quote
-import json
-from functools import lru_cache
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from django.core.cache import cache
-import asyncio
-import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
-from django.db.models import Count
 from apps.books.models import Book, Author
 
 # Configure logging
@@ -320,4 +314,4 @@ class AuthorInfoService:
         try:
             return xml_text.split(f"<{tag}>")[1].split(f"</{tag}>")[0]
         except:
-            return None 
+            return None

@@ -24,34 +24,7 @@ class DatabaseSearchService:
     Database-backed search service.
     Provides search functionality with filtering, pagination, and external API fallback.
     """
-    
-    # @staticmethod
-    # def _generate_cache_key(query: str, page: int, page_size: int, filters: Optional[Dict[str, Any]] = None) -> str:
-    #     """Generate a unique cache key for the search query."""
-    #     key_parts = [query, str(page), str(page_size)]
-    #     if filters:
-    #         key_parts.append(json.dumps(filters, sort_keys=True))
-    #     key_string = ':'.join(key_parts)
-    #     return f"{settings.CACHE_KEY_PREFIX}:search:{hashlib.md5(key_string.encode()).hexdigest()}"
-    
-    # @staticmethod
-    # def _update_recent_searches(query: str):
-    #     """Update the list of recent searches in cache."""
-    #     try:
-    #         recent_searches = cache.get(f"{settings.CACHE_KEY_PREFIX}:recent_searches", [])
-    #         recent_searches.append(query)
-    #         # Keep only last 1000 searches
-    #         if len(recent_searches) > 1000:
-    #             recent_searches = recent_searches[-1000:]
-    #         cache.set(
-    #             f"{settings.CACHE_KEY_PREFIX}:recent_searches",
-    #             recent_searches,
-    #             timeout=60 * 60 * 24  # 24 hours
-    #         )
-    #         logger.debug(f"Updated recent searches with query: {query}")
-    #     except Exception as e:
-    #         logger.error(f"Error updating recent searches: {e}", exc_info=True)
-    
+
     @staticmethod
     def search_books(query: str, page: int = 1, page_size: int = 10,
                     filters: Optional[Dict[str, Any]] = None,
@@ -83,45 +56,7 @@ class DatabaseSearchService:
             DatabaseSearchService._enqueue_external_enrichment(query, page_size)
 
         return [], total_count
-    
-    # @staticmethod
-    # def _should_fetch_external(query: str) -> bool:
-    #     """
-    #     Determine if we should fetch from external APIs based on various factors.
-    #     """
-    #     try:
-    #         # Check if query is too short
-    #         if len(query.strip()) < 3:
-    #             logger.debug(f"Query too short: {query}")
-    #             return False
-            
-    #         # Check if we've searched this query recently
-    #         recent_searches = cache.get(f"{settings.CACHE_KEY_PREFIX}:recent_searches", [])
-    #         if query in recent_searches[-10:]:  # Last 10 searches
-    #             logger.debug(f"Query recently searched: {query}")
-    #             return False
-            
-    #         # Check if we have enough books in the database
-    #         book_count = Book.objects.count()
-    #         if book_count < 1000:  # Arbitrary threshold
-    #             logger.debug(f"Database has only {book_count} books, will fetch external")
-    #             return True
-            
-    #         # Check if we've updated books recently
-    #         recent_updates = Book.objects.filter(
-    #             last_updated__gte=datetime.now() - timedelta(days=1)
-    #         ).count()
-    #         if recent_updates > 100:  # Arbitrary threshold
-    #             logger.debug(f"Recent updates count: {recent_updates}, skipping external fetch")
-    #             return False
-            
-    #         logger.debug(f"Will fetch external results for query: {query}")
-    #         return True
-            
-    #     except Exception as e:
-    #         logger.error(f"Error checking if should fetch external: {e}", exc_info=True)
-    #         return False
-    
+
     @staticmethod
     def _search_local_database(query: str, page: int, page_size: int, 
                               filters: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], int]:
@@ -338,8 +273,6 @@ class DatabaseSearchService:
                     ),
                 ).distinct()
             
-            # Apply additional filters
-            # if not filters:
             logger.debug(f"Applying filters: {filters}")
             queryset = DatabaseSearchService._apply_filters(queryset, filters)
             

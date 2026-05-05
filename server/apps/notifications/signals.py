@@ -1,13 +1,7 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import signals
-from django.contrib.auth import get_user_model
-import re
-from .models import Notification, NotificationType
 from apps.books.models import BookReview, BookRating
-from apps.follows.models import Follow
-
-User = get_user_model()
 
 # Create default notification types when the app is ready
 @receiver(signals.post_migrate)
@@ -18,33 +12,6 @@ def create_default_types(sender, **kwargs):
     if sender.name == 'notifications':
         from .models import create_default_notification_types
         create_default_notification_types()
-
-# # Helper function to detect mentions in text
-# def detect_mentions(text):
-#     """
-#     Detect @username mentions in text and return a list of mentioned users.
-    
-#     Args:
-#         text: The text to search for mentions
-        
-#     Returns:
-#         List of User objects that were mentioned
-#     """
-#     # Find all @username patterns in the text
-#     mention_pattern = r'@(\w+)'
-#     mentions = re.findall(mention_pattern, text)
-    
-#     # Get the corresponding users
-#     mentioned_users = []
-#     for username in mentions:
-#         try:
-#             user = User.objects.get(username=username)
-#             mentioned_users.append(user)
-#         except User.DoesNotExist:
-#             # Username doesn't exist, skip it
-#             pass
-    
-#     return mentioned_users
 
 # Book Review Notifications
 @receiver(post_save, sender=BookReview)
@@ -77,24 +44,7 @@ def book_review_created(sender, instance, created, **kwargs):
                         )
             except Exception as e:
                 print(f"Error creating notification for author {book_author.name}: {e}")
-        
-        # Check for user mentions in the review text
-        # mentioned_users = detect_mentions(instance.review_text)
-        # for mentioned_user in mentioned_users:
-        #     # Don't notify the author of the review
-        #     if mentioned_user != instance.user:
-        #         try:
-        #             NotificationService.create_notification(
-        #                 recipient=mentioned_user,
-        #                 actor=instance.user,
-        #                 verb='mentioned you in a review',
-        #                 target=instance.book,
-        #                 action_object=instance,
-        #                 notification_type='mention'
-        #             )
-        #         except Exception as e:
-        #             print(f"Error creating mention notification for user {mentioned_user.username}: {e}")
-        
+
         # Notify users who follow this book (through reading lists or other mechanisms)
         # This would require a model that tracks book followers
         # For now, we'll leave this as a placeholder

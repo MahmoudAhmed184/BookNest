@@ -18,7 +18,6 @@ class BookSerializer(serializers.ModelSerializer):
     authors = AuthorSerializer(many=True)
     genres = serializers.ListField(child=serializers.CharField(), write_only=True)
     reviews_count = serializers.SerializerMethodField(read_only=True)
-    # average_rate = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
     class Meta:
         model = Book
@@ -106,10 +105,3 @@ class ReadingListSerializer(serializers.ModelSerializer):
     
     def get_owner_username(self, obj):
         return obj.profile.user.username if obj.profile and obj.profile.user else None
-
-
-# class ReadingListDetailSerializer(ReadingListSerializer):
-#     # books = BookSerializer(many=True, read_only=True)
-
-#     # class Meta(ReadingListSerializer.Meta):
-#     #     fields = ReadingListSerializer.Meta.fields + ["books"]

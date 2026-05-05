@@ -556,8 +556,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
                 "errors": response.data if hasattr(response, 'data') else {"detail": "Invalid token or passwords don't match"}
             }
             return Response(error_response, status=response.status_code)
-            
-        return response
 
 # views.py
 from rest_framework import generics, status

@@ -55,14 +55,6 @@ def save_external_book(book_data: Dict[str, Any]) -> Optional[Book]:
     if not book_data.get('isbn13') or not book_data.get('title'):
         logger.warning("Cannot save book: missing required fields (isbn13 or title)")
         return None
-    
-    # # Check for network connectivity issues with cover image URL
-    # if book_data.get('cover_img'):
-    #     from apps.books.utils.external_api_clients import check_network_connectivity
-    #     if not check_network_connectivity():
-    #         # If network is down, set cover_img to None to avoid connection errors
-    #         logger.warning(f"Network connectivity issue detected. Setting cover_img to None for book {book_data['title']}")
-    #         book_data['cover_img'] = None
         
     try:
         # Check if book already exists - use get_or_none pattern to avoid exceptions
