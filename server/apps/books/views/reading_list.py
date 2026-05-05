@@ -1,15 +1,20 @@
-from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.books.selectors import reading_lists_owned_by_user, reading_lists_visible_to_user
+from apps.books.selectors import reading_lists_for_user_id, reading_lists_owned_by_user, reading_lists_visible_to_user
 from apps.books.serializers.book import ReadingListSerializer
-from apps.books.services import add_book_to_reading_list, remove_book_from_reading_list
+from apps.books.services import add_book_to_reading_list, create_reading_list, remove_book_from_reading_list
 from apps.users.permissions import IsOwnerOrReadOnly
+
+if TYPE_CHECKING:
+    from rest_framework.request import Request
 
 
 class ReadingListBookMembershipSerializer(serializers.Serializer):
@@ -24,30 +29,30 @@ class MessageSerializer(serializers.Serializer):
 class ReadingListCollectionAPIView(generics.ListCreateAPIView):
     serializer_class = ReadingListSerializer
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[Any]:
         if self.request.method == "POST":
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return []
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         if self.request.user.is_authenticated:
             return reading_lists_owned_by_user(user=self.request.user)
         return reading_lists_visible_to_user(user=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(profile=self.request.user.profile)
+    def perform_create(self, serializer: ReadingListSerializer) -> None:
+        create_reading_list(user=self.request.user, serializer=serializer)
 
 
 class ReadingListResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ReadingListSerializer
     lookup_field = "list_id"
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[Any]:
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return []
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
             return reading_lists_owned_by_user(user=self.request.user)
         return reading_lists_visible_to_user(user=self.request.user)
@@ -65,7 +70,14 @@ class ReadingListBookMembershipAPIView(APIView):
         },
         operation_id="createReadingListBookMembership",
     )
-    def post(self, request, list_id=None, book_id=None):
+    def post(
+        self,
+        request: Request,
+        list_id: int | None = None,
+        book_id: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         target_book_id = book_id or request.data.get("book_id")
         target_list_id = list_id or request.data.get("list_id")
 
@@ -100,7 +112,14 @@ class ReadingListBookMembershipAPIView(APIView):
         },
         operation_id="deleteReadingListBookMembership",
     )
-    def delete(self, request, list_id=None, book_id=None):
+    def delete(
+        self,
+        request: Request,
+        list_id: int | None = None,
+        book_id: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         target_book_id = book_id or request.data.get("book_id")
         target_list_id = list_id or request.data.get("list_id")
 
@@ -133,7 +152,6 @@ class AdminUserReadingListsAPIView(generics.ListAPIView):
     serializer_class = ReadingListSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         user_id = self.kwargs.get("user_id")
-        user = get_object_or_404(get_user_model(), id=user_id)
-        return reading_lists_owned_by_user(user=user)
+        return reading_lists_for_user_id(user_id=user_id)

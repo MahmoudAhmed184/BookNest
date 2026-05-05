@@ -1,22 +1,36 @@
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from django.utils import timezone
 from django.utils.timesince import timesince
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.utils import extend_schema
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, serializers
-from rest_framework.exceptions import NotFound
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.books.models import Author, Book, Genre
+from apps.books.selectors import (
+    author_queryset,
+    book_catalog_queryset,
+    book_resource_queryset,
+    books_for_author,
+    books_for_genre,
+    genre_queryset,
+    recent_ratings,
+    recent_reviews,
+    related_books_for_book,
+)
 from apps.books.serializers.book import (
     AuthorSerializer,
     BookGenreSerializer,
     BookSerializer,
 )
+
+if TYPE_CHECKING:
+    from rest_framework.request import Request
 
 
 class FeedActivityBookSerializer(serializers.Serializer):
@@ -33,17 +47,16 @@ class FeedActivitySerializer(serializers.Serializer):
     book = FeedActivityBookSerializer()
 
 
-def _positive_int(value, default, maximum):
+def _positive_int(value: Any, default: int, maximum: int) -> int:
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
     return min(max(1, parsed), maximum)
 
 
 class BookCollectionAPIView(generics.ListCreateAPIView):
-    queryset = Book.objects.prefetch_related("authors", "genres")
     serializer_class = BookSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {
@@ -57,58 +70,42 @@ class BookCollectionAPIView(generics.ListCreateAPIView):
     }
     pagination_class = LimitOffsetPagination
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[Any]:
         if self.request.method == "POST":
             return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
         return []
 
+    def get_queryset(self) -> Any:
+        return book_catalog_queryset()
+
 
 class BookResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Book.objects.all()
     serializer_class = BookSerializer
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[Any]:
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
             return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
         return []
+
+    def get_queryset(self) -> Any:
+        return book_resource_queryset()
 
 
 class RelatedBookListAPIView(generics.ListAPIView):
     serializer_class = BookSerializer
 
-    def get_queryset(self):
-        book = get_object_or_404(
-            Book.objects.prefetch_related("authors", "genres"),
-            pk=self.kwargs.get("book_id"),
-        )
+    def get_queryset(self) -> Any:
         limit = _positive_int(self.request.query_params.get("limit"), default=8, maximum=24)
-        author_ids = book.authors.values_list("author_id", flat=True)
-        genre_ids = book.genres.values_list("id", flat=True)
-
-        return (
-            Book.objects.prefetch_related("authors", "genres")
-            .filter(Q(authors__author_id__in=author_ids) | Q(genres__id__in=genre_ids))
-            .exclude(isbn13=book.isbn13)
-            .distinct()
-            .order_by("-average_rate", "title")[:limit]
-        )
+        return related_books_for_book(book_id=self.kwargs.get("book_id"), limit=limit)
 
 
 class FeedActivityListAPIView(APIView):
     @extend_schema(responses=FeedActivitySerializer(many=True))
-    def get(self, request):
-        from apps.books.models import BookRating, BookReview
-
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         limit = _positive_int(request.query_params.get("limit"), default=20, maximum=50)
-        reviews = (
-            BookReview.objects.select_related("user", "book")
-            .order_by("-created_at")[:limit]
-        )
-        ratings = (
-            BookRating.objects.select_related("user", "book")
-            .order_by("-created_at")[:limit]
-        )
-        activities = []
+        reviews = recent_reviews(limit=limit)
+        ratings = recent_ratings(limit=limit)
+        activities: list[dict[str, Any]] = []
 
         for review in reviews:
             activities.append(
@@ -157,7 +154,7 @@ class FeedActivityListAPIView(APIView):
             ]
         )
 
-    def _relative_timestamp(self, value):
+    def _relative_timestamp(self, value: Any) -> str:
         if not value:
             return "Recently"
 
@@ -166,62 +163,55 @@ class FeedActivityListAPIView(APIView):
 
 class AuthorListAPIView(generics.ListAPIView):
     schema = AutoSchema()
-    queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {
-        'name': ['icontains'],
-        'number_of_books': ['gte', 'lte'],
+        "name": ["icontains"],
+        "number_of_books": ["gte", "lte"],
     }
     pagination_class = LimitOffsetPagination
+
+    def get_queryset(self) -> Any:
+        return author_queryset()
 
 
 class AuthorDetailAPIView(generics.RetrieveAPIView):
     schema = AutoSchema()
-    queryset = Author.objects.all()
     serializer_class = AuthorSerializer
+
+    def get_queryset(self) -> Any:
+        return author_queryset()
 
 
 class AuthorBookListAPIView(generics.ListAPIView):
     serializer_class = BookSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {
-        'authors__name': ['icontains' , 'in'],
-        'genres__name': ['icontains', 'in', 'exact'],
-        'average_rate': ['gte', 'lte'],
-        'description': ['icontains'],
-        'publication_date': ['exact', 'year', 'month', 'day', 'range'],
-        'number_of_pages': ['gte', 'lte', 'exact'],
-        'title': ['exact', 'icontains', 'istartswith'],
+        "authors__name": ["icontains", "in"],
+        "genres__name": ["icontains", "in", "exact"],
+        "average_rate": ["gte", "lte"],
+        "description": ["icontains"],
+        "publication_date": ["exact", "year", "month", "day", "range"],
+        "number_of_pages": ["gte", "lte", "exact"],
+        "title": ["exact", "icontains", "istartswith"],
     }
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self):
-        author_id = self.kwargs.get('pk')
-        author_name = self.kwargs.get('name')
-        queryset = Book.objects.all().prefetch_related('authors')
-
-        if author_id:
-            queryset = queryset.filter(authors__author_id=author_id)
-        elif author_name:
-            queryset = queryset.filter(authors__name__icontains=author_name)
-        else:
-            raise NotFound("Provide either author ID or name")
-
-        queryset = queryset.distinct()
-
-        return queryset
+    def get_queryset(self) -> Any:
+        return books_for_author(author_id=self.kwargs.get("pk"), author_name=self.kwargs.get("name"))
 
 
 class GenreListAPIView(generics.ListAPIView):
     schema = AutoSchema()
-    queryset = Genre.objects.all()
     serializer_class = BookGenreSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {
-        'name': ['icontains', 'exact'],
+        "name": ["icontains", "exact"],
     }
     pagination_class = LimitOffsetPagination
+
+    def get_queryset(self) -> Any:
+        return genre_queryset()
 
 
 class GenreBookListAPIView(generics.ListAPIView):
@@ -229,29 +219,19 @@ class GenreBookListAPIView(generics.ListAPIView):
     API endpoint that returns books filtered by genre(s).
     Supports filtering by single genre or multiple genres.
     """
+
     schema = AutoSchema()
     serializer_class = BookSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {
-        'authors__name': ['icontains', 'in'],
-        'average_rate': ['gte', 'lte'],
-        'description': ['icontains'],
-        'publication_date': ['exact', 'year', 'month', 'day', 'range'],
-        'number_of_pages': ['gte', 'lte', 'exact'],
-        'title': ['exact', 'icontains', 'istartswith'],
+        "authors__name": ["icontains", "in"],
+        "average_rate": ["gte", "lte"],
+        "description": ["icontains"],
+        "publication_date": ["exact", "year", "month", "day", "range"],
+        "number_of_pages": ["gte", "lte", "exact"],
+        "title": ["exact", "icontains", "istartswith"],
     }
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self):
-        genre_name = self.kwargs.get('name')
-        genre_id = self.kwargs.get('pk')
-        queryset = Book.objects.all().prefetch_related('genres')
-
-        if genre_id:
-            queryset = queryset.filter(genres__id=genre_id)
-        elif genre_name:
-            queryset = queryset.filter(genres__name__icontains=genre_name)
-        else:
-            raise NotFound("Provide either genre ID or name")
-
-        return queryset.distinct()
+    def get_queryset(self) -> Any:
+        return books_for_genre(genre_id=self.kwargs.get("pk"), genre_name=self.kwargs.get("name"))

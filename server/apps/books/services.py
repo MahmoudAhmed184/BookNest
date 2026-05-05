@@ -50,6 +50,12 @@ def recalculate_book_rating(*, book: Book) -> Book:
     return book
 
 
+def create_reading_list(*, user: Any, serializer: Any) -> ReadingList:
+    reading_list = serializer.save(profile=user.profile)
+    reading_list.full_clean()
+    return reading_list
+
+
 def add_book_to_reading_list(*, user: Any, book_id: str, list_id: int) -> tuple[Book, ReadingList, bool]:
     book = get_object_or_404(Book, isbn13=book_id)
     reading_list = get_object_or_404(ReadingList, list_id=list_id, profile__user=user)
