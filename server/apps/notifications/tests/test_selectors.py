@@ -4,5 +4,5 @@ from apps.notifications import selectors
 
 
 class NotificationSelectorImportTests(SimpleTestCase):
-    def test_notification_list_selector_exists(self):
+    def test_notification_list_selector_exists(self) -> None:
         self.assertTrue(callable(selectors.notifications_for_user))

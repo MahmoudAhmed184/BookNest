@@ -4,5 +4,5 @@ from apps.notifications import services
 
 
 class NotificationServiceImportTests(SimpleTestCase):
-    def test_notification_service_exposes_unread_count(self):
+    def test_notification_service_exposes_unread_count(self) -> None:
         self.assertTrue(callable(services.NotificationService.get_unread_count))
