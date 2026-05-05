@@ -4,5 +4,5 @@ from apps.recommendation import selectors
 
 
 class RecommendationSelectorImportTests(SimpleTestCase):
-    def test_user_recommendations_selector_exists(self):
+    def test_user_recommendations_selector_exists(self) -> None:
         self.assertTrue(callable(selectors.user_recommendations))

@@ -1,10 +1,10 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pandas as pd
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.test import SimpleTestCase, TestCase, override_settings
-import pandas as pd
 
 from apps.books.models import Book, BookRating
 from apps.recommendation import services
@@ -14,10 +14,10 @@ from apps.recommendation.tasks import enqueue_generate_recommendations_for_user
 
 
 class RecommendationServiceImportTests(SimpleTestCase):
-    def test_service_exposes_training_entrypoint(self):
+    def test_service_exposes_training_entrypoint(self) -> None:
         self.assertTrue(callable(services.RecommendationService.train_recommendation_model))
 
-    def test_engine_excludes_all_items_seen_by_user(self):
+    def test_engine_excludes_all_items_seen_by_user(self) -> None:
         engine = RecommendationEngine(min_ratings_per_user=2)
         ratings_df = pd.DataFrame(
             [
@@ -32,13 +32,11 @@ class RecommendationServiceImportTests(SimpleTestCase):
 
         self.assertIsNotNone(engine.train(ratings_df, test_size=0))
 
-        recommended_items = {
-            item_id for item_id, _score in engine.recommend_for_user(1, n_recommendations=10)
-        }
+        recommended_items = {item_id for item_id, _score in engine.recommend_for_user(1, n_recommendations=10)}
         self.assertNotIn("a", recommended_items)
         self.assertNotIn("b", recommended_items)
 
-    def test_model_artifact_is_saved_to_local_media(self):
+    def test_model_artifact_is_saved_to_local_media(self) -> None:
         engine = RecommendationEngine()
 
         with TemporaryDirectory() as media_root:
@@ -53,14 +51,13 @@ class RecommendationServiceImportTests(SimpleTestCase):
             self.assertEqual(model_path.parent.name, "recommendation_models")
             self.assertEqual(model_path.suffix, ".pkl")
 
-    def test_enqueue_fails_fast_when_redis_broker_is_unreachable(self):
-        with override_settings(CELERY_BROKER_URL="redis://127.0.0.1:1/0"):
-            with self.assertRaises(ConnectionError):
-                enqueue_generate_recommendations_for_user(1)
+    def test_enqueue_fails_fast_when_redis_broker_is_unreachable(self) -> None:
+        with override_settings(CELERY_BROKER_URL="redis://127.0.0.1:1/0"), self.assertRaises(ConnectionError):
+            enqueue_generate_recommendations_for_user(1)
 
 
 class RecommendationFallbackTests(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         post_save.disconnect(trigger_recommendations_after_rating, sender=BookRating)
         self.user = get_user_model().objects.create_user(
             username="reader",
@@ -79,10 +76,10 @@ class RecommendationFallbackTests(TestCase):
         )
         BookRating.objects.create(user=self.user, book=self.rated_book, rate=5)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         post_save.connect(trigger_recommendations_after_rating, sender=BookRating)
 
-    def test_catalog_fallback_excludes_rated_books(self):
+    def test_catalog_fallback_excludes_rated_books(self) -> None:
         recommendations = services.RecommendationService._fallback_catalog_recommendations(
             user_id=self.user.id,
             n_recommendations=10,
