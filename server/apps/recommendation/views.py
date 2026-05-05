@@ -15,6 +15,7 @@ class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoints for recommendation models
     """
+
     queryset = RecommendationModel.objects.none()
     serializer_class = RecommendationModelSerializer
     permission_classes = [permissions.IsAdminUser]  # Only admins can access model endpoints
@@ -27,6 +28,7 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoints for user recommendations
     """
+
     serializer_class = UserRecommendationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -34,13 +36,13 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Return recommendations for the current user only
         """
-        return user_recommendations(self.request.user)
+        return user_recommendations(user=self.request.user)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         if (
             not queryset.exists()
-            and rating_count_for_user(request.user) >= DEFAULT_MIN_RATINGS_FOR_RECOMMENDATIONS
+            and rating_count_for_user(user=request.user) >= DEFAULT_MIN_RATINGS_FOR_RECOMMENDATIONS
         ):
             RecommendationService.generate_recommendations_for_user(
                 user_id=request.user.id,
@@ -60,32 +62,26 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Generate new recommendations for the current user
         """
-        n_recommendations = int(request.data.get('n_recommendations', 10))
-        model_id = request.data.get('model_id')
-        async_generation = request.data.get('async', False)
+        n_recommendations = int(request.data.get("n_recommendations", 10))
+        model_id = request.data.get("model_id")
+        async_generation = request.data.get("async", False)
 
         if async_generation:
             # Generate recommendations asynchronously
             try:
                 task = enqueue_generate_recommendations_for_user(
-                    user_id=request.user.id,
-                    n_recommendations=n_recommendations,
-                    model_id=model_id
+                    user_id=request.user.id, n_recommendations=n_recommendations, model_id=model_id
                 )
                 return Response({"message": "Recommendation generation started", "task_id": task.id})
             except Exception:
                 recommendations = RecommendationService.generate_recommendations_for_user(
-                    user_id=request.user.id,
-                    n_recommendations=n_recommendations,
-                    model_id=model_id
+                    user_id=request.user.id, n_recommendations=n_recommendations, model_id=model_id
                 )
                 serializer = self.get_serializer(recommendations, many=True)
                 return Response(serializer.data)
 
         recommendations = RecommendationService.generate_recommendations_for_user(
-            user_id=request.user.id,
-            n_recommendations=n_recommendations,
-            model_id=model_id
+            user_id=request.user.id, n_recommendations=n_recommendations, model_id=model_id
         )
 
         if recommendations:
@@ -94,5 +90,5 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(
             {"message": "No recommendations generated. You may need more ratings or the model needs training."},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
