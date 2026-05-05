@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from celery.exceptions import CeleryError
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
@@ -10,6 +15,9 @@ from .services import (
 )
 from .tasks import enqueue_generate_recommendations_for_user
 
+if TYPE_CHECKING:
+    from rest_framework.request import Request
+
 
 class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -20,7 +28,7 @@ class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RecommendationModelSerializer
     permission_classes = [permissions.IsAdminUser]  # Only admins can access model endpoints
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return recommendation_models()
 
 
@@ -32,13 +40,13 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserRecommendationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         """
         Return recommendations for the current user only
         """
         return user_recommendations(user=self.request.user)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         if (
             not queryset.exists()
@@ -58,11 +66,18 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def generate(self, request):
+    def generate(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Generate new recommendations for the current user
         """
-        n_recommendations = int(request.data.get("n_recommendations", 10))
+        try:
+            n_recommendations = int(request.data.get("n_recommendations", 10))
+        except TypeError, ValueError:
+            return Response(
+                {"message": "n_recommendations must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         model_id = request.data.get("model_id")
         async_generation = request.data.get("async", False)
 
@@ -73,7 +88,7 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
                     user_id=request.user.id, n_recommendations=n_recommendations, model_id=model_id
                 )
                 return Response({"message": "Recommendation generation started", "task_id": task.id})
-            except Exception:
+            except ConnectionError, CeleryError:
                 recommendations = RecommendationService.generate_recommendations_for_user(
                     user_id=request.user.id, n_recommendations=n_recommendations, model_id=model_id
                 )
