@@ -7,7 +7,12 @@ dependencies = []
 [dependency-groups]
 dev = [
     "debugpy>=1.8.20",
+    "django-stubs[compatible-mypy]>=6.0.3",
     "ipython>=9.13.0",
+    "mypy>=1.19.1",
+    "ruff>=0.14.0",
+    "types-python-dateutil>=2.9.0.20250822",
+    "types-requests>=2.32.4.20260402",
 ]
 prod = [
     "aiohttp>=3.13.5",
@@ -41,3 +46,21 @@ test = [
 
 [tool.uv]
 default-groups = ["prod", "dev", "test"]
+
+[tool.ruff]
+extend-exclude = ["**/migrations/*.py"]
+line-length = 119
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+fixable = ["ALL"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+strict = false
+ignore_missing_imports = true
+disable_error_code = ["misc", "var-annotated"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.testing"
