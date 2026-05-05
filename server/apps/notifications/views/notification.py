@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -7,13 +11,16 @@ from apps.notifications.selectors import notifications_for_user
 from apps.notifications.serializers import NotificationCreateSerializer, NotificationSerializer
 from apps.notifications.services import NotificationService
 
+if TYPE_CHECKING:
+    from rest_framework.request import Request
+
 
 class IsRecipientOrAdmin(IsAuthenticated):
     """
     Custom permission to only allow recipients to view their own notifications.
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: Any, obj: Any) -> bool:
         if request.user.is_staff:
             return True
 
@@ -23,12 +30,12 @@ class IsRecipientOrAdmin(IsAuthenticated):
 class NotificationCollectionAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         if self.request.method == "POST":
             return NotificationCreateSerializer
         return NotificationSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         read = self.request.query_params.get("read")
         notification_type = self.request.query_params.get("type")
         return notifications_for_user(
@@ -43,7 +50,7 @@ class NotificationResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsRecipientOrAdmin]
     lookup_field = "id"
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return notifications_for_user(user=self.request.user)
 
 
@@ -54,7 +61,7 @@ class NotificationUnreadCountAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         count = NotificationService.get_unread_count(user=request.user)
         return Response({"count": count})
 
@@ -62,7 +69,7 @@ class NotificationUnreadCountAPIView(APIView):
 class NotificationMarkAllReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         updated = NotificationService.mark_all_as_read(user=request.user)
         return Response({"updated": updated})
 
@@ -70,7 +77,7 @@ class NotificationMarkAllReadAPIView(APIView):
 class NotificationMarkReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, id):
+    def post(self, request: Request, id: int, *args: Any, **kwargs: Any) -> Response:
         notification = NotificationService.mark_as_read(
             notification_id=id,
             user=request.user,
@@ -82,7 +89,7 @@ class NotificationMarkReadAPIView(APIView):
 class NotificationMarkUnreadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, id):
+    def post(self, request: Request, id: int, *args: Any, **kwargs: Any) -> Response:
         notification = NotificationService.mark_as_unread(
             notification_id=id,
             user=request.user,

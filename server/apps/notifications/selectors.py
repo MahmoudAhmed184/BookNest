@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.shortcuts import get_object_or_404
 
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, NotificationType
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -30,3 +30,7 @@ def get_notification_for_user(*, notification_id: int, user: Any) -> Notificatio
 
 def unread_count_for_user(*, user: Any) -> int:
     return Notification.objects.for_recipient(user).unread().count()
+
+
+def notification_type_queryset() -> QuerySet[NotificationType]:
+    return NotificationType.objects.all()
