@@ -5,7 +5,6 @@ from apps.recommendation.views import (
     UserRecommendationViewSet,
 )
 
-
 recommendation_collection = UserRecommendationViewSet.as_view({"get": "list"})
 recommendation_refresh = UserRecommendationViewSet.as_view({"post": "generate"})
 recommendation_model_collection = RecommendationModelViewSet.as_view({"get": "list"})

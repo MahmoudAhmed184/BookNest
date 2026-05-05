@@ -1,12 +1,13 @@
+import logging
+
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
-import logging
 
 
 class RecommendationsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.recommendation'
-    verbose_name = _('Book Recommendation')
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.recommendation"
+    verbose_name = _("Book Recommendation")
 
     def ready(self):
         """
@@ -14,4 +15,3 @@ class RecommendationsConfig(AppConfig):
         """
         logger = logging.getLogger(__name__)
         logger.info("RecommendationsConfig ready method called.")
-        import apps.recommendation.signals

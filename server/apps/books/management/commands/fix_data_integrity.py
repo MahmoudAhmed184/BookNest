@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -20,7 +20,6 @@ from apps.books.models import (
     ReviewVote,
 )
 from apps.users.models.profile import Profile
-
 
 User = get_user_model()
 
@@ -226,9 +225,7 @@ class Command(BaseCommand):
 
     def fix_missing_genres(self):
         missing_book_ids = list(
-            Book.objects.annotate(genre_count=Count("genres"))
-            .filter(genre_count=0)
-            .values_list("isbn13", flat=True)
+            Book.objects.annotate(genre_count=Count("genres")).filter(genre_count=0).values_list("isbn13", flat=True)
         )
         self.summary["books_missing_genres"] = len(missing_book_ids)
         if self.dry_run or not missing_book_ids:
@@ -245,10 +242,7 @@ class Command(BaseCommand):
         )
         through_model = Book.genres.through
         through_model.objects.bulk_create(
-            [
-                through_model(book_id=book_id, genre_id=genre.id)
-                for book_id in missing_book_ids
-            ],
+            [through_model(book_id=book_id, genre_id=genre.id) for book_id in missing_book_ids],
             batch_size=self.batch_size,
             ignore_conflicts=True,
         )

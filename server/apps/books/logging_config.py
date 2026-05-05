@@ -1,7 +1,6 @@
 import logging
 
-
-logger = logging.getLogger('apps.books')
+logger = logging.getLogger("apps.books")
 
 
 def get_logger(name):

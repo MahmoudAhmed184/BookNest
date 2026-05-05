@@ -9,7 +9,6 @@ from apps.recommendation.services import (
     RecommendationService,
 )
 
-
 logger = logging.getLogger(__name__)
 
 RETRAIN_RATING_INTERVAL = 5

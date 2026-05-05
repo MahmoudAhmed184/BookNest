@@ -1,9 +1,5 @@
 from django.urls import path
 
-from apps.notifications.views.notification_type import (
-    NotificationTypeDetailAPIView,
-    NotificationTypeListAPIView,
-)
 from apps.notifications.views.notification import (
     NotificationCollectionAPIView,
     NotificationMarkAllReadAPIView,
@@ -12,7 +8,10 @@ from apps.notifications.views.notification import (
     NotificationResourceAPIView,
     NotificationUnreadCountAPIView,
 )
-
+from apps.notifications.views.notification_type import (
+    NotificationTypeDetailAPIView,
+    NotificationTypeListAPIView,
+)
 
 urlpatterns = [
     path("notifications/", NotificationCollectionAPIView.as_view(), name="notification-collection"),

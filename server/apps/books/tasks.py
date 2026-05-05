@@ -85,9 +85,7 @@ def sync_external_books_for_query(query: str, page_size: int = 20):
     Search requests never wait on this task.
     """
     try:
-        external_books = search_external_apis(query, max_retries=1, timeout=8)[
-            :page_size
-        ]
+        external_books = search_external_apis(query, max_retries=1, timeout=8)[:page_size]
         saved_count = 0
 
         for book_data in external_books:
@@ -95,24 +93,17 @@ def sync_external_books_for_query(query: str, page_size: int = 20):
                 if save_external_book(book_data):
                     saved_count += 1
             except Exception as exc:
-                logger.warning(
-                    "Error saving external book for query '%s': %s", query, exc
-                )
+                logger.warning("Error saving external book for query '%s': %s", query, exc)
 
         logger.info("Saved %s external books for query: %s", saved_count, query)
         return saved_count
     except Exception as exc:
-        logger.error(
-            "External book sync failed for query '%s': %s", query, exc, exc_info=True
-        )
+        logger.error("External book sync failed for query '%s': %s", query, exc, exc_info=True)
         return 0
 
 
 def enqueue_sync_external_books_for_query(query: str, page_size: int = 20):
-    if (
-        not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
-        and not _celery_broker_is_reachable()
-    ):
+    if not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False) and not _celery_broker_is_reachable():
         raise ConnectionError("Celery broker is not reachable")
 
     return sync_external_books_for_query.apply_async(
@@ -139,9 +130,7 @@ def update_popular_terms():
                 term_freq[term] = term_freq.get(term, 0) + 1
 
             # Get top 10 terms
-            popular_terms = sorted(term_freq.items(), key=lambda x: x[1], reverse=True)[
-                :10
-            ]
+            popular_terms = sorted(term_freq.items(), key=lambda x: x[1], reverse=True)[:10]
             popular_terms = [term for term, _ in popular_terms]
 
             # Cache popular terms
@@ -166,9 +155,7 @@ def update_book_metadata():
     """
     try:
         # Get books that haven't been updated recently
-        books = Book.objects.filter(last_updated__isnull=True).order_by("?")[
-            :100
-        ]  # Random sample of 100 books
+        books = Book.objects.filter(last_updated__isnull=True).order_by("?")[:100]  # Random sample of 100 books
 
         for book in books:
             try:

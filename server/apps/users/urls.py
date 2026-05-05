@@ -1,6 +1,6 @@
-from django.urls import path
 from dj_rest_auth.jwt_auth import get_refresh_view
 from dj_rest_auth.views import UserDetailsView
+from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 
 from apps.users.views import (
@@ -10,7 +10,6 @@ from apps.users.views import (
     ProfileViewSet,
     UserDataDetailView,
 )
-
 
 profile_collection = ProfileViewSet.as_view({"get": "list", "post": "create"})
 profile_resource = ProfileViewSet.as_view(

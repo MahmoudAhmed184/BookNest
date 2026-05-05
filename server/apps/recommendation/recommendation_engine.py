@@ -5,7 +5,6 @@ from typing import Any
 
 import pandas as pd
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -69,15 +68,12 @@ class RecommendationEngine:
         smoothing = max(float(item_stats["count"].median()), 1.0)
         self.item_scores = {
             item_id: float(
-                ((row["mean"] * row["count"]) + (self.global_mean * smoothing))
-                / (row["count"] + smoothing)
+                ((row["mean"] * row["count"]) + (self.global_mean * smoothing)) / (row["count"] + smoothing)
             )
             for item_id, row in item_stats.iterrows()
         }
         self.user_seen_items = (
-            ratings_df.groupby(self.user_id_col)[self.item_id_col]
-            .apply(lambda values: set(values))
-            .to_dict()
+            ratings_df.groupby(self.user_id_col)[self.item_id_col].apply(lambda values: set(values)).to_dict()
         )
 
     def _predict(self, item_id: Any) -> float:
@@ -89,10 +85,7 @@ class RecommendationEngine:
         if test_df.empty:
             return {"rmse": None, "mae": None}
 
-        errors = [
-            float(row[self.rating_col]) - self._predict(row[self.item_id_col])
-            for _, row in test_df.iterrows()
-        ]
+        errors = [float(row[self.rating_col]) - self._predict(row[self.item_id_col]) for _, row in test_df.iterrows()]
         mae = sum(abs(error) for error in errors) / len(errors)
         rmse = sqrt(sum(error * error for error in errors) / len(errors))
         return {"rmse": rmse, "mae": mae}
@@ -130,9 +123,7 @@ class RecommendationEngine:
         )
         return self._evaluate(test_df)
 
-    def recommend_for_user(
-        self, user_id: object, n_recommendations: int = 10
-    ) -> list[tuple[object, float]]:
+    def recommend_for_user(self, user_id: object, n_recommendations: int = 10) -> list[tuple[object, float]]:
         if self.global_mean is None or not self.item_scores:
             logger.error("Model has not been trained. Call train() first.")
             return []
@@ -146,6 +137,5 @@ class RecommendationEngine:
         recommendations.sort(key=lambda prediction: prediction.estimated_rating, reverse=True)
 
         return [
-            (prediction.item_id, prediction.estimated_rating)
-            for prediction in recommendations[:n_recommendations]
+            (prediction.item_id, prediction.estimated_rating) for prediction in recommendations[:n_recommendations]
         ]

@@ -26,11 +26,11 @@ def sync_book_after_author_link_change(sender, instance, **kwargs):
 
 @receiver(m2m_changed, sender=Book.genres.through)
 def sync_book_after_genre_link_change(sender, instance, action, reverse, pk_set, **kwargs):
-    if action not in {'post_add', 'post_remove', 'post_clear'}:
+    if action not in {"post_add", "post_remove", "post_clear"}:
         return
 
     if reverse:
-        book_ids = list(instance.books.values_list('isbn13', flat=True))
+        book_ids = list(instance.books.values_list("isbn13", flat=True))
         for book_id in book_ids:
             _sync_after_commit(book_id)
         return
@@ -40,13 +40,13 @@ def sync_book_after_genre_link_change(sender, instance, action, reverse, pk_set,
 
 @receiver(post_save, sender=Author)
 def sync_books_after_author_save(sender, instance, **kwargs):
-    book_ids = list(instance.books.values_list('isbn13', flat=True))
+    book_ids = list(instance.books.values_list("isbn13", flat=True))
     for book_id in book_ids:
         _sync_after_commit(book_id)
 
 
 @receiver(post_save, sender=Genre)
 def sync_books_after_genre_save(sender, instance, **kwargs):
-    book_ids = list(instance.books.values_list('isbn13', flat=True))
+    book_ids = list(instance.books.values_list("isbn13", flat=True))
     for book_id in book_ids:
         _sync_after_commit(book_id)

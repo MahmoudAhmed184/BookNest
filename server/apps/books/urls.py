@@ -1,5 +1,16 @@
 from django.urls import path
 
+from apps.books.views.catalog import (
+    AuthorBookListAPIView,
+    AuthorDetailAPIView,
+    AuthorListAPIView,
+    BookCollectionAPIView,
+    BookResourceAPIView,
+    FeedActivityListAPIView,
+    GenreBookListAPIView,
+    GenreListAPIView,
+    RelatedBookListAPIView,
+)
 from apps.books.views.reading_list import (
     AdminUserReadingListsAPIView,
     ReadingListBookMembershipAPIView,
@@ -19,18 +30,6 @@ from apps.books.views.review import (
 )
 from apps.books.views.search import BookSearchAPIView
 from apps.books.views.suggestion import BookSuggestionAPIView
-from apps.books.views.catalog import (
-    AuthorBookListAPIView,
-    AuthorDetailAPIView,
-    AuthorListAPIView,
-    BookCollectionAPIView,
-    BookResourceAPIView,
-    FeedActivityListAPIView,
-    GenreBookListAPIView,
-    GenreListAPIView,
-    RelatedBookListAPIView,
-)
-
 
 urlpatterns = [
     path("books/", BookCollectionAPIView.as_view(), name="book-collection"),

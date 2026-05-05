@@ -1,7 +1,9 @@
+from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models import signals
-from apps.books.models import BookReview, BookRating
+
+from apps.books.models import BookRating, BookReview
+
 
 # Create default notification types when the app is ready
 @receiver(signals.post_migrate)
@@ -9,9 +11,11 @@ def create_default_types(sender, **kwargs):
     """
     Create default notification types after migrations.
     """
-    if sender.name == 'notifications':
+    if sender.name == "notifications":
         from .models import create_default_notification_types
+
         create_default_notification_types()
+
 
 # Book Review Notifications
 @receiver(post_save, sender=BookReview)
@@ -22,25 +26,26 @@ def book_review_created(sender, instance, created, **kwargs):
     """
     if created:
         # Import here to avoid circular imports
-        from .services import NotificationService
         from apps.users.models import Profile
-        
+
+        from .services import NotificationService
+
         # Get the book authors to notify them
         for book_author in instance.book.authors.all():
             # Find the user profile associated with this author if any
             try:
                 # Check for profiles with AUTHOR type that might be associated with this author
-                author_profiles = Profile.objects.filter(profile_type='AUTHOR')
+                author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
                         # Notify the author about the review
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.user,
-                            verb='reviewed your book',
+                            verb="reviewed your book",
                             target=instance.book,
                             action_object=instance,
-                            notification_type='book_review'
+                            notification_type="book_review",
                         )
             except Exception as e:
                 print(f"Error creating notification for author {book_author.name}: {e}")
@@ -48,6 +53,7 @@ def book_review_created(sender, instance, created, **kwargs):
         # Notify users who follow this book (through reading lists or other mechanisms)
         # This would require a model that tracks book followers
         # For now, we'll leave this as a placeholder
+
 
 # Book Rating Notifications
 @receiver(post_save, sender=BookRating)
@@ -58,31 +64,33 @@ def book_rating_created(sender, instance, created, **kwargs):
     """
     if created:
         # Import here to avoid circular imports
-        from .services import NotificationService
         from apps.users.models import Profile
-        
+
+        from .services import NotificationService
+
         # Get the book authors to notify them
         for book_author in instance.book.authors.all():
             # Find the user profile associated with this author if any
             try:
                 # Check for profiles with AUTHOR type that might be associated with this author
-                author_profiles = Profile.objects.filter(profile_type='AUTHOR')
+                author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
                         # Notify the author about the rating
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.user,
-                            verb=f'rated your book {instance.rate} stars',
+                            verb=f"rated your book {instance.rate} stars",
                             target=instance.book,
                             action_object=instance,
-                            notification_type='book_rating'
+                            notification_type="book_rating",
                         )
             except Exception as e:
                 print(f"Error creating notification for author {book_author.name}: {e}")
 
+
 # Reading List Notifications
-@receiver(post_save, sender='books.ReadingListBooks')
+@receiver(post_save, sender="books.ReadingListBooks")
 def reading_list_book_added(sender, instance, created, **kwargs):
     """
     Signal handler to create notifications when a book is added to a reading list.
@@ -90,45 +98,44 @@ def reading_list_book_added(sender, instance, created, **kwargs):
     """
     if created:
         # Import here to avoid circular imports
-        from .services import NotificationService
         from apps.users.models import Profile
-        
+
+        from .services import NotificationService
+
         # Get the book authors to notify them
         for book_author in instance.book.authors.all():
             try:
                 # Check for profiles with AUTHOR type that might be associated with this author
-                author_profiles = Profile.objects.filter(profile_type='AUTHOR')
+                author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
                         # Notify the author about the book being added to a reading list
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.readinglist.profile.user,
-                            verb='added your book to their reading list',
+                            verb="added your book to their reading list",
                             target=instance.book,
                             action_object=instance.readinglist,
-                            notification_type='system'
+                            notification_type="system",
                         )
             except Exception as e:
                 print(f"Error creating notification for author {book_author.name}: {e}")
+
 
 # System Notifications
 # This can be used for system-wide announcements or important updates
 def create_system_notification(recipients, message, data=None):
     """
     Create a system notification for multiple recipients.
-    
+
     Args:
         recipients: List of users to receive the notification
         message: The notification message
         data: Additional data for the notification
     """
     from .services import NotificationService
-    
+
     for recipient in recipients:
         NotificationService.create_notification(
-            recipient=recipient,
-            verb=message,
-            notification_type='system',
-            data=data or {}
+            recipient=recipient, verb=message, notification_type="system", data=data or {}
         )

@@ -1,17 +1,18 @@
-from .base import *
+from .base import *  # noqa: F403
+from .base import BASE_DIR
 
 DEBUG = False
 
 PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.MD5PasswordHasher',
+    "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
 
-MEDIA_ROOT = BASE_DIR / 'test_media'
+MEDIA_ROOT = BASE_DIR / "test_media"

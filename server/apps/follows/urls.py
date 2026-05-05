@@ -2,13 +2,12 @@ from django.urls import path
 
 from apps.follows.views import (
     FollowCollectionAPIView,
-    FollowResourceAPIView,
     FollowerListAPIView,
     FollowingListAPIView,
+    FollowResourceAPIView,
     UserFollowersAPIView,
     UserFollowingAPIView,
 )
-
 
 urlpatterns = [
     path("follows/", FollowCollectionAPIView.as_view(), name="follow-collection"),

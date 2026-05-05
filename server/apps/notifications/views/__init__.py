@@ -5,6 +5,15 @@ from .notification import (
     NotificationUnreadCountAPIView,
 )
 from .notification_type import (
-    NotificationTypeListAPIView,
     NotificationTypeDetailAPIView,
+    NotificationTypeListAPIView,
 )
+
+__all__ = [
+    "IsRecipientOrAdmin",
+    "NotificationCollectionAPIView",
+    "NotificationResourceAPIView",
+    "NotificationTypeDetailAPIView",
+    "NotificationTypeListAPIView",
+    "NotificationUnreadCountAPIView",
+]

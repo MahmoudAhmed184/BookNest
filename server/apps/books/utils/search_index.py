@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from apps.books.models import Book, BookSearchIndex
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 TITLE_WEIGHT = 4
 AUTHOR_WEIGHT = 3
@@ -13,9 +15,9 @@ ISBN_WEIGHT = 4
 
 def _clean_text(value: object) -> str:
     if value is None:
-        return ''
+        return ""
 
-    return ' '.join(str(value).split())
+    return " ".join(str(value).split())
 
 
 def _join_unique(values: Iterable[object]) -> str:
@@ -31,7 +33,7 @@ def _join_unique(values: Iterable[object]) -> str:
         seen.add(key)
         cleaned_values.append(cleaned)
 
-    return ' '.join(cleaned_values)
+    return " ".join(cleaned_values)
 
 
 def _weighted_document(*, title: str, authors: str, genres: str, isbn: str, description: str) -> str:
@@ -42,7 +44,7 @@ def _weighted_document(*, title: str, authors: str, genres: str, isbn: str, desc
         + [genres] * GENRE_WEIGHT
         + [description]
     )
-    return ' '.join(part for part in parts if part)
+    return " ".join(part for part in parts if part)
 
 
 def build_book_search_payload(book: Book) -> dict[str, str]:
@@ -53,12 +55,12 @@ def build_book_search_payload(book: Book) -> dict[str, str]:
     description = _clean_text(book.description)
 
     return {
-        'title': title,
-        'authors': authors,
-        'genres': genres,
-        'isbn': isbn,
-        'description': description,
-        'document': _weighted_document(
+        "title": title,
+        "authors": authors,
+        "genres": genres,
+        "isbn": isbn,
+        "description": description,
+        "document": _weighted_document(
             title=title,
             authors=authors,
             genres=genres,
@@ -69,7 +71,7 @@ def build_book_search_payload(book: Book) -> dict[str, str]:
 
 
 def sync_book_search_index(book_id: str) -> BookSearchIndex | None:
-    book = Book.objects.prefetch_related('authors', 'genres').filter(pk=book_id).first()
+    book = Book.objects.prefetch_related("authors", "genres").filter(pk=book_id).first()
     if not book:
         return None
 
@@ -82,7 +84,7 @@ def sync_book_search_index(book_id: str) -> BookSearchIndex | None:
 
 def rebuild_book_search_index(batch_size: int = 500) -> int:
     count = 0
-    queryset = Book.objects.prefetch_related('authors', 'genres').order_by('isbn13')
+    queryset = Book.objects.prefetch_related("authors", "genres").order_by("isbn13")
 
     for book in queryset.iterator(chunk_size=batch_size):
         sync_book_search_index(book.isbn13)
