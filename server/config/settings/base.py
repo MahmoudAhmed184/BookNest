@@ -15,6 +15,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import cloudinary
+from django.utils.csp import CSP
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -122,6 +123,7 @@ REST_AUTH = {
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -225,9 +227,7 @@ SITE_ID = 1
 
 
 # Email configuration
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
-)
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
@@ -350,6 +350,13 @@ LOGGING = {
 
 CORS_ALLOW_CREDENTIALS = True
 
+SECURE_CSP_REPORT_ONLY = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF, CSP.NONCE],
+    "img-src": [CSP.SELF, "https:", "data:"],
+    "connect-src": [CSP.SELF],
+}
+
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BookNest API",
@@ -393,9 +400,7 @@ CACHE_KEY_PREFIX = "booknest"
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_ACCEPT_CONTENT = [
-    content.strip()
-    for content in os.environ.get("CELERY_ACCEPT_CONTENT", "json").split(",")
-    if content.strip()
+    content.strip() for content in os.environ.get("CELERY_ACCEPT_CONTENT", "json").split(",") if content.strip()
 ]
 CELERY_TASK_SERIALIZER = os.environ.get("CELERY_TASK_SERIALIZER", "json")
 CELERY_RESULT_SERIALIZER = os.environ.get("CELERY_RESULT_SERIALIZER", "json")
