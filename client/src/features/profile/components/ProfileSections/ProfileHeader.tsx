@@ -21,15 +21,15 @@ export function ProfileHeader({
   const profileImage = resolveProfileImage(user.profile_pic);
 
   return (
-    <section className={`flex flex-col gap-6 md:flex-row md:items-end ${center ? "items-center" : ""}`}>
-      <div className="h-64 w-64 overflow-hidden rounded-xl bg-secondary-black shadow-xl">
+    <section className={`flex flex-col gap-5 sm:flex-row sm:items-center ${center ? "items-center" : "items-start"}`}>
+      <div className="h-36 w-36 shrink-0 overflow-hidden rounded-xl bg-secondary-black shadow-xl sm:h-40 sm:w-40 md:h-44 md:w-44">
         {profileImage ? (
           <img
             src={profileImage}
             alt={`${user.username}'s profile image`}
             className="h-full w-full object-cover transition-transform duration-200 ease-out hover:scale-[1.03]"
-            width="256"
-            height="256"
+            width="176"
+            height="176"
             loading="lazy"
             decoding="async"
           />
@@ -42,8 +42,8 @@ export function ProfileHeader({
           </div>
         )}
       </div>
-      <div className={`flex flex-col gap-4 ${center ? "items-center md:items-start" : ""}`}>
-        <h1 className="display-heading text-4xl md:text-5xl">{user.username}</h1>
+      <div className={`flex min-w-0 flex-col gap-3 ${center ? "items-center sm:items-start" : "items-start"}`}>
+        <h1 className="display-heading break-words text-3xl sm:text-4xl md:text-5xl">{user.username}</h1>
         {action}
       </div>
     </section>

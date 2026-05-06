@@ -26,14 +26,14 @@ export function ReadingStats({
   ];
 
   return (
-    <section className="bento-grid" aria-label="Reading stats">
-      {stats.map((stat, position) => (
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Reading stats">
+      {stats.map((stat) => (
         <div
           key={stat.id}
-          className={`glass-card card-lift p-5 ${position === 0 ? "md:col-span-2" : ""}`}
+          className="glass-card min-w-0 p-4 sm:p-5"
         >
-          <p className="text-3xl font-extrabold text-primary-white">{stat.value}</p>
-          <p className="mt-1 text-xs uppercase text-primary-gray">{stat.label}</p>
+          <p className="truncate text-2xl font-extrabold leading-tight text-primary-white sm:text-3xl">{stat.value}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary-gray">{stat.label}</p>
         </div>
       ))}
     </section>
