@@ -7,6 +7,7 @@ from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer
 from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.books.models import Author, Book, BookRating, BookReview, Genre, ReadingList, ReadingListBooks
@@ -300,12 +301,14 @@ class ProfileUpdateSerializer(ProfileSerializer):
         return value.strip() if value else value
 
 
+@extend_schema_serializer(component_name="UserDataAuthor")
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
         fields = ["author_id", "name", "number_of_books"]
 
 
+@extend_schema_serializer(component_name="UserDataBookGenre")
 class BookGenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre

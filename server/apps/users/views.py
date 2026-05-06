@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DatabaseError, IntegrityError
 from django.http import Http404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -49,6 +49,12 @@ if TYPE_CHECKING:
     from rest_framework.request import Request
 
 logger = logging.getLogger(__name__)
+
+
+class SessionEndResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    message = serializers.CharField()
+    data = serializers.JSONField(allow_null=True)
 
 
 class CustomRegisterView(RegisterView):
@@ -190,9 +196,28 @@ class CustomLogoutView(LogoutView):
 
 
 class CurrentSessionAPIView(CustomLogoutView):
+    serializer_class = SessionEndResponseSerializer
+
+    @extend_schema(exclude=True)
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)
+
     @extend_schema(
         request=None,
-        responses={200: OpenApiResponse(description="Current session ended.")},
+        responses={
+            200: SessionEndResponseSerializer,
+            400: OpenApiResponse(description="Invalid refresh token."),
+        },
+    )
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().post(request, *args, **kwargs)
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: SessionEndResponseSerializer,
+            400: OpenApiResponse(description="Invalid refresh token."),
+        },
     )
     def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return self.post(request, *args, **kwargs)

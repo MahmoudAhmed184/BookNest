@@ -9,8 +9,9 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.cache.backends.base import InvalidCacheBackendError
 from django.db import DatabaseError
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from redis.exceptions import RedisError
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.exceptions import Throttled
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
@@ -108,6 +109,23 @@ class SearchRateThrottle(UserRateThrottle):
                 "retry_after": self.wait(),
             }
         )
+
+
+class BookSearchPaginationSerializer(serializers.Serializer):
+    current_page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    total_count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    has_next = serializers.BooleanField()
+    has_previous = serializers.BooleanField()
+
+
+class BookSearchResponseSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    results = serializers.ListField(child=serializers.DictField())
+    pagination = BookSearchPaginationSerializer()
+    filters_applied = serializers.DictField()
+    include_external = serializers.BooleanField()
 
 
 class BookSearchAPIView(APIView):
@@ -294,6 +312,26 @@ class BookSearchAPIView(APIView):
 
         return True, None
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter("page", int, OpenApiParameter.QUERY),
+            OpenApiParameter("page_size", int, OpenApiParameter.QUERY),
+            OpenApiParameter("genres", str, OpenApiParameter.QUERY),
+            OpenApiParameter("min_rating", float, OpenApiParameter.QUERY),
+            OpenApiParameter("pub_date_from", str, OpenApiParameter.QUERY),
+            OpenApiParameter("pub_date_to", str, OpenApiParameter.QUERY),
+            OpenApiParameter("authors", str, OpenApiParameter.QUERY),
+            OpenApiParameter("num_pages", int, OpenApiParameter.QUERY),
+            OpenApiParameter("include_external", bool, OpenApiParameter.QUERY),
+        ],
+        responses={
+            200: BookSearchResponseSerializer,
+            400: OpenApiResponse(description="Invalid search parameters."),
+            429: OpenApiResponse(description="Search rate limit exceeded."),
+            500: OpenApiResponse(description="Search service error."),
+        },
+    )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Handle GET requests for book search.

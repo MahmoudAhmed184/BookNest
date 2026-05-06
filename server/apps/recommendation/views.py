@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from celery.exceptions import CeleryError
-from rest_framework import permissions, status, viewsets
+from drf_spectacular.utils import OpenApiResponse, PolymorphicProxySerializer, extend_schema, inline_serializer
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.response import Response
 
 from .models import RecommendationModel
@@ -17,6 +18,15 @@ from .tasks import enqueue_generate_recommendations_for_user
 
 if TYPE_CHECKING:
     from rest_framework.request import Request
+
+
+class RecommendationGenerateAcceptedSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    task_id = serializers.CharField()
+
+
+class RecommendationGenerateMessageSerializer(serializers.Serializer):
+    message = serializers.CharField()
 
 
 class RecommendationModelViewSet(viewsets.ReadOnlyModelViewSet):
@@ -66,6 +76,29 @@ class UserRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=inline_serializer(
+            name="RecommendationGenerateRequest",
+            fields={
+                "n_recommendations": serializers.IntegerField(required=False, min_value=1, default=10),
+                "model_id": serializers.IntegerField(required=False, allow_null=True),
+                "async": serializers.BooleanField(required=False, default=False),
+            },
+        ),
+        responses={
+            200: PolymorphicProxySerializer(
+                component_name="RecommendationGenerateResponse",
+                serializers=[
+                    UserRecommendationSerializer(many=True),
+                    RecommendationGenerateAcceptedSerializer,
+                    RecommendationGenerateMessageSerializer,
+                ],
+                resource_type_field_name=None,
+                many=False,
+            ),
+            400: OpenApiResponse(description="Invalid recommendation generation request."),
+        },
+    )
     def generate(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Generate new recommendations for the current user

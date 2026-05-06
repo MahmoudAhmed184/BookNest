@@ -198,6 +198,9 @@ class AuthorBookListAPIView(generics.ListAPIView):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self) -> Any:
+        if getattr(self, "swagger_fake_view", False):
+            return book_catalog_queryset().none()
+
         return books_for_author(author_id=self.kwargs.get("pk"), author_name=self.kwargs.get("name"))
 
 
@@ -234,4 +237,7 @@ class GenreBookListAPIView(generics.ListAPIView):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self) -> Any:
+        if getattr(self, "swagger_fake_view", False):
+            return book_catalog_queryset().none()
+
         return books_for_genre(genre_id=self.kwargs.get("pk"), genre_name=self.kwargs.get("name"))

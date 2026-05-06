@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from rest_framework import generics
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,14 @@ from apps.notifications.services import NotificationService
 
 if TYPE_CHECKING:
     from rest_framework.request import Request
+
+
+class NotificationUnreadCountSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+
+
+class NotificationMarkAllReadSerializer(serializers.Serializer):
+    updated = serializers.IntegerField()
 
 
 class IsRecipientOrAdmin(IsAuthenticated):
@@ -61,6 +70,7 @@ class NotificationUnreadCountAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: NotificationUnreadCountSerializer})
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         count = NotificationService.get_unread_count(user=request.user)
         return Response({"count": count})
@@ -69,6 +79,10 @@ class NotificationUnreadCountAPIView(APIView):
 class NotificationMarkAllReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={200: NotificationMarkAllReadSerializer},
+    )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         updated = NotificationService.mark_all_as_read(user=request.user)
         return Response({"updated": updated})
@@ -77,6 +91,13 @@ class NotificationMarkAllReadAPIView(APIView):
 class NotificationMarkReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: NotificationSerializer,
+            404: OpenApiResponse(description="Notification not found."),
+        },
+    )
     def post(self, request: Request, id: int, *args: Any, **kwargs: Any) -> Response:
         notification = NotificationService.mark_as_read(
             notification_id=id,
@@ -89,6 +110,13 @@ class NotificationMarkReadAPIView(APIView):
 class NotificationMarkUnreadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: NotificationSerializer,
+            404: OpenApiResponse(description="Notification not found."),
+        },
+    )
     def post(self, request: Request, id: int, *args: Any, **kwargs: Any) -> Response:
         notification = NotificationService.mark_as_unread(
             notification_id=id,

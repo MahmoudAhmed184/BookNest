@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Any
 
 import requests
 from django.db import DatabaseError
-from rest_framework import status
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,12 +21,29 @@ if TYPE_CHECKING:
     from apps.books.models import Book
 
 
+class BookSuggestionResponseSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    suggestions = serializers.ListField(child=serializers.DictField())
+    count = serializers.IntegerField()
+
+
 class BookSuggestionAPIView(APIView):
     """
     API view for getting book title suggestions using database.
     Provides real-time suggestions based on partial queries.
     """
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter("limit", int, OpenApiParameter.QUERY),
+        ],
+        responses={
+            200: BookSuggestionResponseSerializer,
+            400: OpenApiResponse(description="Missing or invalid suggestion query parameters."),
+            500: OpenApiResponse(description="Suggestion service error."),
+        },
+    )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Handle GET requests for book suggestions.
