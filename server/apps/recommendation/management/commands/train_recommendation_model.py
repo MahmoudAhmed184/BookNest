@@ -1,6 +1,7 @@
 import logging
 
 from django.core.management.base import BaseCommand
+from django.db import DatabaseError
 
 from apps.recommendation.models import RecommendationModel
 from apps.recommendation.services import RecommendationService
@@ -47,5 +48,5 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.ERROR("Model training failed. Check logs for details."))
 
-        except Exception as e:
+        except (DatabaseError, OSError, RuntimeError, TypeError, ValueError) as e:
             self.stdout.write(self.style.ERROR(f"Error training model: {str(e)}"))

@@ -3,7 +3,7 @@ import random
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import DatabaseError, IntegrityError, transaction
 
 from apps.books.models import Book, BookRating
 
@@ -86,5 +86,5 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f"Successfully created {users_created} new users and {ratings_created} new ratings")
             )
 
-        except Exception as e:
+        except (DatabaseError, IntegrityError, ValueError) as e:
             self.stdout.write(self.style.ERROR(f"Error creating test data: {str(e)}"))

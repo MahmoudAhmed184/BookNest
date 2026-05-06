@@ -1,5 +1,6 @@
 import logging
 
+from celery.exceptions import CeleryError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -47,7 +48,7 @@ def trigger_recommendations_after_rating(sender, instance, **kwargs):
             user.id,
             task.id,
         )
-    except Exception as exc:
+    except (CeleryError, ConnectionError, RuntimeError, TypeError, ValueError) as exc:
         logger.warning(
             "Could not enqueue recommendation generation for user %s; running synchronously: %s",
             user.id,

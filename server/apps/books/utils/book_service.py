@@ -3,14 +3,14 @@ from datetime import datetime
 from typing import Any
 
 from dateutil import parser
-from django.db import transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
 from django.db.models.functions import Length
 
 from apps.books.models import Author, Book, BookAuthor, Genre
 
-# Configure logging
 logger = logging.getLogger(__name__)
+BOOK_SAVE_ERRORS = (AttributeError, DatabaseError, IntegrityError, TypeError, ValueError)
 
 
 def parse_date(date_value):
@@ -34,7 +34,7 @@ def parse_date(date_value):
             return parser.parse(date_value).date()
 
         return None
-    except Exception as e:
+    except (OverflowError, TypeError, ValueError) as e:
         logger.warning(f"Could not parse date: {date_value}, error: {e}")
         return None
 
@@ -144,7 +144,7 @@ def save_external_book(book_data: dict[str, Any]) -> Book | None:
                     else:
                         logger.debug(f"Author '{author.name}' already associated with book {book.isbn13}")
 
-                except Exception as e:
+                except BOOK_SAVE_ERRORS as e:
                     logger.warning(f"Error adding author '{author_name if author_name else 'Unknown'}' to book: {e}")
                     # Continue with other authors even if one fails
 
@@ -167,7 +167,7 @@ def save_external_book(book_data: dict[str, Any]) -> Book | None:
                     default_author.number_of_books = BookAuthor.objects.filter(author=default_author).count()
                     default_author.save(update_fields=["number_of_books"])
                     logger.warning(f"No valid authors provided for book {book.isbn13}, using default author")
-            except Exception as e:
+            except BOOK_SAVE_ERRORS as e:
                 logger.error(f"Error handling default author: {e}")
                 # Continue without default author if there's an error
 
@@ -219,14 +219,14 @@ def save_external_book(book_data: dict[str, Any]) -> Book | None:
                                 book.genres.add(primary_genre)
                                 genres_added = True
                                 logger.debug(f"Added genre '{primary_genre.name}' to book {book.isbn13}")
-                            except Exception as e:
+                            except IntegrityError as e:
                                 # Handle potential duplicate key error
                                 if "unique constraint" not in str(e).lower():
                                     raise
                                 # If it's a duplicate, just continue
                                 logger.debug(f"Genre '{primary_genre.name}' already exists for book {book.isbn13}")
 
-                except Exception as e:
+                except BOOK_SAVE_ERRORS as e:
                     logger.warning(f"Error adding genre '{genre_name}' to book: {e}")
                     # Continue with other genres even if one fails
 
@@ -239,14 +239,14 @@ def save_external_book(book_data: dict[str, Any]) -> Book | None:
             try:
                 book.genres.add(default_genre)
                 logger.warning(f"No valid genres provided for book {book.isbn13}, using default genre")
-            except Exception as e:
+            except IntegrityError as e:
                 # Handle potential duplicate key error
                 if "unique constraint" not in str(e).lower():
                     logger.error(f"Error adding default genre to book: {e}")
 
         return book
 
-    except Exception as e:
+    except BOOK_SAVE_ERRORS as e:
         logger.error(f"Error saving external book: {e}", exc_info=True)
         # Check for specific error types and provide more context
         if "connection" in str(e).lower():

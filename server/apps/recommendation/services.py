@@ -6,9 +6,11 @@ from typing import Any
 
 import pandas as pd
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count, FloatField, Value
 from django.db.models.functions import Coalesce
+from django.db.utils import DatabaseError
 
 from .models import RecommendationModel, UserRecommendation
 from .recommendation_engine import RecommendationEngine
@@ -139,7 +141,16 @@ class RecommendationService:
                 engine = pickle.load(f)
 
             return engine, model_record
-        except Exception as e:
+        except (
+            AttributeError,
+            DatabaseError,
+            EOFError,
+            ImportError,
+            OSError,
+            pickle.PickleError,
+            TypeError,
+            ValueError,
+        ) as e:
             logger.error(f"Error loading recommendation model: {str(e)}")
             return None
 
@@ -175,7 +186,7 @@ class RecommendationService:
                 model_record = RecommendationService.train_recommendation_model(
                     min_ratings_per_user=min_ratings_per_user,
                 )
-            except Exception as exc:
+            except (DatabaseError, OSError, RuntimeError, TypeError, ValueError) as exc:
                 logger.exception(f"Could not train recommendation model for user {user_id}: {exc}")
                 model_record = None
 
@@ -218,7 +229,7 @@ class RecommendationService:
                     user_rec = UserRecommendation(user_id=user_id, book=book, score=score, model=model_record)
                     user_rec.full_clean()
                     user_recs.append(user_rec)
-                except Exception as e:
+                except (Book.DoesNotExist, DatabaseError, TypeError, ValidationError, ValueError) as e:
                     logger.error(f"Error creating recommendation for book {book_isbn}: {str(e)}")
 
             # Bulk create all recommendations

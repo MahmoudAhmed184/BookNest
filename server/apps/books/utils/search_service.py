@@ -6,8 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Any
 
+from celery.exceptions import CeleryError
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import FieldError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import DatabaseError, connection
 from django.db.models import Case, FloatField, IntegerField, Q, Value, When
@@ -17,8 +19,10 @@ from apps.books.models import Book, BookSearchIndex
 from apps.books.utils.book_service import save_external_book
 from apps.books.utils.external_api_clients import GoogleBooksClient, OpenLibraryClient, merge_book_results
 
-# Configure logging
 logger = logging.getLogger(__name__)
+SEARCH_QUERY_ERRORS = (DatabaseError, FieldError, TypeError, ValueError)
+EXTERNAL_SEARCH_ERRORS = (OSError, RuntimeError, TypeError, ValueError)
+ENQUEUE_ERRORS = (CeleryError, ConnectionError, OSError, RuntimeError, TypeError, ValueError)
 
 
 class DatabaseSearchService:
@@ -243,7 +247,7 @@ class DatabaseSearchService:
             enqueue_sync_external_books_for_query(query=query, page_size=min(page_size, 40))
             logger.info("Queued external catalog enrichment for query: %s", query)
             return True
-        except Exception as exc:
+        except ENQUEUE_ERRORS as exc:
             cache.delete(cache_key)
             logger.warning("Could not queue external catalog enrichment for '%s': %s", query, exc)
             return False
@@ -307,7 +311,7 @@ class DatabaseSearchService:
                 logger.warning(f"Page {page} is out of range, returning empty result")
                 return [], total_count
 
-        except Exception as e:
+        except SEARCH_QUERY_ERRORS as e:
             logger.error(f"Database search error: {e}", exc_info=True)
             return [], 0
 
@@ -342,7 +346,7 @@ class DatabaseSearchService:
 
                     return merged_results
 
-                except Exception as e:
+                except EXTERNAL_SEARCH_ERRORS as e:
                     logger.error(f"Error in async external API search: {e}", exc_info=True)
                     return []
 
@@ -373,7 +377,7 @@ class DatabaseSearchService:
             logger.info(f"Returning {len(paginated_books)} paginated results from external APIs")
             return paginated_books, total_count
 
-        except Exception as e:
+        except EXTERNAL_SEARCH_ERRORS as e:
             logger.error(f"External API search error: {e}", exc_info=True)
             return [], 0
 
@@ -409,7 +413,7 @@ class DatabaseSearchService:
 
             return books, total_count
 
-        except Exception as e:
+        except SEARCH_QUERY_ERRORS as e:
             logger.error(f"Error getting all books: {e}", exc_info=True)
             return [], 0
 
@@ -451,7 +455,7 @@ class DatabaseSearchService:
 
             return queryset
 
-        except Exception as e:
+        except SEARCH_QUERY_ERRORS as e:
             logger.error(f"Error applying filters: {e}", exc_info=True)
             return queryset
 
@@ -477,7 +481,7 @@ class DatabaseSearchService:
                 "source": book.source,
                 "last_updated": book.last_updated.isoformat() if book.last_updated else None,
             }
-        except Exception as e:
+        except (AttributeError, DatabaseError, TypeError, ValueError) as e:
             logger.error(f"Error converting book to dictionary: {e}", exc_info=True)
             return {}
 
@@ -517,6 +521,6 @@ class DatabaseSearchService:
             logger.debug(f"Found {len(suggestions)} suggestions")
             return suggestions
 
-        except Exception as e:
+        except SEARCH_QUERY_ERRORS as e:
             logger.error(f"Error getting suggestions: {e}", exc_info=True)
             return []

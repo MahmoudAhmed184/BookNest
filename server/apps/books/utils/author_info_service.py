@@ -7,13 +7,14 @@ from urllib.parse import quote
 import requests
 from django.conf import settings
 from django.core.cache import cache
+from django.db import DatabaseError
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 from apps.books.models import Author, Book
 
-# Configure logging
 logger = logging.getLogger(__name__)
+AUTHOR_INFO_ERRORS = (DatabaseError, KeyError, RuntimeError, TypeError, ValueError, requests.RequestException)
 
 
 def get_requests_session():
@@ -64,7 +65,7 @@ class AuthorInfoService:
                 author = Author.objects.filter(name__iexact=author_name).first()
                 if author:
                     results["number_of_books"] = Book.objects.filter(authors=author).count()
-            except Exception as e:
+            except (DatabaseError, TypeError, ValueError) as e:
                 logger.error(f"Error getting book count for {author_name}: {e}")
 
             # Use ThreadPoolExecutor for parallel processing
@@ -90,7 +91,7 @@ class AuthorInfoService:
 
             return results
 
-        except Exception as e:
+        except AUTHOR_INFO_ERRORS as e:
             logger.error(f"Error fetching author info for {author_name}: {e}")
             return {}
 
@@ -136,7 +137,7 @@ class AuthorInfoService:
 
             return {"bio": page.get("extract", "")}
 
-        except Exception as e:
+        except AUTHOR_INFO_ERRORS as e:
             logger.error(f"Error fetching Wikipedia data: {e}")
             return {}
 
@@ -184,7 +185,7 @@ class AuthorInfoService:
 
             return {"birth_date": AuthorInfoService._get_claim_value(claims, "P569")}
 
-        except Exception as e:
+        except AUTHOR_INFO_ERRORS as e:
             logger.error(f"Error fetching Wikidata data: {e}")
             return {}
 
@@ -232,7 +233,7 @@ class AuthorInfoService:
                 "loc_authority": "Library of Congress",
             }
 
-        except Exception as e:
+        except AUTHOR_INFO_ERRORS as e:
             logger.error(f"Error fetching Library of Congress data: {e}")
             return {}
 
@@ -283,7 +284,7 @@ class AuthorInfoService:
                 "number_of_books": AuthorInfoService._extract_xml_value(author_text, "works_count"),
             }
 
-        except Exception as e:
+        except AUTHOR_INFO_ERRORS as e:
             logger.error(f"Error fetching Goodreads data: {e}")
             return {}
 

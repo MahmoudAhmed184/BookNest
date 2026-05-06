@@ -276,7 +276,7 @@ class BookNormalizer:
             if isinstance(pub_date, date):
                 return pub_date
 
-        except Exception as e:
+        except (OverflowError, TypeError, ValueError) as e:
             logger.warning(f"Error processing publication date: {e}")
 
         return None

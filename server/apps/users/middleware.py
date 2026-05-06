@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.urls import resolve
+from django.urls import Resolver404, resolve
 
 
 class ProfileRequiredMiddleware:
@@ -42,7 +42,7 @@ class ProfileRequiredMiddleware:
         # Get the current URL pattern
         try:
             url_name = resolve(request.path_info).url_name
-        except Exception:
+        except Resolver404:
             return True
 
         # Allow these paths without profile check

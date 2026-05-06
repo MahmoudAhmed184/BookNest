@@ -1,6 +1,8 @@
 import logging
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError, IntegrityError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -20,7 +22,7 @@ def create_default_reading_lists(sender, instance, created, **kwargs):
             for reading_list in create_default_reading_lists_for_profile(profile=instance):
                 logger.info(f"Created {reading_list.name} list for user {instance.user.username}")
 
-        except Exception as e:
+        except (DatabaseError, IntegrityError, TypeError, ValidationError, ValueError) as e:
             logger.error(f"Error creating reading lists for user {instance.user.username}: {str(e)}")
             raise
 

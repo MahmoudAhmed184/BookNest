@@ -1,11 +1,17 @@
+import logging
+
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError
 from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from apps.books.models import BookRating, BookReview
 
+logger = logging.getLogger(__name__)
+NOTIFICATION_SIGNAL_ERRORS = (AttributeError, DatabaseError, TypeError, ValidationError, ValueError)
 
-# Create default notification types when the app is ready
+
 @receiver(signals.post_migrate)
 def create_default_types(sender, **kwargs):
     """
@@ -17,7 +23,6 @@ def create_default_types(sender, **kwargs):
         create_default_notification_types()
 
 
-# Book Review Notifications
 @receiver(post_save, sender=BookReview)
 def book_review_created(sender, instance, created, **kwargs):
     """
@@ -25,20 +30,15 @@ def book_review_created(sender, instance, created, **kwargs):
     Notifies book authors and users following the book.
     """
     if created:
-        # Import here to avoid circular imports
         from apps.users.models import Profile
 
         from .services import NotificationService
 
-        # Get the book authors to notify them
         for book_author in instance.book.authors.all():
-            # Find the user profile associated with this author if any
             try:
-                # Check for profiles with AUTHOR type that might be associated with this author
                 author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
-                        # Notify the author about the review
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.user,
@@ -47,15 +47,10 @@ def book_review_created(sender, instance, created, **kwargs):
                             action_object=instance,
                             notification_type="book_review",
                         )
-            except Exception as e:
-                print(f"Error creating notification for author {book_author.name}: {e}")
-
-        # Notify users who follow this book (through reading lists or other mechanisms)
-        # This would require a model that tracks book followers
-        # For now, we'll leave this as a placeholder
+            except NOTIFICATION_SIGNAL_ERRORS as exc:
+                logger.warning("Error creating notification for author %s: %s", book_author.name, exc)
 
 
-# Book Rating Notifications
 @receiver(post_save, sender=BookRating)
 def book_rating_created(sender, instance, created, **kwargs):
     """
@@ -63,20 +58,15 @@ def book_rating_created(sender, instance, created, **kwargs):
     Notifies book authors about new ratings.
     """
     if created:
-        # Import here to avoid circular imports
         from apps.users.models import Profile
 
         from .services import NotificationService
 
-        # Get the book authors to notify them
         for book_author in instance.book.authors.all():
-            # Find the user profile associated with this author if any
             try:
-                # Check for profiles with AUTHOR type that might be associated with this author
                 author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
-                        # Notify the author about the rating
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.user,
@@ -85,11 +75,10 @@ def book_rating_created(sender, instance, created, **kwargs):
                             action_object=instance,
                             notification_type="book_rating",
                         )
-            except Exception as e:
-                print(f"Error creating notification for author {book_author.name}: {e}")
+            except NOTIFICATION_SIGNAL_ERRORS as exc:
+                logger.warning("Error creating notification for author %s: %s", book_author.name, exc)
 
 
-# Reading List Notifications
 @receiver(post_save, sender="books.ReadingListBooks")
 def reading_list_book_added(sender, instance, created, **kwargs):
     """
@@ -97,19 +86,15 @@ def reading_list_book_added(sender, instance, created, **kwargs):
     Notifies book authors when their books are added to reading lists.
     """
     if created:
-        # Import here to avoid circular imports
         from apps.users.models import Profile
 
         from .services import NotificationService
 
-        # Get the book authors to notify them
         for book_author in instance.book.authors.all():
             try:
-                # Check for profiles with AUTHOR type that might be associated with this author
                 author_profiles = Profile.objects.filter(profile_type="AUTHOR")
                 for profile in author_profiles:
                     if profile.user:
-                        # Notify the author about the book being added to a reading list
                         NotificationService.create_notification(
                             recipient=profile.user,
                             actor=instance.readinglist.profile.user,
@@ -118,12 +103,10 @@ def reading_list_book_added(sender, instance, created, **kwargs):
                             action_object=instance.readinglist,
                             notification_type="system",
                         )
-            except Exception as e:
-                print(f"Error creating notification for author {book_author.name}: {e}")
+            except NOTIFICATION_SIGNAL_ERRORS as exc:
+                logger.warning("Error creating notification for author %s: %s", book_author.name, exc)
 
 
-# System Notifications
-# This can be used for system-wide announcements or important updates
 def create_system_notification(recipients, message, data=None):
     """
     Create a system notification for multiple recipients.
