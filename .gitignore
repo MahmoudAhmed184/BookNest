@@ -22,6 +22,7 @@ server/**/restore_data.sh
 server/**/*secret*
 server/**/*key*
 server/**/*credential*
+server/media/
 
 # Python bytecode and native extensions
 __pycache__/
