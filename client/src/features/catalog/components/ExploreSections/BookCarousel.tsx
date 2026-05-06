@@ -31,7 +31,7 @@ export function BookCarousel<TItem>({
         1024: { slidesPerView: 3, spaceBetween: 24 },
         1280: { slidesPerView: 4, spaceBetween: 28 },
       }}
-      className="w-full"
+      className="book-carousel-swiper w-full"
     >
       {items.map((item) => (
         <SwiperSlide key={keyExtractor(item)}>{renderBook(item)}</SwiperSlide>

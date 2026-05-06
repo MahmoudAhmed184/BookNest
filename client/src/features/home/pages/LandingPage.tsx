@@ -138,7 +138,7 @@ export default function Landing(): ReactElement | null {
           pagination={{ clickable: true }}
           autoplay={{ delay: 3000, disableOnInteraction: false }}
           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
-          className="w-full"
+          className="landing-trending-swiper w-full"
         >
           {carouselBooks.map((book) => (
             <SwiperSlide key={book.isbn13}>
