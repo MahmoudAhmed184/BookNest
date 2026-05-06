@@ -35,7 +35,7 @@ export function BookShelfCarousel({
       pagination={{ clickable: true }}
       autoplay={{ delay: 3200, disableOnInteraction: false }}
       breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
-      className="w-full"
+      className="book-carousel-swiper w-full"
     >
       {books.map((book) => (
         <SwiperSlide key={book.isbn13}>
