@@ -105,14 +105,14 @@ server/
 |   `-- wsgi.py
 |-- logs/                    # Runtime logs only, ignored by Git
 |-- media/                   # Local media fallback, ignored by Git
+|-- .dockerignore            # Docker build context exclusions
 |-- .env.example             # Tracked template
 |-- .python-version          # Python pin: 3.14.4
 |-- Dockerfile
 |-- docker-compose.yml
 |-- manage.py
 |-- pyproject.toml
-|-- uv.lock
-`-- wait-for-db.sh
+`-- uv.lock
 ```
 
 ## Configuration
@@ -152,11 +152,15 @@ Key variables:
 | `DB_PASSWORD` | MariaDB application password |
 | `DB_HOST` | `127.0.0.1` locally, `db` in Docker Compose |
 | `DB_PORT` | Usually `3306` |
+| `DB_HOST_PORT` | Host port published by Docker Compose for MariaDB |
 | `MARIADB_ROOT_PASSWORD` | Root password used when Docker initializes MariaDB |
 | `USE_REDIS_CACHE` | Set `True` to use Redis for Django cache in development; defaults to in-memory cache |
 | `REDIS_URL` | Django cache Redis URL when Redis cache is enabled |
 | `CELERY_BROKER_URL` | Celery broker URL |
 | `CELERY_RESULT_BACKEND` | Celery result backend URL |
+| `REDIS_HOST_PORT` | Host port published by Docker Compose for Redis |
+| `WEB_PORT` | Host port published by Docker Compose for Django |
+| `CELERY_LOG_LEVEL` | Celery worker log level in Docker Compose |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud |
 | `CLOUDINARY_API_KEY` | Cloudinary key |
 | `CLOUDINARY_API_SECRET` | Cloudinary secret |
@@ -221,7 +225,7 @@ uv run python manage.py test --verbosity=2
 
 ## Docker Development
 
-Docker Compose starts MariaDB, Redis, Django, and Celery:
+Docker Compose starts MariaDB, Redis, Django, Celery, and a one-shot migration service:
 
 ```bash
 cp .env.example .env
@@ -230,22 +234,27 @@ docker compose up --build
 
 Services:
 
-| Service | Container | Port | Purpose |
-| --- | --- | --- | --- |
-| `web` | `booknest_web` | `8000` | Django API |
-| `db` | `booknest_db` | `3306` | MariaDB |
-| `redis` | `booknest_redis` | `6379` | Cache and broker |
-| `celery` | `booknest_celery` | none | Background worker |
+| Service | Host Port | Purpose |
+| --- | --- | --- |
+| `web` | `127.0.0.1:8000` | Django API |
+| `db` | `127.0.0.1:3306` | MariaDB |
+| `redis` | `127.0.0.1:6379` | Cache and broker |
+| `migrate` | none | Runs `python manage.py migrate --noinput`, then exits |
+| `celery` | none | Background worker |
+
+Compose waits for MariaDB and Redis healthchecks before starting Django services. The default network is managed by Compose, so services use `db` and `redis` as hostnames.
 
 Run backend commands in the web container:
 
 ```bash
-docker compose exec web uv run python manage.py migrate
-docker compose exec web uv run python manage.py createsuperuser
-docker compose exec web uv run python manage.py check
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py check
 ```
 
-MariaDB data is persisted in the named Docker volume `mariadb_data`.
+Create admin users explicitly with `createsuperuser`; Docker startup does not create a default admin account.
+
+MariaDB data is persisted in the named Docker volume `mariadb_data`. Redis data is persisted in `redis_data`, and the container virtual environment is kept in `app_venv` so the source bind mount does not hide the image's installed dependencies.
 
 - `docker compose down` stops containers and keeps data.
 - `docker compose down -v` removes volumes and deletes database data.
@@ -483,7 +492,7 @@ docker compose logs db
 
 ### Port 3306 Already In Use
 
-Another MariaDB/MySQL server may already be bound to the port. Either stop it or change the Docker Compose port mapping.
+Another MariaDB/MySQL server may already be bound to the port. Either stop it or set `DB_HOST_PORT` in `.env` to change the Docker Compose host port mapping.
 
 ### Production Check Fails On Secret Key
 

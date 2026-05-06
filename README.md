@@ -70,12 +70,12 @@ BookNest/
 |       `-- main.tsx
 |-- server/
 |   |-- README.md
+|   |-- .dockerignore
 |   |-- Dockerfile
 |   |-- docker-compose.yml
 |   |-- manage.py
 |   |-- pyproject.toml
 |   |-- uv.lock
-|   |-- wait-for-db.sh
 |   |-- apps/
 |   |   |-- books/
 |   |   |-- follows/
@@ -171,20 +171,25 @@ docker compose up --build
 
 Docker Compose starts:
 
-- `web`: Django API on port `8000`
-- `db`: MariaDB on port `3306`
-- `redis`: Redis on port `6379`
+- `web`: Django API on `127.0.0.1:8000`
+- `db`: MariaDB on `127.0.0.1:3306`
+- `redis`: Redis on `127.0.0.1:6379`
+- `migrate`: one-shot Django migration service
 - `celery`: background worker
+
+Compose waits for MariaDB and Redis healthchecks before starting Django services. The `web` and `celery` services wait for the `migrate` service to finish successfully.
 
 Run Django commands inside the web container:
 
 ```bash
-docker compose exec web uv run python manage.py migrate
-docker compose exec web uv run python manage.py createsuperuser
-docker compose exec web uv run python manage.py check
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py check
 ```
 
-MariaDB data is stored in the `mariadb_data` Docker volume. `docker compose down` keeps the data. `docker compose down -v` deletes it.
+Create admin users explicitly with `createsuperuser`; Docker startup does not create a default admin account.
+
+MariaDB data is stored in the `mariadb_data` Docker volume. Redis data is stored in `redis_data`, and the container virtual environment is stored in `app_venv`. `docker compose down` keeps the data. `docker compose down -v` deletes it.
 
 ## Frontend Setup
 
@@ -208,10 +213,10 @@ Important backend variables:
 - `DEBUG`
 - `SECRET_KEY`
 - `JWT_SIGNING_KEY`
-- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_HOST_PORT`
 - `MARIADB_ROOT_PASSWORD`
 - `USE_REDIS_CACHE`
-- `REDIS_URL`, `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`
+- `REDIS_URL`, `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `REDIS_HOST_PORT`, `WEB_PORT`, `CELERY_LOG_LEVEL`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS`
 - `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
