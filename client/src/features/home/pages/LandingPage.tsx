@@ -16,11 +16,14 @@ const valueCards = [
 
 export default function Landing(): ReactElement | null {
   const { books, featuredBook, isLoading, isFetching, isError, refetch } = useLandingCatalog();
+  const heroBooks = books.slice(1, 5);
+  const carouselBooks = books.slice(5, 13);
+  const shouldStretchLastHeroBook = heroBooks.length === 3;
 
   return (
     <div className="flex flex-col gap-16 py-10">
       <section
-        className="relative min-h-[calc(100vh-8rem)] overflow-hidden rounded-xl py-8"
+        className="relative min-h-[calc(100vh-8rem)] overflow-hidden rounded-xl px-5 py-8 sm:px-6 lg:px-8 xl:px-10"
         aria-labelledby="landing-title"
       >
         <div
@@ -60,6 +63,7 @@ export default function Landing(): ReactElement | null {
                 <BookCardSkeleton />
                 <BookCardSkeleton />
                 <BookCardSkeleton />
+                <BookCardSkeleton />
               </>
             ) : null}
             {isError ? (
@@ -92,7 +96,7 @@ export default function Landing(): ReactElement | null {
                   variant="featured"
                   className="md:col-span-2 md:row-span-2"
                 />
-                {books.slice(1, 4).map((book) => (
+                {heroBooks.map((book, index) => (
                   <BookCard
                     key={book.isbn13}
                     to={routeBuilders.book(book.isbn13)}
@@ -100,6 +104,11 @@ export default function Landing(): ReactElement | null {
                     author={getAuthorNames(book)}
                     coverSrc={book.cover_img}
                     variant="trending"
+                    className={
+                      shouldStretchLastHeroBook && index === heroBooks.length - 1
+                        ? "lg:col-span-2"
+                        : undefined
+                    }
                   />
                 ))}
               </>
@@ -131,7 +140,7 @@ export default function Landing(): ReactElement | null {
           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
           className="w-full"
         >
-          {books.slice(4, 12).map((book) => (
+          {carouselBooks.map((book) => (
             <SwiperSlide key={book.isbn13}>
               <BookCard
                 to={routeBuilders.book(book.isbn13)}

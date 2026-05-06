@@ -15,8 +15,8 @@ interface UseLandingCatalogResult {
 
 export function useLandingCatalog(): UseLandingCatalogResult {
   const query = useQuery({
-    queryKey: catalogKeys.popularBooks(12),
-    queryFn: () => getPopularBooks(12),
+    queryKey: catalogKeys.popularBooks(13),
+    queryFn: () => getPopularBooks(13),
   });
   const books = query.data || [];
 
