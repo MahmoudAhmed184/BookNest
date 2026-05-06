@@ -124,7 +124,6 @@ node_modules/
 dist-ssr/
 
 # Docker local overrides
-.dockerignore
 docker-compose.override.yml
 
 # Jupyter notebooks
