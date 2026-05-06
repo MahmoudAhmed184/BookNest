@@ -2,7 +2,7 @@
 
 This is the React frontend for BookNest. It is a Vite-powered TypeScript application that connects to the Django API in `../server`, renders the reader-facing web experience, and keeps API, route, state, and type boundaries explicit.
 
-The frontend uses a feature-first structure with strict TypeScript, typed Axios services, route-level code splitting, and a Vite-native test command.
+The frontend uses a feature-first structure with strict TypeScript, typed Axios services, React Router DOM route-level code splitting, TanStack Query data hooks, and a Vite-native test command.
 
 ## Stack
 
@@ -60,10 +60,20 @@ uv run python manage.py migrate
 uv run python manage.py runserver
 ```
 
-The frontend API base URL is defined in `src/config/index.ts`:
+The frontend API base URL is defined in `src/config/env.ts`:
 
 ```ts
-export const API_BASE_URL = "http://localhost:8000";
+const DEFAULT_API_BASE_URL = "http://localhost:8000";
+
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+).replace(/\/$/, "");
+```
+
+Override it with a Vite environment variable when needed:
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 ## Scripts
@@ -90,33 +100,24 @@ src/
 |   |   |-- ErrorBoundary/
 |   |   |-- Footer/
 |   |   |-- Layout/
-|   |   `-- Navbar/
+|   |   |-- Navbar/
+|   |   `-- index.ts
 |   `-- ui/
 |       |-- BookCard/
 |       |-- BookCardSkeleton/
 |       |-- EmptyState/
 |       |-- ErrorState/
 |       |-- FieldError/
-|       `-- InlineSpinner/
+|       |-- InlineSpinner/
+|       |-- MoodBadge/
+|       |-- StarRating/
+|       |-- ToggleSwitch/
+|       `-- index.ts
 |-- config/
 |   `-- env.ts
 |-- features/
 |   |-- auth/
-|   |   |-- components/
-|   |   |-- hooks/
-|   |   |-- pages/
-|   |   |-- services/
-|   |   |-- store/
-|   |   |-- types/
-|   |   `-- index.ts
 |   |-- catalog/
-|   |   |-- components/
-|   |   |-- data/
-|   |   |-- hooks/
-|   |   |-- pages/
-|   |   |-- services/
-|   |   |-- types/
-|   |   `-- index.ts
 |   |-- collections/
 |   |-- errors/
 |   |-- home/
@@ -124,6 +125,8 @@ src/
 |   |-- profile/
 |   `-- settings/
 |-- hooks/
+|   |-- useScrolled.ts
+|   `-- useSearchShortcut.ts
 |-- lib/
 |   |-- axios.ts
 |   `-- queryClient.ts
@@ -136,9 +139,13 @@ src/
 |-- styles/
 |   |-- App.css
 |   `-- index.css
+|-- test/
+|   |-- QueryBackedPages.test.tsx
+|   `-- renderHookWithClient.tsx
 |-- types/
 |   `-- api.ts
 |-- utils/
+|   `-- colorFromString.ts
 |-- main.tsx
 `-- vite-env.d.ts
 ```
@@ -166,7 +173,7 @@ Current routes:
 | `/explore` | `features/catalog/pages/ExplorePage.tsx` |
 | `/search` | `features/catalog/pages/SearchPage.tsx` |
 | `/search/:query` | `features/catalog/pages/SearchPage.tsx` |
-| `/author` | `features/catalog/pages/AuthorPage.tsx` |
+| `/author/:id` | `features/catalog/pages/AuthorPage.tsx` |
 | `/profile/me` | `features/profile/pages/ProfilePage.tsx` |
 | `/profile/:id` | `features/profile/pages/UserProfilePage.tsx` |
 | `/categories` | `features/catalog/pages/CategoriesPage.tsx` |
@@ -176,7 +183,7 @@ Current routes:
 | `/notifications` | `features/notifications/pages/NotificationsPage.tsx` |
 | `*` | `features/errors/pages/NotFoundPage.tsx` |
 
-Route paths and builders live in `src/routes/paths.ts`. Routing uses React Router DOM; the project does not use TanStack Router or generated route trees.
+Route paths, route parameter types, and route builders live in `src/routes/paths.ts`. Routing uses React Router DOM; the project does not use TanStack Router or generated route trees.
 
 ### API Layer
 
@@ -213,17 +220,20 @@ Styling is split between:
 
 Tailwind configuration is CSS-first through `@theme` and `@utility` in `src/styles/index.css`. The current palette is defined there and should not be duplicated or changed in page files.
 
-The shared UI primitives added in the latest pass are:
+Shared UI primitives:
 
 - `BookCard`: cover-first accessible book card with hover lift, cover fallback initials, lazy image loading, and truncated title support.
 - `BookCardSkeleton`: card-matching skeleton layout with shimmer animation.
-- `EmptyState`: reusable warm empty state with icon, copy, and optional CTA.
+- `EmptyState`: reusable empty state with icon, copy, and optional CTA.
 - `ErrorState`: reusable inline error state with retry support.
 - `FieldError`: accessible inline form error with warning icon.
 - `InlineSpinner`: small submit/progress indicator for buttons.
+- `MoodBadge`: compact genre/mood badge with deterministic color support.
+- `StarRating`: reusable rating display/control for book and review flows.
+- `ToggleSwitch`: accessible binary setting control.
 - `ErrorBoundary`: graceful runtime fallback wrapper used by `Layout`.
 
-Global UX behavior now includes:
+Global UX behavior includes:
 
 - `animate-fade-up` page entry motion.
 - `animate-shimmer` skeleton loading.
@@ -233,16 +243,16 @@ Global UX behavior now includes:
 
 Data-backed pages use TanStack Query loading, fetching, error, and retry states instead of blank screens or standalone spinners. Search has a 300ms debounce, clear action, results count, active sort controls, accessible combobox attributes, and scroll restoration when returning from a book page.
 
-### Testing
+## Testing
 
 The frontend uses Vitest with jsdom and React Testing Library.
 
 Current test files:
 
 ```text
-src/features/home/pages/LandingPage.test.tsx
 src/features/auth/hooks/authHooks.test.tsx
 src/features/catalog/hooks/catalogHooks.test.tsx
+src/features/home/pages/LandingPage.test.tsx
 src/features/profile/hooks/profileHooks.test.tsx
 src/test/QueryBackedPages.test.tsx
 ```
@@ -253,7 +263,7 @@ Run tests:
 npm test
 ```
 
-The smoke test verifies that the landing page renders its primary heading and navigation links.
+The tests cover the landing page, auth hooks, catalog hooks, profile hooks, and query-backed page smoke rendering.
 
 ## TypeScript
 
@@ -267,7 +277,7 @@ Strict TypeScript is enabled in `tsconfig.json`:
 }
 ```
 
-The frontend source tree is TS/TSX-only. No `.js` or `.jsx` files should be added under `src/`.
+The frontend source tree is TS/TSX-only. Do not add `.js` or `.jsx` files under `src/`.
 
 Before committing frontend changes, run:
 
@@ -275,6 +285,7 @@ Before committing frontend changes, run:
 npx tsc --noEmit
 npm run lint
 npm test
+npm run build
 ```
 
 ## Build and Preview
@@ -298,7 +309,7 @@ The production build is emitted to `dist/`.
 - Keep reusable, generic UI in `src/components/ui/`.
 - Keep app shell components in `src/components/layout/`.
 - Keep route-level views inside `src/features/{domain}/pages/`.
-- Keep domain-specific hooks, services, types, data, and components in `src/features/{domain}/`.
+- Keep domain-specific hooks, services, types, data, constants, utils, and components in `src/features/{domain}/`.
 - Keep shared infrastructure wrappers in `src/lib/`.
 - Keep root `src/services/`, `src/store/`, `src/hooks/`, and `src/types/` for cross-feature concerns only.
 - Keep app-level config in `src/config/`.
@@ -306,11 +317,11 @@ The production build is emitted to `dist/`.
 - Avoid `any`; use `unknown` with runtime narrowing when a value is genuinely unknown.
 - Use shared `BookCard`, `BookCardSkeleton`, `EmptyState`, `ErrorState`, `FieldError`, and `InlineSpinner` before adding page-local variants.
 - Preserve the existing color palette in `src/styles/index.css`; do not introduce one-off hex colors in page markup.
-- Keep API calls in feature services; UI pages should consume existing service functions through TanStack Query hooks or mutations.
+- Keep API calls in feature services; UI pages should consume service functions through TanStack Query hooks or mutations.
 
 ## Troubleshooting
 
-### The page renders but data stays loading
+### The Page Renders But Data Stays Loading
 
 Start the backend on `http://localhost:8000` and make sure its database is migrated:
 
@@ -320,21 +331,31 @@ uv run python manage.py migrate
 uv run python manage.py runserver
 ```
 
-### Vite refuses to start because of Node.js
+### Vite Refuses To Start Because Of Node.js
 
 Use Node.js 20.19+, 22.13+, or 24+. Older Node.js versions are outside the engine range for the current frontend toolchain.
 
-### API requests go to the wrong host
+### API Requests Go To The Wrong Host
 
-Update `src/config/index.ts`:
+Update the Vite environment value consumed by `src/config/env.ts`:
 
-```ts
-export const API_BASE_URL = "http://localhost:8000";
+```dotenv
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-If the backend is deployed elsewhere, point that constant at the deployed API origin.
+Restart the Vite dev server after changing environment variables.
+
+### Browser Requests Are Blocked By CORS
+
+Add the active Vite origin to the backend `server/.env` values and restart Django:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
+```
 
 ## Related Documentation
 
 - Root project README: `../README.md`
 - Backend README: `../server/README.md`
+- Backend API docs while running locally: `http://localhost:8000/api/v1/docs/`

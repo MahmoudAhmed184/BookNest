@@ -1,72 +1,80 @@
-# BookNest Data Integrity Management Commands
+# BookNest Books Management Commands
 
-This directory contains management commands for maintaining data integrity in the BookNest application.
+This directory contains Django management commands for maintaining the books catalog and its derived search data.
 
-## fix_data_integrity.py
+Run commands from `server/`:
 
-This command provides various options to fix data integrity issues in the BookNest database.
+```bash
+uv run python manage.py <command>
+```
 
-### Features
+## `fix_data_integrity`
 
-#### Author Data Integrity
-- `--fix-author-counts`: Fix author book counts to match actual relationships
-- `--update-data-quality`: Update author data quality fields based on available information
+Repairs imported or restored BookNest data so derived counters and relationships stay consistent.
 
-#### Book Data Integrity
-- `--fix-missing-genres`: Ensure all books have at least one genre
-- `--fix-book-ratings`: Fix book rating counts and average ratings
-- `--normalize-book-titles`: Normalize book titles (trim whitespace, fix capitalization)
-- `--fix-book-metadata`: Fix missing or invalid book metadata (ISBN, publication date, etc.)
+When no specific fix option is provided, the command behaves like `--fix-all`.
 
-#### General Options
-- `--fix-all`: Run all data integrity fixes
-- `--dry-run`: Show what would be fixed without making changes
+### Options
+
+| Option | Purpose |
+| --- | --- |
+| `--fix-all` | Run every integrity repair. |
+| `--fix-author-counts` | Recalculate author book counts from `BookAuthor` rows. |
+| `--fix-book-ratings` | Recalculate book rating counts and average ratings. |
+| `--fix-review-counts` | Recalculate review upvote/downvote counters from current and legacy vote rows. |
+| `--fix-missing-genres` | Attach `Uncategorized` to books that have no genre rows. |
+| `--normalize-book-titles` | Trim and collapse whitespace in book titles. |
+| `--dedupe-reading-list-books` | Remove duplicate rows for the same reading list and book. |
+| `--ensure-profiles` | Create missing profiles for users. |
+| `--reset-sequences` | Reset MariaDB auto-increment values for imported tables. |
+| `--dry-run` | Report repairs without changing data. |
+| `--batch-size <n>` | Set the bulk write batch size. Defaults to `1000`. |
 
 ### Usage
 
 ```bash
-# Run all fixes
-python manage.py fix_data_integrity --fix-all
+# Preview all repairs without writing changes.
+uv run python manage.py fix_data_integrity --fix-all --dry-run
 
-# Preview what would be fixed without making changes
-python manage.py fix_data_integrity --fix-all --dry-run
+# Run all repairs.
+uv run python manage.py fix_data_integrity --fix-all
 
-# Fix specific issues
-python manage.py fix_data_integrity --fix-author-counts --fix-book-ratings
+# Run specific repairs.
+uv run python manage.py fix_data_integrity --fix-author-counts --fix-book-ratings
+
+# Normalize titles and remove duplicate reading-list entries in larger batches.
+uv run python manage.py fix_data_integrity \
+  --normalize-book-titles \
+  --dedupe-reading-list-books \
+  --batch-size 2000
 ```
 
-## Overview
+## `rebuild_book_search_index`
 
-This directory contains management commands for maintaining data integrity in the BookNest application. These commands help ensure that the database remains consistent and that data quality is maintained.
+Rebuilds denormalized book search documents from the current catalog data.
 
-## Available Commands
+Use it after large imports, direct database restores, bulk edits to book/author/genre relationships, or data integrity repairs that affect searchable fields.
 
-### fix_data_integrity.py
+### Options
 
-This command performs various data integrity checks and fixes on the books and authors data.
+| Option | Purpose |
+| --- | --- |
+| `--batch-size <n>` | Number of books to process per iterator batch. Defaults to `500`. |
 
-#### Features
-
-- **Fix Author Book Counts**: Ensures that the `number_of_books` field for each author accurately reflects the actual number of books associated with that author.
-- **Fix Missing Genres**: Ensures that all books have at least one genre, adding an "Unknown Genre" if none exists.
-- **Update Data Quality**: Updates the `data_quality` field for authors based on the completeness of their information (bio, date of birth).
-
-#### Usage
+### Usage
 
 ```bash
-# Run all fixes
-python manage.py fix_data_integrity --fix-all
+# Rebuild with the default batch size.
+uv run python manage.py rebuild_book_search_index
 
-# Run specific fixes
-python manage.py fix_data_integrity --fix-author-counts --fix-missing-genres
-
-# Dry run (show what would be fixed without making changes)
-python manage.py fix_data_integrity --fix-all --dry-run
+# Rebuild with a larger batch size.
+uv run python manage.py rebuild_book_search_index --batch-size 1000
 ```
 
-## Best Practices
+## Operational Notes
 
-1. Run these commands regularly as part of maintenance routines.
-2. Use the `--dry-run` flag first to see what changes would be made.
-3. Consider running these commands during off-peak hours for large databases.
-4. Add these commands to your CI/CD pipeline or scheduled tasks to ensure ongoing data integrity.
+- Use `--dry-run` before destructive or large integrity repairs.
+- Run repairs during low-traffic windows for large databases.
+- Take a MariaDB backup before changing production data.
+- Rebuild the search index after catalog repairs or imports that should affect search results.
+- Recommendation commands live in `server/apps/recommendation/management/commands/`.

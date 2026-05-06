@@ -11,6 +11,8 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 - [Local Development](#local-development)
 - [Docker Development](#docker-development)
 - [Database Maintenance](#database-maintenance)
+- [Search Index](#search-index)
+- [Recommendation Jobs](#recommendation-jobs)
 - [API Documentation](#api-documentation)
 - [Frontend Integration](#frontend-integration)
 - [Testing And Verification](#testing-and-verification)
@@ -24,27 +26,29 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 
 | Area | Technology |
 | --- | --- |
-| Runtime | Python 3.14.4+ |
+| Runtime | Python 3.14.4 |
 | Dependency manager | `uv` with `pyproject.toml` and `uv.lock` |
 | Web framework | Django 6.0.4 |
-| API | Django REST Framework |
+| API | Django REST Framework 3.17.1 |
 | Auth | `dj-rest-auth`, `django-allauth`, Simple JWT |
 | Database | MariaDB via `django.db.backends.mysql` and `mysqlclient` |
-| Cache | Redis through `django-redis` |
+| Cache | Redis through `django-redis`; local memory cache by default in development |
 | Background jobs | Celery with Redis broker/result backend |
 | Media | Cloudinary / `django-cloudinary-storage` |
 | API schema | `drf-spectacular` |
 | Production server dependency | Gunicorn |
+| Static files | WhiteNoise |
+| Quality gates | Django test runner, pytest, coverage, Ruff, mypy, django-stubs |
 
 ## Architecture
 
 The backend follows a domain-app layout:
 
-- `apps/books`: catalog, authors, genres, ratings, reviews, reading lists, search helpers, and integrity maintenance commands.
+- `apps/books`: catalog, authors, genres, ratings, reviews, reading lists, search helpers, Celery tasks, and integrity/search-index maintenance commands.
 - `apps/users`: custom user model, profiles, profile interests/social links, auth/profile serializers and views.
 - `apps/follows`: follow relationships between profiles.
 - `apps/notifications`: notification types, notification creation, unread counts, read/unread actions.
-- `apps/recommendation`: recommendation model metadata, generated user recommendations, export/train/generate commands.
+- `apps/recommendation`: recommendation model metadata, generated user recommendations, training/generation services, Celery tasks, and management commands.
 
 Each app follows the same internal layering:
 
@@ -54,7 +58,7 @@ Each app follows the same internal layering:
 - `services.py`: writes/actions/orchestration. Prefer these for business operations.
 - `views/` or `views.py`: HTTP-specific request/response handling.
 - `serializers/` or `serializers.py`: DRF serialization and validation.
-- `tests/`: app-local tests split into `test_models.py`, `test_views.py`, `test_services.py`, and `test_selectors.py`.
+- `tests/`: app-local tests split into model, view, service, selector, and search coverage.
 
 Views should stay thin: parse request input, call selectors/services, and return responses. Business logic belongs in services/selectors.
 
@@ -62,50 +66,63 @@ Views should stay thin: parse request input, call selectors/services, and return
 
 ```text
 server/
-├── apps/
-│   ├── books/
-│   │   ├── management/commands/fix_data_integrity.py
-│   │   ├── managers.py
-│   │   ├── selectors.py
-│   │   ├── services.py
-│   │   ├── serializers/
-│   │   ├── tests/
-│   │   ├── utils/
-│   │   └── views/
-│   ├── follows/
-│   ├── notifications/
-│   ├── recommendation/
-│   └── users/
-├── config/
-│   ├── settings/
-│   │   ├── base.py
-│   │   ├── development.py
-│   │   ├── production.py
-│   │   └── testing.py
-│   ├── asgi.py
-│   ├── celery.py
-│   ├── urls.py
-│   └── wsgi.py
-├── logs/                    # Runtime logs only, ignored by Git
-├── media/                   # Local media fallback, ignored by Git
-├── .env.example             # Tracked template
-├── .python-version          # Python pin
-├── Dockerfile
-├── docker-compose.yml
-├── manage.py
-├── pyproject.toml
-├── uv.lock
-└── wait-for-db.sh
+|-- apps/
+|   |-- books/
+|   |   |-- management/commands/
+|   |   |   |-- README.md
+|   |   |   |-- fix_data_integrity.py
+|   |   |   `-- rebuild_book_search_index.py
+|   |   |-- managers.py
+|   |   |-- models.py
+|   |   |-- selectors.py
+|   |   |-- services.py
+|   |   |-- serializers/
+|   |   |-- tests/
+|   |   |-- utils/
+|   |   `-- views/
+|   |-- follows/
+|   |-- notifications/
+|   |-- recommendation/
+|   |   |-- management/commands/
+|   |   |-- recommendation_engine.py
+|   |   |-- selectors.py
+|   |   |-- services.py
+|   |   `-- tasks.py
+|   `-- users/
+|       |-- models/
+|       |-- selectors.py
+|       |-- services.py
+|       `-- views.py
+|-- config/
+|   |-- settings/
+|   |   |-- base.py
+|   |   |-- development.py
+|   |   |-- production.py
+|   |   `-- testing.py
+|   |-- asgi.py
+|   |-- celery.py
+|   |-- urls.py
+|   `-- wsgi.py
+|-- logs/                    # Runtime logs only, ignored by Git
+|-- media/                   # Local media fallback, ignored by Git
+|-- .env.example             # Tracked template
+|-- .python-version          # Python pin: 3.14.4
+|-- Dockerfile
+|-- docker-compose.yml
+|-- manage.py
+|-- pyproject.toml
+|-- uv.lock
+`-- wait-for-db.sh
 ```
 
 ## Configuration
 
 Settings modules:
 
-- `config.settings.base`: shared application, database, cache, auth, logging, API, and Celery settings.
-- `config.settings.development`: local development defaults, debug enabled, relaxed local security, console email backend by default.
-- `config.settings.production`: production security settings and deploy checks.
-- `config.settings.testing`: test-specific password hashing, email backend, cache, and media root.
+- `config.settings.base`: shared application, database, cache, auth, logging, API, static/media, and Celery settings.
+- `config.settings.development`: local development defaults, debug enabled, relaxed local security, console email backend by default, and local-memory cache unless `USE_REDIS_CACHE=True`.
+- `config.settings.production`: production security settings, CORS/CSRF allowlists, and deploy checks.
+- `config.settings.testing`: test password hashing, email backend, cache, and media root.
 
 Default command behavior:
 
@@ -146,6 +163,8 @@ Key variables:
 | `ALLOWED_HOSTS` | Comma-separated Django host allowlist |
 | `CSRF_TRUSTED_ORIGINS` | Comma-separated trusted origins |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins |
+| `FRONTEND_URL` | URL used in account/auth email flows |
+| `SITE_NAME` | Human-readable site name used in email subject prefixes |
 | `DJANGO_LOG_DIR` | Log directory, defaults to `logs` under `server/` |
 | `DJANGO_LOG_FILE` | Main Django log path |
 | `RECOMMENDATION_LOG_FILE` | Recommendation log path |
@@ -181,6 +200,12 @@ Repair imported or restored data integrity:
 uv run python manage.py fix_data_integrity --fix-all
 ```
 
+Rebuild denormalized book search documents after large book/author/genre imports:
+
+```bash
+uv run python manage.py rebuild_book_search_index
+```
+
 Start the development server:
 
 ```bash
@@ -190,7 +215,7 @@ uv run python manage.py runserver
 Useful local checks:
 
 ```bash
-uv run python manage.py check
+uv run python -Wd manage.py check
 uv run python manage.py test --verbosity=2
 ```
 
@@ -238,15 +263,17 @@ uv run python manage.py migrate
 Run data integrity repairs after large imports or restores:
 
 ```bash
+uv run python manage.py fix_data_integrity --fix-all --dry-run
 uv run python manage.py fix_data_integrity --fix-all
 ```
 
 The integrity command repairs:
 
 - author book counters
-- book rating counters and averages
+- book rating counters and average ratings
 - review vote counters
 - missing book genres
+- normalized book title whitespace
 - duplicate reading-list entries
 - missing user profiles
 - MariaDB auto-increment sequences
@@ -265,32 +292,77 @@ MYSQL_PWD="$DB_PASSWORD" mariadb-dump --single-transaction --quick \
 
 Database dumps are ignored by Git and should be stored securely because they may contain user data and password hashes.
 
+## Search Index
+
+Book search uses denormalized search documents. Rebuild them after large catalog imports, repaired relationships, or direct data restores:
+
+```bash
+uv run python manage.py rebuild_book_search_index
+uv run python manage.py rebuild_book_search_index --batch-size 1000
+```
+
+## Recommendation Jobs
+
+Recommendation management commands live under `apps/recommendation/management/commands/`.
+
+Train a model:
+
+```bash
+uv run python manage.py train_recommendation_model --model-type svd
+uv run python manage.py train_recommendation_model --model-type knn --min-ratings 5 --knn-k 40
+```
+
+Generate recommendations:
+
+```bash
+uv run python manage.py generate_recommendations --user-id 1 --count 10
+uv run python manage.py generate_recommendations --all --min-ratings 3
+```
+
+Create random local recommendation test data:
+
+```bash
+uv run python manage.py script --users 10 --ratings-per-user 10 --rating-range 1-5
+```
+
 ## API Documentation
 
 When the API is running:
 
-- Swagger UI: `http://localhost:8000/swagger/`
-- ReDoc: `http://localhost:8000/redoc/`
-- Schema: `http://localhost:8000/schema/`
+- Swagger UI: `http://localhost:8000/api/v1/docs/`
+- ReDoc: `http://localhost:8000/api/v1/redoc/`
+- Schema: `http://localhost:8000/api/v1/schema/`
 
-Primary API route prefixes:
+Primary API route groups:
 
 ```text
-/api/users/
-/api/books/
-/api/follow/
-/api/notifications/
-/api/recommendation/
+/api/v1/auth/
+/api/v1/users/
+/api/v1/profiles/
+/api/v1/books/
+/api/v1/authors/
+/api/v1/genres/
+/api/v1/feed-activities/
+/api/v1/reviews/
+/api/v1/ratings/
+/api/v1/reading-lists/
+/api/v1/follows/
+/api/v1/notifications/
+/api/v1/notification-types/
+/api/v1/notification-counts/
+/api/v1/recommendations/
+/api/v1/recommendation-refreshes/
+/api/v1/recommendation-models/
 ```
 
 ## Frontend Integration
 
-The React client in `../client` is the primary consumer of this API. It expects the backend to be available at `http://localhost:8000` during local development unless `client/src/config/env.ts` is changed.
+The React client in `../client` is the primary consumer of this API. It expects the backend to be available at `http://localhost:8000` during local development unless `VITE_API_BASE_URL` is set for the frontend. The value is read in `client/src/config/env.ts`.
 
-The frontend now uses a feature-first source layout:
+The frontend uses a feature-first source layout:
 
 - React Router DOM route definitions live in `client/src/routes/`; the project does not use TanStack Router or generated route trees.
-- Domain pages, hooks, services, and types live under `client/src/features/{domain}/`.
+- Domain pages, hooks, services, components, and types live under `client/src/features/{domain}/`.
 - Shared Axios helpers live in `client/src/lib/axios.ts`, and domain API clients call the backend from feature-local service files.
 
 For local browser testing, make sure `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` include the active Vite origin, usually:
@@ -304,16 +376,24 @@ The current frontend UI uses retryable loading/error states for API-backed books
 
 ## Testing And Verification
 
+Run Django system checks with warnings enabled:
+
+```bash
+uv run python -Wd manage.py check
+```
+
 Run all tests:
 
 ```bash
 uv run python manage.py test --verbosity=2
 ```
 
-Run Django system checks:
+Run linting, formatting, and type checks:
 
 ```bash
-uv run python manage.py check
+uv run ruff check . --fix
+uv run ruff format .
+uv run mypy . --ignore-missing-imports
 ```
 
 Run deploy checks with production settings:
@@ -378,6 +458,7 @@ Before deploying:
 - Configure MariaDB credentials through environment variables.
 - Configure Redis/Celery URLs.
 - Configure Cloudinary credentials.
+- Configure email credentials if account email flows are used.
 - Run migrations.
 - Run `uv run python manage.py check --deploy --settings=config.settings.production`.
 - Run the full test suite against a reachable MariaDB instance.
@@ -416,9 +497,15 @@ Use a `JWT_SIGNING_KEY` of at least 64 bytes.
 
 Check `DJANGO_LOG_DIR`, `DJANGO_LOG_FILE`, and `RECOMMENDATION_LOG_FILE`. Relative paths are resolved from `server/`.
 
+### Frontend Requests Are Blocked By CORS
+
+Add the active Vite origin to `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`, then restart Django.
+
 ## References
 
 - Django deployment checklist: https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 - Django custom management commands: https://docs.djangoproject.com/en/6.0/howto/custom-management-commands/
+- Django REST Framework documentation: https://www.django-rest-framework.org/
+- HackSoftware Django Styleguide: https://github.com/HackSoftware/Django-Styleguide
 - uv projects and commands: https://docs.astral.sh/uv/
 - MariaDB Docker image variables: https://mariadb.com/kb/en/mariadb-server-docker-official-image-environment-variables/
