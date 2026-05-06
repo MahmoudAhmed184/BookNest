@@ -38,7 +38,7 @@ export function ToggleSwitch({
       </span>
       <span
         className={`relative h-7 w-12 shrink-0 rounded-full border border-[var(--surface-glass-border)] transition-colors duration-200 ease-out ${
-          checked ? "bg-accent" : "bg-primary-black"
+          checked ? "bg-[var(--mood-hopeful)]" : "bg-primary-black"
         }`}
         aria-hidden="true"
       >

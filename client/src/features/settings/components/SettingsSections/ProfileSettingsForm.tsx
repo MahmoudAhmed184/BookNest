@@ -22,44 +22,56 @@ export function ProfileSettingsForm({
   const hasUsernameError = !username.trim();
 
   return (
-    <form onSubmit={onUpdateInfo} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold text-primary-white">Profile Settings</h2>
+    <form onSubmit={onUpdateInfo} className="flex flex-col gap-6">
       <div>
-        <label htmlFor="username" className="mb-2 block text-sm text-primary-gray">
-          Username <span aria-hidden="true" className="text-accent">*</span>
-        </label>
-        <input
-          type="text"
-          id="username"
-          value={username}
-          onChange={(event) => onUsernameChange(event.target.value)}
-          className={`field w-full text-primary-white ${hasUsernameError ? "border-accent" : ""}`}
-          autoComplete="username"
-          aria-invalid={hasUsernameError}
-          aria-describedby="settings-username-error"
-        />
-        <div id="settings-username-error">
-          <FieldError message={hasUsernameError ? "Username is required" : undefined} />
-        </div>
+        <h2 className="text-xl font-bold text-primary-white">Profile</h2>
+        <p className="mt-1 text-sm leading-relaxed text-primary-gray">
+          Update the public details shown on your reader profile.
+        </p>
       </div>
-      <div>
-        <label htmlFor="bio" className="mb-2 block text-sm text-primary-gray">Bio</label>
-        <textarea
-          id="bio"
-          value={bio}
-          onChange={(event) => onBioChange(event.target.value)}
-          className="field min-h-32 w-full resize-y text-primary-white"
-          rows={5}
-          placeholder="Tell us about yourself..."
-        />
+      <div className="grid gap-5">
+        <div>
+          <label htmlFor="username" className="mb-2 block text-sm font-medium text-primary-gray">
+            Username <span aria-hidden="true" className="text-accent">*</span>
+          </label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(event) => onUsernameChange(event.target.value)}
+            className={`field w-full text-primary-white ${hasUsernameError ? "border-accent" : ""}`}
+            autoComplete="username"
+            aria-invalid={hasUsernameError}
+            aria-describedby={hasUsernameError ? "settings-username-error" : undefined}
+          />
+          <div id="settings-username-error">
+            <FieldError message={hasUsernameError ? "Username is required" : undefined} />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="bio" className="mb-2 block text-sm font-medium text-primary-gray">
+            Bio
+          </label>
+          <textarea
+            id="bio"
+            value={bio}
+            onChange={(event) => onBioChange(event.target.value)}
+            className="field min-h-32 w-full resize-y text-primary-white"
+            rows={5}
+            aria-describedby="settings-bio-help"
+          />
+          <p id="settings-bio-help" className="mt-2 text-xs leading-relaxed text-primary-gray">
+            A short note about your reading taste, favorite genres, or current shelf.
+          </p>
+        </div>
       </div>
       <button
         type="submit"
-        className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm"
+        className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 self-start px-5 py-2 text-sm"
         disabled={isSavingProfile || hasUsernameError}
       >
         {isSavingProfile ? <InlineSpinner /> : null}
-        {isSavingProfile ? "Updating..." : "Update Info"}
+        {isSavingProfile ? "Saving..." : "Save profile"}
       </button>
     </form>
   );

@@ -26,7 +26,7 @@ export function PasswordSettingField({
 }: PasswordSettingFieldProps): ReactElement {
   return (
     <div>
-      <label htmlFor={id} className="mb-2 block text-sm text-primary-gray">
+      <label htmlFor={id} className="mb-2 block text-sm font-medium text-primary-gray">
         {label} <span aria-hidden="true" className="text-accent">*</span>
       </label>
       <div className="relative">
@@ -37,6 +37,7 @@ export function PasswordSettingField({
           onChange={(event) => onChange(event.target.value)}
           className="field w-full pr-12 text-primary-white"
           autoComplete="new-password"
+          aria-invalid={Boolean(error)}
           aria-describedby={error ? "settings-password-error" : undefined}
         />
         <button

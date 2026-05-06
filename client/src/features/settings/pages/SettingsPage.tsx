@@ -15,6 +15,7 @@ import {
   SettingsProfileOverview,
   SettingsSidebar,
   SettingsSkeleton,
+  SettingsTabs,
   type SettingsTab,
 } from "../components/SettingsSections";
 import { settingsTabs } from "../constants/settingsTabs";
@@ -87,6 +88,11 @@ export default function Settings(): ReactElement {
     }
   };
 
+  const handleLogout = (): void => {
+    logout();
+    navigate(routePaths.login);
+  };
+
   if (isLoading) return <SettingsSkeleton />;
 
   if (isError || !user) {
@@ -103,47 +109,57 @@ export default function Settings(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-8 py-12 animate-fade-up">
-      <header className="flex flex-col gap-3">
-        <h1 className="display-heading">Settings</h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-primary-gray">
+    <div className="flex flex-col gap-6 py-8 animate-fade-up lg:gap-8 lg:py-12">
+      <header className="flex max-w-[1120px] flex-col gap-3">
+        <h1 className="text-4xl font-extrabold leading-tight text-primary-white md:text-5xl">
+          Settings
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-primary-gray md:text-base">
           Manage your BookNest account, profile, and security details.
         </p>
       </header>
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-        <SettingsProfileOverview
-          user={user}
-          selectedFile={selectedFile}
-          isUploading={isUploadingPicture}
-          onFileChange={handleFileChange}
-          onEditProfile={() => setActiveTab("profile")}
-        />
-        <SettingsSidebar
-          user={user}
-          activeTab={activeTab}
-          tabs={settingsTabs}
-          username={username}
-          bio={bio}
-          newPassword={newPassword}
-          confirmPassword={confirmPassword}
-          passwordError={passwordError}
-          showNewPassword={showNewPassword}
-          showConfirmPassword={showConfirmPassword}
-          isSavingProfile={isSavingProfile}
-          onTabChange={setActiveTab}
-          onLogout={() => {
-            logout();
-            navigate(routePaths.login);
-          }}
-          onUsernameChange={setUsername}
-          onBioChange={setBio}
-          onNewPasswordChange={setNewPassword}
-          onConfirmPasswordChange={setConfirmPassword}
-          onToggleNewPassword={() => setShowNewPassword((current) => !current)}
-          onToggleConfirmPassword={() => setShowConfirmPassword((current) => !current)}
-          onUpdateInfo={handleUpdateInfo}
-          onUpdatePassword={handleUpdatePassword}
-        />
+      <div className="grid max-w-[1120px] gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-6 xl:grid-cols-[260px_minmax(0,860px)]">
+        <aside className="lg:sticky lg:top-28">
+          <SettingsTabs
+            tabs={settingsTabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onLogout={handleLogout}
+          />
+        </aside>
+        <div className="flex min-w-0 flex-col gap-4 lg:gap-6">
+          <div className="hidden lg:order-1 lg:block">
+            <SettingsProfileOverview
+              user={user}
+              selectedFile={selectedFile}
+              isUploading={isUploadingPicture}
+              onFileChange={handleFileChange}
+              onEditProfile={() => setActiveTab("profile")}
+            />
+          </div>
+          <div className="order-1 lg:order-2">
+            <SettingsSidebar
+              user={user}
+              activeTab={activeTab}
+              username={username}
+              bio={bio}
+              newPassword={newPassword}
+              confirmPassword={confirmPassword}
+              passwordError={passwordError}
+              showNewPassword={showNewPassword}
+              showConfirmPassword={showConfirmPassword}
+              isSavingProfile={isSavingProfile}
+              onUsernameChange={setUsername}
+              onBioChange={setBio}
+              onNewPasswordChange={setNewPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              onToggleNewPassword={() => setShowNewPassword((current) => !current)}
+              onToggleConfirmPassword={() => setShowConfirmPassword((current) => !current)}
+              onUpdateInfo={handleUpdateInfo}
+              onUpdatePassword={handleUpdatePassword}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

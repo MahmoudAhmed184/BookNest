@@ -1,7 +1,7 @@
 import type { SettingsTabItem } from "../components/SettingsSections";
 
 export const settingsTabs: SettingsTabItem[] = [
-  { id: "account", label: "Account Settings" },
-  { id: "profile", label: "Profile Settings" },
-  { id: "security", label: "Security Settings" },
+  { id: "account", label: "Account" },
+  { id: "profile", label: "Profile" },
+  { id: "security", label: "Security" },
 ];
