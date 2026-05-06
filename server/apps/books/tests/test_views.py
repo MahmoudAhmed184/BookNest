@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from apps.books.models import Author, Book, BookRating, BookReview
+from apps.books.models import Author, Book, BookRating, BookReview, Genre
 from apps.users.models.profile import Profile
 
 User = get_user_model()
@@ -212,3 +212,28 @@ class AuthorAPITests(APITestCase):
         results = response.data.get("results", response.data) if isinstance(response.data, dict) else response.data
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "Author Alpha")
+
+
+class GenreAPITests(APITestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.fiction = Genre.objects.create(name="Fiction")
+        self.mystery = Genre.objects.create(name="Mystery")
+        self.unused = Genre.objects.create(name="Unused")
+
+        self.book1 = Book.objects.create(isbn13="9780000000001", title="Fiction Book 1")
+        self.book1.genres.add(self.fiction)
+        self.book2 = Book.objects.create(isbn13="9780000000002", title="Fiction Book 2")
+        self.book2.genres.add(self.fiction)
+        self.book3 = Book.objects.create(isbn13="9780000000003", title="Mystery Book")
+        self.book3.genres.add(self.mystery)
+
+    def test_genre_list_returns_popular_genres(self) -> None:
+        response = self.client.get(reverse("genre-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get("results", response.data) if isinstance(response.data, dict) else response.data
+
+        self.assertEqual([genre["name"] for genre in results], ["Fiction", "Mystery"])
+        self.assertEqual(results[0]["book_count"], 2)
+        self.assertEqual(results[1]["book_count"], 1)

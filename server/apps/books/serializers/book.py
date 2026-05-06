@@ -8,9 +8,11 @@ from apps.books.models import Author, Book, BookAuthor, Genre, ReadingList
 
 
 class BookGenreSerializer(serializers.ModelSerializer):
+    book_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Genre
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "book_count"]
 
 
 class AuthorSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -28,7 +28,11 @@ def author_queryset() -> QuerySet[Author]:
 
 
 def genre_queryset() -> QuerySet[Genre]:
-    return Genre.objects.all()
+    return (
+        Genre.objects.annotate(book_count=Count("books", distinct=True))
+        .filter(book_count__gt=0)
+        .order_by("-book_count", "name")
+    )
 
 
 def get_book_by_isbn(*, isbn13: str) -> Book:

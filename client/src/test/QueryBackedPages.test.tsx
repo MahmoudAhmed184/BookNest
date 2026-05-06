@@ -60,6 +60,34 @@ function renderPage(page: ReactElement): void {
 const refetch = vi.fn();
 const user = { id: 1, user_id: 31, username: "reader", bio: "Bio" };
 
+function exploreState(
+  overrides: Partial<ReturnType<typeof useExploreCatalog>> = {}
+): ReturnType<typeof useExploreCatalog> {
+  return {
+    books: [],
+    categories: [],
+    popularBooks: [],
+    recommendations: [],
+    isBooksLoading: false,
+    isBooksFetching: false,
+    isBooksError: false,
+    isCategoriesLoading: false,
+    isCategoriesFetching: false,
+    isCategoriesError: false,
+    isPopularBooksLoading: false,
+    isPopularBooksFetching: false,
+    isPopularBooksError: false,
+    isRecommendationsLoading: false,
+    isRecommendationsFetching: false,
+    isRecommendationsError: false,
+    refetchBooks: refetch,
+    refetchCategories: refetch,
+    refetchPopularBooks: refetch,
+    refetchRecommendations: refetch,
+    ...overrides,
+  };
+}
+
 describe("query-backed pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -96,48 +124,27 @@ describe("query-backed pages", () => {
   });
 
   it("renders Explore loading, error, and success states", () => {
-    vi.mocked(useExploreCatalog).mockReturnValue({
-      books: [],
-      recommendations: [],
-      isBooksLoading: true,
-      isBooksFetching: false,
-      isBooksError: false,
-      isRecommendationsLoading: false,
-      isRecommendationsFetching: false,
-      isRecommendationsError: false,
-      refetchBooks: refetch,
-      refetchRecommendations: refetch,
-    });
+    vi.mocked(useExploreCatalog).mockReturnValue(
+      exploreState({
+        isBooksLoading: true,
+      })
+    );
     renderPage(<Explore />);
     expect(screen.getByText("Explore")).toBeTruthy();
 
-    vi.mocked(useExploreCatalog).mockReturnValue({
-      books: [],
-      recommendations: [],
-      isBooksLoading: false,
-      isBooksFetching: false,
-      isBooksError: true,
-      isRecommendationsLoading: false,
-      isRecommendationsFetching: false,
-      isRecommendationsError: false,
-      refetchBooks: refetch,
-      refetchRecommendations: refetch,
-    });
+    vi.mocked(useExploreCatalog).mockReturnValue(
+      exploreState({
+        isBooksError: true,
+      })
+    );
     renderPage(<Explore />);
     expect(screen.getByText("Books could not be loaded")).toBeTruthy();
 
-    vi.mocked(useExploreCatalog).mockReturnValue({
-      books: [{ isbn13: "1", title: "Catalog Book" }],
-      recommendations: [],
-      isBooksLoading: false,
-      isBooksFetching: false,
-      isBooksError: false,
-      isRecommendationsLoading: false,
-      isRecommendationsFetching: false,
-      isRecommendationsError: false,
-      refetchBooks: refetch,
-      refetchRecommendations: refetch,
-    });
+    vi.mocked(useExploreCatalog).mockReturnValue(
+      exploreState({
+        books: [{ isbn13: "1", title: "Catalog Book" }],
+      })
+    );
     renderPage(<Explore />);
     expect(screen.getByText("Catalog Book")).toBeTruthy();
   });

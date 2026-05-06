@@ -9,6 +9,7 @@ export interface CatalogGenre {
   id: number;
   name: string;
   description?: string | null;
+  book_count?: number;
 }
 
 export interface Book {
