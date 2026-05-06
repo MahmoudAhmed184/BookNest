@@ -14,11 +14,11 @@ export function CollectionsShelf({ collections }: CollectionsShelfProps): ReactE
       <h2 id="collections-shelf-title" className="text-xl font-bold text-primary-white">
         Collections Shelf
       </h2>
-      <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {collections.map((collection) => (
           <article
             key={collection.list_id}
-            className="glass-card card-lift min-w-[220px] snap-start p-4"
+            className="glass-card card-lift min-w-0 p-4"
           >
             <div className="mb-4 flex h-28 items-end gap-1 overflow-hidden rounded-xl bg-primary-black p-3">
               {(collection.books ?? []).slice(0, 3).map((book) => (
