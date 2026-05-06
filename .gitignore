@@ -1,0 +1,158 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+django_debug.log
+recommendation.log
+books.log
+
+# Environment variables and local secrets
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+*.local
+local_settings.py
+server/**/restore_data.sh
+server/**/*secret*
+server/**/*key*
+server/**/*credential*
+
+# Python bytecode and native extensions
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python packaging and virtual environments
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+server/lib/
+server/lib64/
+server/parts/
+sdist/
+server/var/
+wheels/
+server/share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pdm.toml
+__pypackages__/
+.venv
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python test, coverage, and type-check caches
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+cover/
+
+# Python tooling and framework output
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+instance/
+.webassets-cache
+.scrapy/
+docs/_build/
+server/site/
+.pybuilder/
+target/
+profile_default/
+ipython_config.py
+.spyderproject
+.spyproject
+.ropeproject
+.pyre/
+.pytype/
+cython_debug/
+
+# Translations
+*.mo
+*.pot
+
+# Django local artifacts
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+static/
+uploads/
+
+# Database dumps and backups
+backups/
+*.sql
+*.dump
+*.backup
+dump.sql
+*.bak
+*.old
+
+# Node dependencies and build output
+node_modules/
+dist-ssr/
+
+# Docker local overrides
+.dockerignore
+docker-compose.override.yml
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Editor and IDE files
+**/.vscode/*
+!**/.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
