@@ -1,9 +1,36 @@
-# version: '3.8'
+x-django-service: &django-service
+  build:
+    context: .
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  env_file: ./.env
+  environment:
+    DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.development}
+    DEBUG: ${DEBUG:-True}
+    DB_NAME: ${DB_NAME:-booknest_db}
+    DB_USER: ${DB_USER:-booknest}
+    DB_PASSWORD: ${DB_PASSWORD:-booknest}
+    DB_HOST: db
+    DB_PORT: "3306"
+    REDIS_URL: redis://redis:6379/1
+    CELERY_BROKER_URL: redis://redis:6379/0
+    CELERY_RESULT_BACKEND: redis://redis:6379/0
+  volumes:
+    - .:/app
+    - app_venv:/app/.venv
+    - ./media:/app/media
+    - ./logs:/app/logs
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
 
 services:
   db:
     image: mariadb:11.8
-    container_name: booknest_db
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: ${DB_NAME:-booknest_db}
@@ -11,87 +38,60 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD:-booknest}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-booknest_root}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${DB_HOST_PORT:-3306}:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
-    networks:
-      - booknest_network
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u${DB_USER:-booknest} -p${DB_PASSWORD:-booknest}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 30s
+      start_interval: 5s
       interval: 10s
       timeout: 5s
       retries: 5
 
-  web:
-    build: .
-    container_name: booknest_web
+  redis:
+    image: redis:7-alpine
     restart: unless-stopped
-    environment:
-      - DEBUG=${DEBUG}
-      - SECRET_KEY=${SECRET_KEY}
-      - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DB_NAME=${DB_NAME:-booknest_db}
-      - DB_USER=${DB_USER:-booknest}
-      - DB_PASSWORD=${DB_PASSWORD:-booknest}
-      - DB_HOST=db
-      - DB_PORT=3306
-      - REDIS_URL=redis://redis:6379/1
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${REDIS_HOST_PORT:-6379}:6379"
     volumes:
-      - .:/app
-      - ./media:/app/media
-      - ./logs:/app/logs
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    <<: *django-service
+    command: python manage.py migrate --noinput
+    restart: "no"
+
+  web:
+    <<: *django-service
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - booknest_network
-
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   celery:
-    build: .
-    container_name: booknest_celery
-    command: celery -A config worker --loglevel=info
+    <<: *django-service
+    command: celery -A config worker --loglevel=${CELERY_LOG_LEVEL:-info}
     depends_on:
-      - web
-      - redis
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DB_NAME=${DB_NAME:-booknest_db}
-      - DB_USER=${DB_USER:-booknest}
-      - DB_PASSWORD=${DB_PASSWORD:-booknest}
-      - DB_HOST=db
-      - DB_PORT=3306
-      - REDIS_URL=redis://redis:6379/1
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    volumes:
-      - .:/app
-    networks:
-      - booknest_network
-
-  redis:
-    image: redis:7-alpine
-    container_name: booknest_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - booknest_network
-
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
+  app_venv:
   mariadb_data:
   redis_data:
-
-networks:
-  booknest_network:
-    driver: bridge
