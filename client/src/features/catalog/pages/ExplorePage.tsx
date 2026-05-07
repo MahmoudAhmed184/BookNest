@@ -151,8 +151,10 @@ export default function Explore(): ReactElement {
     isRecommendationsLoading,
     isRecommendationsFetching,
     isRecommendationsError,
+    isRefreshingRecommendations,
     refetchBooks,
     refetchRecommendations,
+    refreshRecommendations,
   } = useExploreCatalog(token, page, serverFilters);
 
   const scrollToResults = useCallback((): void => {
@@ -347,7 +349,10 @@ export default function Explore(): ReactElement {
         isLoading={isRecommendationsLoading}
         isFetching={isRecommendationsFetching}
         isError={isRecommendationsError}
+        isRefreshing={isRefreshingRecommendations}
+        canRefresh={Boolean(token)}
         onRetry={refetchRecommendations}
+        onRefresh={() => refreshRecommendations()}
       />
       {popularBooks.length > 0 ? <PopularBooksGrid books={popularBooks} /> : null}
     </div>

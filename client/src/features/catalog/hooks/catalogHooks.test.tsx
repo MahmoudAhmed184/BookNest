@@ -38,6 +38,7 @@ vi.mock("../services/bookService", () => ({
   getRecommendedBooks: vi.fn(),
   getReviews: vi.fn(),
   getSuggestions: vi.fn(),
+  refreshRecommendations: vi.fn(),
   searchBooks: vi.fn(),
 }));
 

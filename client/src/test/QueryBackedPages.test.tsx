@@ -147,10 +147,12 @@ function exploreState(
     isRecommendationsLoading: false,
     isRecommendationsFetching: false,
     isRecommendationsError: false,
+    isRefreshingRecommendations: false,
     refetchBooks: refetch,
     refetchCategories: refetch,
     refetchPopularBooks: refetch,
     refetchRecommendations: refetch,
+    refreshRecommendations: vi.fn(),
   };
 
   return { ...state, ...overrides };

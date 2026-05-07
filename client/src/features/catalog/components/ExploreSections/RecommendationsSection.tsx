@@ -12,7 +12,10 @@ export interface RecommendationsSectionProps {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  isRefreshing: boolean;
+  canRefresh: boolean;
   onRetry: () => void;
+  onRefresh: () => void;
 }
 
 export function RecommendationsSection({
@@ -20,15 +23,28 @@ export function RecommendationsSection({
   isLoading,
   isFetching,
   isError,
+  isRefreshing,
+  canRefresh,
   onRetry,
+  onRefresh,
 }: RecommendationsSectionProps): ReactElement {
   return (
     <section className="flex flex-col gap-5" aria-labelledby="recommended-books">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <SectionTitle id="recommended-books">Recommended For You</SectionTitle>
-        {isFetching && recommendations.length > 0 ? (
-          <p className="text-xs text-primary-gray" role="status">Updating recommendations...</p>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {isFetching && recommendations.length > 0 ? (
+            <p className="text-xs text-primary-gray" role="status">Updating recommendations...</p>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-primary-v inline-flex min-h-[40px] items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            disabled={!canRefresh || isRefreshing}
+            onClick={onRefresh}
+          >
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
       {isLoading ? <SkeletonRow /> : null}
       {isError ? (
@@ -37,7 +53,7 @@ export function RecommendationsSection({
       {!isLoading && !isError && recommendations.length === 0 ? (
         <EmptyState
           title="Recommendations are warming up"
-          description="Rate more books to unlock personalized recommendations that match your reading taste."
+          description="Rate a few books to unlock personalized recommendations. Until then, BookNest falls back to catalog popularity and related genres."
           actionLabel="Browse books"
           actionTo={routePaths.search}
         />
@@ -52,7 +68,6 @@ export function RecommendationsSection({
               title={book.book_title}
               coverSrc={book.book_cover}
               showAuthor={false}
-              variant="new"
             />
           )}
         />

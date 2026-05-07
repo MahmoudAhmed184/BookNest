@@ -84,6 +84,22 @@ export interface RecommendedBook {
   book_cover?: string | null;
 }
 
+export interface RecommendationRefreshOptions {
+  n_recommendations?: number;
+  async?: boolean;
+  model_id?: number | string;
+}
+
+export interface AsyncRecommendationRefreshResponse {
+  task_id?: string;
+  message?: string;
+  recommendations?: RecommendedBook[];
+}
+
+export type RecommendationRefreshResponse =
+  | RecommendedBook[]
+  | AsyncRecommendationRefreshResponse;
+
 export interface FeedActivity {
   id: string;
   username: string;

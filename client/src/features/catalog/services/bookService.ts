@@ -30,6 +30,8 @@ import type {
   DeleteBookPayload,
   FeedActivityResponse,
   GenreSearchResponse,
+  RecommendationRefreshOptions,
+  RecommendationRefreshResponse,
   RecommendedBook,
   ReviewSortParams,
 } from "../types/book";
@@ -552,6 +554,23 @@ export async function getRecommendedBooks(
       }
     );
 
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function refreshRecommendations(
+  options: RecommendationRefreshOptions = {},
+  token?: string | null
+): Promise<RecommendationRefreshResponse> {
+  try {
+    const response = await postData<
+      RecommendationRefreshResponse,
+      RecommendationRefreshOptions
+    >("/api/v1/recommendation-refreshes/", options, {
+      headers: authHeaders(token),
+    });
     return response;
   } catch (error: unknown) {
     throwApiError(error);

@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import {
   keepPreviousData,
+  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 import {
   type CatalogBookFilters,
@@ -11,8 +13,15 @@ import {
   getGenres,
   getPopularBooks,
   getRecommendedBooks,
+  refreshRecommendations as refreshRecommendationsRequest,
 } from "../services/bookService";
-import type { Book, CatalogGenre, RecommendedBook } from "../types/book";
+import type {
+  Book,
+  CatalogGenre,
+  RecommendationRefreshOptions,
+  RecommendationRefreshResponse,
+  RecommendedBook,
+} from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
 import { catalogKeys } from "./catalog.keys";
 
@@ -37,10 +46,12 @@ interface UseExploreCatalogResult {
   isRecommendationsLoading: boolean;
   isRecommendationsFetching: boolean;
   isRecommendationsError: boolean;
+  isRefreshingRecommendations: boolean;
   refetchBooks: () => void;
   refetchCategories: () => void;
   refetchPopularBooks: () => void;
   refetchRecommendations: () => void;
+  refreshRecommendations: (options?: RecommendationRefreshOptions) => void;
 }
 
 function createEmptyPagination<T>(
@@ -66,6 +77,11 @@ export function useExploreCatalog(
   filters: CatalogBookFilters = {}
 ): UseExploreCatalogResult {
   const queryClient = useQueryClient();
+  const invalidateRecommendations = (): void => {
+    void queryClient.invalidateQueries({
+      queryKey: catalogKeys.recommendations(),
+    });
+  };
   const booksQuery = useQuery({
     queryKey: catalogKeys.catalogBooks(page, explorePageSize, filters),
     queryFn: () => getCatalogBooks({ page, pageSize: explorePageSize, ...filters }),
@@ -86,6 +102,26 @@ export function useExploreCatalog(
     queryKey: catalogKeys.recommendations(),
     queryFn: () => getRecommendedBooks(token),
     enabled: Boolean(token),
+  });
+  const refreshRecommendationsMutation = useMutation({
+    mutationFn: (options?: RecommendationRefreshOptions) =>
+      refreshRecommendationsRequest(
+        { n_recommendations: 12, async: true, ...options },
+        token
+      ),
+    onSuccess: (response: RecommendationRefreshResponse) => {
+      if (Array.isArray(response) || response.recommendations) {
+        toast.success("Recommendations refreshed.");
+        invalidateRecommendations();
+        return;
+      }
+
+      toast.success("Recommendations are being generated.");
+      window.setTimeout(invalidateRecommendations, 5_000);
+    },
+    onError: () => {
+      toast.error("Couldn't refresh recommendations. Try again.");
+    },
   });
 
   useEffect(() => {
@@ -132,9 +168,12 @@ export function useExploreCatalog(
     isRecommendationsLoading: recommendationsQuery.isLoading,
     isRecommendationsFetching: recommendationsQuery.isFetching,
     isRecommendationsError: recommendationsQuery.isError,
+    isRefreshingRecommendations: refreshRecommendationsMutation.isPending,
     refetchBooks: () => void booksQuery.refetch(),
     refetchCategories: () => void categoriesQuery.refetch(),
     refetchPopularBooks: () => void popularBooksQuery.refetch(),
     refetchRecommendations: () => void recommendationsQuery.refetch(),
+    refreshRecommendations: (options?: RecommendationRefreshOptions) =>
+      refreshRecommendationsMutation.mutate(options),
   };
 }
