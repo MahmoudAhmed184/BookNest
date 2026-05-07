@@ -15,7 +15,9 @@ import { API_BASE_URL } from "../../../config/env";
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   apiClient,
+  type ProfileRequiredRedirectPayload,
   REFRESH_TOKEN_STORAGE_KEY,
+  setProfileRequiredRedirectHandler,
 } from "../../../lib/axios";
 import { AuthContext } from "../store/authContext";
 import { useLoginMutation } from "./useLoginMutation";
@@ -163,6 +165,54 @@ describe("auth hooks", () => {
         apiClient.defaults.adapter = originalAdapter;
       }
       postSpy.mockRestore();
+    }
+  });
+
+  it("redirects profile-required 403 envelopes with action metadata", async () => {
+    const originalAdapter = apiClient.defaults.adapter;
+    const redirectHandler = vi.fn<
+      (payload: ProfileRequiredRedirectPayload) => void
+    >();
+
+    const adapter: AxiosAdapter = async (config) => {
+      const requestConfig = config as InternalAxiosRequestConfig;
+
+      throw new AxiosError(
+        "Forbidden",
+        AxiosError.ERR_BAD_REQUEST,
+        requestConfig,
+        undefined,
+        responseFor(requestConfig, 403, {
+          errors: {
+            detail: "You must create a profile before accessing this feature",
+          },
+          meta: {
+            action_required: "create_profile",
+            profile_creation_url: "/register",
+          },
+        })
+      );
+    };
+
+    setProfileRequiredRedirectHandler(redirectHandler);
+    apiClient.defaults.adapter = adapter;
+
+    try {
+      await expect(apiClient.get("/profile-required/")).rejects.toBeInstanceOf(
+        AxiosError
+      );
+      expect(redirectHandler).toHaveBeenCalledWith({
+        requiresProfile: true,
+        actionRequired: "create_profile",
+        profileCreationUrl: "/register",
+      });
+    } finally {
+      if (originalAdapter === undefined) {
+        delete apiClient.defaults.adapter;
+      } else {
+        apiClient.defaults.adapter = originalAdapter;
+      }
+      setProfileRequiredRedirectHandler(null);
     }
   });
 });

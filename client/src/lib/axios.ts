@@ -6,6 +6,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { API_BASE_URL } from "../config/env";
+import { routePaths } from "../routes/paths";
 import type { ApiErrorResponse } from "../types/api";
 
 export const ACCESS_TOKEN_STORAGE_KEY = "token";
@@ -13,6 +14,9 @@ export const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";
 
 const tokenRefreshPath = "/api/v1/auth/tokens/refresh/";
 const tokenVerifyPath = "/api/v1/auth/tokens/verify/";
+const profileRequiredDetail =
+  "You must create a profile before accessing this feature";
+const profileRequiredRedirectStorageKey = "profileRequiredRedirect";
 
 interface TokenRefreshResponse {
   access: string;
@@ -25,7 +29,19 @@ interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+export interface ProfileRequiredRedirectPayload {
+  requiresProfile: true;
+  actionRequired?: string;
+  profileCreationUrl?: string;
+}
+
+type ProfileRequiredRedirectHandler = (
+  payload: ProfileRequiredRedirectPayload
+) => void;
+
 let refreshPromise: Promise<string> | null = null;
+let profileRequiredRedirectHandler: ProfileRequiredRedirectHandler =
+  defaultProfileRequiredRedirectHandler;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -37,6 +53,78 @@ function getStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+function getSessionStorage(): Storage | null {
+  try {
+    return globalThis.sessionStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function stringField(
+  source: Record<string, unknown> | undefined,
+  key: string
+): string | undefined {
+  const value = source?.[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function getProfileRequiredRedirectPayload(
+  data: unknown
+): ProfileRequiredRedirectPayload | null {
+  if (!isRecord(data)) return null;
+
+  const errors = isRecord(data.errors) ? data.errors : undefined;
+  const meta = isRecord(data.meta) ? data.meta : undefined;
+
+  if (stringField(errors, "detail") !== profileRequiredDetail) {
+    return null;
+  }
+
+  const payload: ProfileRequiredRedirectPayload = {
+    requiresProfile: true,
+  };
+  const actionRequired = stringField(meta, "action_required");
+  const profileCreationUrl = stringField(meta, "profile_creation_url");
+
+  if (actionRequired) {
+    payload.actionRequired = actionRequired;
+  }
+
+  if (profileCreationUrl) {
+    payload.profileCreationUrl = profileCreationUrl;
+  }
+
+  return payload;
+}
+
+function defaultProfileRequiredRedirectHandler(
+  payload: ProfileRequiredRedirectPayload
+): void {
+  getSessionStorage()?.setItem(
+    profileRequiredRedirectStorageKey,
+    JSON.stringify(payload)
+  );
+
+  const params = new URLSearchParams({ requiresProfile: "true" });
+  if (payload.actionRequired) {
+    params.set("action_required", payload.actionRequired);
+  }
+
+  globalThis.location.assign(`${routePaths.register}?${params.toString()}`);
+}
+
+export function setProfileRequiredRedirectHandler(
+  handler: ProfileRequiredRedirectHandler | null
+): void {
+  profileRequiredRedirectHandler =
+    handler ?? defaultProfileRequiredRedirectHandler;
 }
 
 export function getStoredAccessToken(): string | null {
@@ -141,6 +229,15 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config as RetriableRequestConfig | undefined;
     const status = error.response?.status;
+    const profileRequiredPayload =
+      status === 403
+        ? getProfileRequiredRedirectPayload(error.response?.data)
+        : null;
+
+    if (profileRequiredPayload) {
+      profileRequiredRedirectHandler(profileRequiredPayload);
+      return Promise.reject(error);
+    }
 
     if (
       status !== 401 ||
