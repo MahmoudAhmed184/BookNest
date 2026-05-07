@@ -1,5 +1,9 @@
+import type { NotificationFilters } from "../types/notification";
+
 export const notificationKeys = {
   all: ["notifications"] as const,
-  list: () => [...notificationKeys.all, "list"] as const,
+  list: (filters: NotificationFilters = {}) =>
+    [...notificationKeys.all, "list", filters] as const,
   unreadCount: () => [...notificationKeys.all, "unread-count"] as const,
+  types: () => [...notificationKeys.all, "types"] as const,
 };

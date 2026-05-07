@@ -577,11 +577,19 @@ describe("query-backed pages", () => {
   it("renders Notifications loading, error, and success states", () => {
     vi.mocked(useNotifications).mockReturnValue({
       notifications: [],
+      notificationTypes: [],
       isLoading: true,
       isFetching: false,
       isError: false,
+      isTypesLoading: false,
+      isTypesError: false,
       isMarkingAllAsRead: false,
+      isUpdatingNotification: false,
+      isDeletingNotification: false,
       markAllAsRead: vi.fn(),
+      markRead: vi.fn(),
+      markUnread: vi.fn(),
+      deleteNotification: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);
@@ -589,11 +597,19 @@ describe("query-backed pages", () => {
 
     vi.mocked(useNotifications).mockReturnValue({
       notifications: [],
+      notificationTypes: [],
       isLoading: false,
       isFetching: false,
       isError: true,
+      isTypesLoading: false,
+      isTypesError: false,
       isMarkingAllAsRead: false,
+      isUpdatingNotification: false,
+      isDeletingNotification: false,
       markAllAsRead: vi.fn(),
+      markRead: vi.fn(),
+      markUnread: vi.fn(),
+      deleteNotification: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);
@@ -603,11 +619,19 @@ describe("query-backed pages", () => {
       notifications: [
         { id: 1, recipient: 1, verb: "New follower", read: false, timestamp: "now" },
       ],
+      notificationTypes: [{ id: 1, name: "follow" }],
       isLoading: false,
       isFetching: false,
       isError: false,
+      isTypesLoading: false,
+      isTypesError: false,
       isMarkingAllAsRead: false,
+      isUpdatingNotification: false,
+      isDeletingNotification: false,
       markAllAsRead: vi.fn(),
+      markRead: vi.fn(),
+      markUnread: vi.fn(),
+      deleteNotification: vi.fn(),
       refetch,
     });
     renderPage(<Notifications />);

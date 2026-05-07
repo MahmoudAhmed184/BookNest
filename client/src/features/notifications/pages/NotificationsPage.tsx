@@ -1,10 +1,19 @@
-import type { ReactElement } from "react";
+import { useMemo, type ReactElement } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { routePaths } from "../../../routes/paths";
 import { useNotifications } from "../hooks/useNotifications";
+import type { NotificationFilters } from "../types/notification";
 
 const skeletonKeys = ["notification-skeleton-1", "notification-skeleton-2", "notification-skeleton-3"];
+const readTabs = [
+  { id: "all", label: "All" },
+  { id: "unread", label: "Unread" },
+  { id: "read", label: "Read" },
+] as const;
+
+type ReadTab = (typeof readTabs)[number]["id"];
 
 function NotificationsSkeleton(): ReactElement {
   return (
@@ -21,18 +30,53 @@ function NotificationsSkeleton(): ReactElement {
 
 export default function Notifications(): ReactElement {
   const { token } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const readFilter = parseReadFilter(searchParams.get("read"));
+  const typeFilter = searchParams.get("type") ?? "";
+  const filters = useMemo<NotificationFilters>(
+    () => ({
+      read:
+        readFilter === "all"
+          ? undefined
+          : readFilter === "read",
+      type: typeFilter || undefined,
+    }),
+    [readFilter, typeFilter]
+  );
   const {
     notifications,
+    notificationTypes,
     isLoading,
     isFetching,
     isError,
+    isTypesLoading,
     isMarkingAllAsRead,
+    isUpdatingNotification,
+    isDeletingNotification,
     markAllAsRead,
+    markRead,
+    markUnread,
+    deleteNotification,
     refetch,
-  } = useNotifications(token, Boolean(token));
+  } = useNotifications(token, Boolean(token), filters);
 
   const unreadNotifications =
     notifications.filter((notification) => notification.read === false);
+  const hasFilters = readFilter !== "all" || typeFilter.length > 0;
+  const updateFilters = (nextRead: ReadTab, nextType = typeFilter): void => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextRead === "all") {
+      nextSearchParams.delete("read");
+    } else {
+      nextSearchParams.set("read", nextRead);
+    }
+    if (nextType) {
+      nextSearchParams.set("type", nextType);
+    } else {
+      nextSearchParams.delete("type");
+    }
+    setSearchParams(nextSearchParams, { replace: true });
+  };
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
@@ -46,6 +90,43 @@ export default function Notifications(): ReactElement {
         </p>
       </header>
 
+      <section className="settings-panel flex flex-col gap-4 p-4 sm:p-5" aria-label="Notification filters">
+        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Read status">
+          {readTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={readFilter === tab.id}
+              className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-semibold ${
+                readFilter === tab.id
+                  ? "btn-accent-v text-primary-white"
+                  : "bg-primary-black text-primary-gray hover:text-primary-white"
+              }`}
+              onClick={() => updateFilters(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <label className="flex max-w-md flex-col gap-2 text-sm font-medium text-primary-white">
+          Type
+          <select
+            value={typeFilter}
+            onChange={(event) => updateFilters(readFilter, event.target.value)}
+            className="field text-primary-white"
+            disabled={isTypesLoading}
+          >
+            <option value="">All types</option>
+            {notificationTypes.map((type) => (
+              <option key={type.id} value={type.name}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+
       {isLoading ? <NotificationsSkeleton /> : null}
 
       {isError ? (
@@ -57,10 +138,14 @@ export default function Notifications(): ReactElement {
         />
       ) : null}
 
-      {!isLoading && !isError && unreadNotifications.length === 0 ? (
+      {!isLoading && !isError && notifications.length === 0 ? (
         <EmptyState
-          title="Nothing new yet"
-          description="You're all caught up. New follows, reading updates, and system messages will appear here."
+          title={hasFilters ? "No matching notifications" : "No notifications yet"}
+          description={
+            hasFilters
+              ? "Adjust the filters to see more notification history."
+              : "New follows, reading updates, and system messages will appear here."
+          }
           actionLabel="Browse books"
           actionTo={routePaths.explore}
         />
@@ -80,13 +165,15 @@ export default function Notifications(): ReactElement {
         </div>
       ) : null}
 
-      {!isLoading && !isError && unreadNotifications.length > 0 ? (
+      {!isLoading && !isError && notifications.length > 0 ? (
         <div className="flex flex-col gap-4" role="list">
-          {unreadNotifications.map((notification) => (
+          {notifications.map((notification) => (
             <article
               key={notification.id}
               role="listitem"
-              className="unread-surface card-lift flex items-start gap-4 rounded-xl p-5 text-primary-white shadow-md"
+              className={`card-lift flex items-start gap-4 rounded-xl p-5 text-primary-white shadow-md ${
+                notification.read ? "settings-panel" : "unread-surface"
+              }`}
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-black text-accent">
                 <svg
@@ -105,14 +192,46 @@ export default function Notifications(): ReactElement {
                 </svg>
               </div>
 
-              <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <p className="text-sm leading-relaxed text-primary-white">
-                  <strong className="text-accent">System Notification:</strong>{" "}
+                  <strong className="text-accent">
+                    {notification.notification_type_name ?? "Notification"}:
+                  </strong>{" "}
                   {notification.verb}
                 </p>
+                {notification.actor_name || notification.target_name ? (
+                  <p className="text-xs text-primary-gray">
+                    {[notification.actor_name, notification.target_name]
+                      .filter(Boolean)
+                      .join(" -> ")}
+                  </p>
+                ) : null}
                 <p className="text-xs text-primary-gray">
                   {notification.timestamp}
                 </p>
+              </div>
+              <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  className="min-h-[36px] rounded-lg border border-secondary-gray px-3 text-xs font-semibold text-primary-gray hover:border-accent hover:text-primary-white disabled:opacity-50"
+                  disabled={isUpdatingNotification}
+                  onClick={() =>
+                    notification.read
+                      ? markUnread(notification.id)
+                      : markRead(notification.id)
+                  }
+                >
+                  {notification.read ? "Mark unread" : "Mark read"}
+                </button>
+                <button
+                  type="button"
+                  className="min-h-[36px] rounded-lg px-3 text-xs font-semibold text-primary-gray hover:bg-primary-black hover:text-primary-white disabled:opacity-50"
+                  disabled={isDeletingNotification}
+                  onClick={() => deleteNotification(notification.id)}
+                  aria-label={`Delete notification ${notification.id}`}
+                >
+                  Delete
+                </button>
               </div>
             </article>
           ))}
@@ -120,4 +239,8 @@ export default function Notifications(): ReactElement {
       ) : null}
     </div>
   );
+}
+
+function parseReadFilter(value: string | null): ReadTab {
+  return value === "read" || value === "unread" ? value : "all";
 }

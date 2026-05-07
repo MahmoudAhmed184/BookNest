@@ -10,3 +10,14 @@ export interface Notification {
   read: boolean;
   timestamp: string;
 }
+
+export interface NotificationType {
+  id: number;
+  name: string;
+  description?: string | null;
+}
+
+export interface NotificationFilters {
+  read?: boolean | undefined;
+  type?: string | undefined;
+}
