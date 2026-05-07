@@ -6,7 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import BookPage from "../features/catalog/pages/BookPage";
 import CollectionDetailPage from "../features/collections/pages/CollectionDetailPage";
 import CollectionsPage from "../features/collections/pages/CollectionsPage";
+import AuthorsPage from "../features/catalog/pages/AuthorsPage";
 import Explore from "../features/catalog/pages/ExplorePage";
+import GenreBooksPage from "../features/catalog/pages/GenreBooksPage";
 import Search from "../features/catalog/pages/SearchPage";
 import Notifications from "../features/notifications/pages/NotificationsPage";
 import Profile from "../features/profile/pages/ProfilePage";
@@ -15,7 +17,9 @@ import UserProfile from "../features/profile/pages/UserProfilePage";
 import ProfileConnections from "../features/follows/pages/ProfileConnectionsPage";
 import { useBookActions } from "../features/catalog/hooks/useBookActions";
 import { useBookPageData } from "../features/catalog/hooks/useBookPageData";
+import { useAuthors } from "../features/catalog/hooks/useAuthors";
 import { useExploreCatalog } from "../features/catalog/hooks/useExploreCatalog";
+import { useGenreBooks } from "../features/catalog/hooks/useGenreBooks";
 import { useRelatedBooks } from "../features/catalog/hooks/useRelatedBooks";
 import { useSearchBooks } from "../features/catalog/hooks/useSearchBooks";
 import {
@@ -50,6 +54,12 @@ vi.mock("../features/catalog/hooks/useRelatedBooks", () => ({
 }));
 vi.mock("../features/catalog/hooks/useBookActions", () => ({
   useBookActions: vi.fn(),
+}));
+vi.mock("../features/catalog/hooks/useAuthors", () => ({
+  useAuthors: vi.fn(),
+}));
+vi.mock("../features/catalog/hooks/useGenreBooks", () => ({
+  useGenreBooks: vi.fn(),
 }));
 vi.mock("../features/collections/hooks/useCollections", () => ({
   useCollectionDetail: vi.fn(),
@@ -164,6 +174,40 @@ function searchState(
   return { ...state, ...overrides };
 }
 
+function authorsState(
+  overrides: Partial<ReturnType<typeof useAuthors>> = {}
+): ReturnType<typeof useAuthors> {
+  const authors = overrides.authors ?? [];
+  const state: ReturnType<typeof useAuthors> = {
+    authors,
+    pagination: offsetPagination(authors),
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    isPlaceholderData: false,
+    refetch,
+  };
+
+  return { ...state, ...overrides };
+}
+
+function genreBooksState(
+  overrides: Partial<ReturnType<typeof useGenreBooks>> = {}
+): ReturnType<typeof useGenreBooks> {
+  const books = overrides.books ?? [];
+  const state: ReturnType<typeof useGenreBooks> = {
+    books,
+    pagination: offsetPagination(books),
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    isPlaceholderData: false,
+    refetch,
+  };
+
+  return { ...state, ...overrides };
+}
+
 function collectionsState(
   overrides: Partial<ReturnType<typeof useCollections>> = {}
 ): ReturnType<typeof useCollections> {
@@ -240,6 +284,8 @@ describe("query-backed pages", () => {
     });
     vi.mocked(useCollections).mockReturnValue(collectionsState());
     vi.mocked(useCollectionDetail).mockReturnValue(collectionDetailState());
+    vi.mocked(useAuthors).mockReturnValue(authorsState());
+    vi.mocked(useGenreBooks).mockReturnValue(genreBooksState());
     vi.mocked(useRelatedBooks).mockReturnValue({
       books: [],
       isLoading: false,
@@ -413,6 +459,39 @@ describe("query-backed pages", () => {
     );
     renderPage(<CollectionDetailPage />);
     expect(screen.getByText("Collection Book")).toBeTruthy();
+  });
+
+  it("renders author browse and genre books pages", () => {
+    vi.mocked(useAuthors).mockReturnValue(
+      authorsState({
+        authors: [{ author_id: 7, name: "Octavia Butler", number_of_books: 4 }],
+      })
+    );
+    renderPage(<AuthorsPage />);
+    expect(screen.getByText("Octavia Butler")).toBeTruthy();
+
+    vi.mocked(useGenreBooks).mockReturnValue(
+      genreBooksState({
+        books: [{ isbn13: "42", title: "Genre Book" }],
+      })
+    );
+    cleanup();
+    render(
+      <AuthContext.Provider
+        value={{
+          user: true,
+          token: "token",
+          userLogin: vi.fn(),
+          logout: vi.fn(),
+        }}
+      >
+        <MemoryRouter initialEntries={["/genres/1/books?name=Fiction"]}>
+          <GenreBooksPage />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    );
+    expect(screen.getByText("Fiction")).toBeTruthy();
+    expect(screen.getByText("Genre Book")).toBeTruthy();
   });
 
   it("renders profile-backed pages in loading, error, and success states", () => {

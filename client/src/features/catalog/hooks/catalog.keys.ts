@@ -14,6 +14,14 @@ export const catalogKeys = {
   genres: (limit: number) => ["genres", limit] as const,
   genresPage: (page: number, pageSize: number) =>
     ["genres", "page", page, pageSize] as const,
+  genreBooks: (
+    genreId: string | number | undefined,
+    page: number,
+    pageSize: number,
+    filters: Readonly<CatalogBookFilters> = {}
+  ) => ["genres", genreId, "books", page, pageSize, filters] as const,
+  authors: (page: number, pageSize: number, query: string) =>
+    ["authors", "page", page, pageSize, query] as const,
   recommendations: () => ["recommendations"] as const,
   book: (id: string | undefined) => ["book", id] as const,
   relatedBooks: (id: string | undefined) => ["book", id, "related"] as const,

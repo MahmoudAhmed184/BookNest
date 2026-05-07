@@ -38,6 +38,8 @@ export interface Book {
 
 export type BookSearchResponse = OffsetPaginatedResponse<Book>;
 
+export type AuthorSearchResponse = OffsetPaginatedResponse<Author>;
+
 export interface BookSuggestionsResponse {
   query: string;
   suggestions: Book[];

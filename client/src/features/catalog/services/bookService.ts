@@ -22,6 +22,7 @@ import type {
   BookSearchResponse,
   BookSuggestionsResponse,
   Author,
+  AuthorSearchResponse,
   CatalogGenre,
   CreateRatingPayload,
   CreateReviewPayload,
@@ -49,6 +50,10 @@ export interface CatalogBookFilters {
 export interface CatalogBooksParams
   extends OffsetPageParams,
     CatalogBookFilters {}
+
+export interface AuthorListParams extends OffsetPageParams {
+  name__icontains?: string | undefined;
+}
 
 type SearchBooksInput = string | SearchBooksParams;
 
@@ -271,10 +276,46 @@ export async function getGenres(limit = 50): Promise<CatalogGenre[]> {
   }
 }
 
+export async function getGenreBooks(
+  genreId: string | number | undefined,
+  params: CatalogBooksParams
+): Promise<BookSearchResponse> {
+  const searchParams = buildLimitOffsetParams(params);
+  appendCatalogFilters(searchParams, params);
+
+  try {
+    const response = await getData<LimitOffsetApiResponse<Book>>(
+      `/api/v1/genres/${genreId}/books/?${searchParams.toString()}`
+    );
+    return normalizeLimitOffsetResponse(response, params);
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function getBook(id: string | undefined): Promise<Book> {
   try {
     const response = await getData<Book>(`/api/v1/books/${id}/`);
     return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getAuthors(
+  params: AuthorListParams
+): Promise<AuthorSearchResponse> {
+  const searchParams = buildLimitOffsetParams(params);
+  const authorName = params.name__icontains?.trim();
+  if (authorName) {
+    searchParams.set("name__icontains", authorName);
+  }
+
+  try {
+    const response = await getData<LimitOffsetApiResponse<Author>>(
+      `/api/v1/authors/?${searchParams.toString()}`
+    );
+    return normalizeLimitOffsetResponse(response, params);
   } catch (error: unknown) {
     throwApiError(error);
   }

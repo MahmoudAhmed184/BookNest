@@ -10,7 +10,9 @@ const Register = lazy(() => import("../features/auth/pages/RegisterPage"));
 const ResetPassword = lazy(() => import("../features/auth/pages/ResetPasswordPage"));
 const Explore = lazy(() => import("../features/catalog/pages/ExplorePage"));
 const Search = lazy(() => import("../features/catalog/pages/SearchPage"));
+const Authors = lazy(() => import("../features/catalog/pages/AuthorsPage"));
 const Author = lazy(() => import("../features/catalog/pages/AuthorPage"));
+const GenreBooks = lazy(() => import("../features/catalog/pages/GenreBooksPage"));
 const Profile = lazy(() => import("../features/profile/pages/ProfilePage"));
 const Categories = lazy(() => import("../features/catalog/pages/CategoriesPage"));
 const Feed = lazy(() => import("../features/catalog/pages/FeedPage"));
@@ -59,7 +61,12 @@ export function AppRouter(): ReactElement {
           <Route path={routePaths.explore} element={withSuspense(<Explore />)} />
           <Route path={routePaths.search} element={withSuspense(<Search />)} />
           <Route path={routePaths.searchQuery} element={withSuspense(<Search />)} />
+          <Route path={routePaths.authors} element={withSuspense(<Authors />)} />
           <Route path={routePaths.author} element={withSuspense(<Author />)} />
+          <Route
+            path={routePaths.genreBooks}
+            element={withSuspense(<GenreBooks />)}
+          />
           <Route
             path={routePaths.userProfile}
             element={withSuspense(<UserProfile />)}

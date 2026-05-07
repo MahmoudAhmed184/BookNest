@@ -13,6 +13,7 @@ export interface NavItem {
 export const primaryLinks: NavItem[] = [
   { to: routePaths.explore, label: "Explore" },
   { to: routePaths.categories, label: "Categories" },
+  { to: routePaths.authors, label: "Authors" },
   { to: routePaths.feed, label: "Feed" },
   { to: routePaths.search, label: "Search" },
 ];
