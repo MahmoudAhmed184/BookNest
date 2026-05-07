@@ -23,7 +23,7 @@ export function useLoginMutation(): UseLoginMutationResult {
     onSuccess: (data) => {
       if (data.access) {
         toast.success("Signed in. Welcome back.");
-        userLogin(null, data.access);
+        userLogin(data.user, data.access, data.refresh);
         navigate(routePaths.explore);
       } else {
         toast.error("Couldn't sign in. Try again.");

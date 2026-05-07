@@ -23,7 +23,7 @@ export function useRegisterMutation(): UseRegisterMutationResult {
     onSuccess: async (data) => {
       if (data.access) {
         toast.success("Account created. Welcome to BookNest.");
-        userLogin(null, data.access);
+        userLogin(data.user, data.access, data.refresh);
         await createProfile(data.access);
         navigate(routePaths.explore);
       } else {

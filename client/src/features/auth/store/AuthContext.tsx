@@ -1,33 +1,122 @@
-import { useState, type ReactElement, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
+import {
+  clearStoredAuthTokens,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  refreshAccessToken,
+  setStoredAuthTokens,
+  verifyAccessToken,
+} from "../../../lib/axios";
+import { routePaths } from "../../../routes/paths";
+import type { AuthenticatedUser } from "../types/auth";
 import { AuthContext } from "./authContext";
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps): ReactElement {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
-  );
-  const [user, setUser] = useState<boolean>(
-    localStorage.getItem("token") ? true : false
-  );
+function redirectToLogin(): void {
+  if (globalThis.location?.pathname !== routePaths.login) {
+    globalThis.location.assign(routePaths.login);
+  }
+}
 
-  const userLogin = (_userData: unknown, authToken: string): void => {
+export function AuthProvider({ children }: AuthProviderProps): ReactElement {
+  const [token, setToken] = useState<string | null>(getStoredAccessToken);
+  const [refreshToken, setRefreshToken] = useState<string | null>(
+    getStoredRefreshToken
+  );
+  const [authUser, setAuthUser] = useState<AuthenticatedUser | null>(null);
+  const [user, setUser] = useState<boolean>(Boolean(getStoredAccessToken()));
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function verifyStoredSession(): Promise<void> {
+      const storedAccessToken = getStoredAccessToken();
+      const storedRefreshToken = getStoredRefreshToken();
+
+      if (!storedAccessToken) {
+        return;
+      }
+
+      try {
+        await verifyAccessToken(storedAccessToken);
+        if (!isActive) return;
+
+        setUser(true);
+        setToken(storedAccessToken);
+        setRefreshToken(storedRefreshToken);
+      } catch {
+        if (!storedRefreshToken) {
+          if (!isActive) return;
+
+          setUser(false);
+          setToken(null);
+          setRefreshToken(null);
+          setAuthUser(null);
+          clearStoredAuthTokens();
+          redirectToLogin();
+          return;
+        }
+
+        try {
+          const nextAccessToken = await refreshAccessToken(storedRefreshToken);
+          if (!isActive) return;
+
+          setUser(true);
+          setToken(nextAccessToken);
+          setRefreshToken(getStoredRefreshToken());
+        } catch {
+          if (!isActive) return;
+
+          setUser(false);
+          setToken(null);
+          setRefreshToken(null);
+          setAuthUser(null);
+          clearStoredAuthTokens();
+          redirectToLogin();
+        }
+      }
+    }
+
+    void verifyStoredSession();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const userLogin = (
+    userData: AuthenticatedUser | null,
+    authToken: string,
+    nextRefreshToken?: string | null
+  ): void => {
     setUser(true);
     setToken(authToken);
-    localStorage.setItem("token", authToken);
+    setAuthUser(userData);
+    setRefreshToken(nextRefreshToken ?? getStoredRefreshToken());
+    setStoredAuthTokens(authToken, nextRefreshToken);
   };
 
   const logout = (): void => {
     setUser(false);
     setToken(null);
-    localStorage.removeItem("token");
+    setRefreshToken(null);
+    setAuthUser(null);
+    clearStoredAuthTokens();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, userLogin, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, authUser, refreshToken, userLogin, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
