@@ -74,62 +74,64 @@ export default function Profile(): ReactElement {
   const favoriteGenre = books[0]?.genres?.[0] ?? "Eclectic";
 
   return (
-    <div className="flex flex-col gap-12 py-12 animate-fade-up">
-      <ProfileHeader
-        user={user}
-        action={
-          <Link
-            to={routePaths.settings}
-            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
-            aria-label={`Edit ${user.username}'s profile`}
-          >
-            Edit Profile
-          </Link>
-        }
-      />
-      <ReadingStats
-        bookCount={bookCount}
-        reviewCount={reviews?.length ?? 0}
-        ratingCount={ratings?.length ?? 0}
-        favoriteGenre={favoriteGenre}
-      />
-      <ProfileBio bio={user.bio} />
-      <CollectionsShelf collections={collections} />
-      <ProfileBooksSection
-        title="My Books"
-        books={books}
-        primaryCollection={primaryCollection}
-        isFetching={isCollectionsFetching}
-        emptyTitle="No books added yet"
-        emptyDescription="Start building your shelf with books you want to read, love, or recommend."
-        canDelete
-        isDeleting={profileActions.isDeletingBook}
-        onDeleteBook={(book, listId) => {
-          setPendingBookDelete({ book, listId });
-        }}
-      />
-      <ProfileReviewsSection
-        title="My Reviews"
-        reviews={reviews}
-        ratings={ratings}
-        isLoading={isReviewsLoading}
-        isFetching={isReviewsFetching}
-        isError={isReviewsError}
-        isRatingsError={isRatingsError}
-        emptyTitle="No reviews yet"
-        emptyDescription="Your thoughts on finished books will show up here."
-        emptyActionLabel="Find a book"
-        emptyActionTo={routePaths.search}
-        canDelete
-        isDeleting={profileActions.isDeletingReview}
-        onRetry={() => {
-          void refetchReviews();
-          void refetchRatings();
-        }}
-        onDeleteReview={(review) => {
-          setPendingReviewDelete(review);
-        }}
-      />
+    <>
+      <div className="flex flex-col gap-12 py-12 animate-fade-up">
+        <ProfileHeader
+          user={user}
+          action={
+            <Link
+              to={routePaths.settings}
+              className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+              aria-label={`Edit ${user.username}'s profile`}
+            >
+              Edit Profile
+            </Link>
+          }
+        />
+        <ReadingStats
+          bookCount={bookCount}
+          reviewCount={reviews?.length ?? 0}
+          ratingCount={ratings?.length ?? 0}
+          favoriteGenre={favoriteGenre}
+        />
+        <ProfileBio bio={user.bio} />
+        <CollectionsShelf collections={collections} />
+        <ProfileBooksSection
+          title="My Books"
+          books={books}
+          primaryCollection={primaryCollection}
+          isFetching={isCollectionsFetching}
+          emptyTitle="No books added yet"
+          emptyDescription="Start building your shelf with books you want to read, love, or recommend."
+          canDelete
+          isDeleting={profileActions.isDeletingBook}
+          onDeleteBook={(book, listId) => {
+            setPendingBookDelete({ book, listId });
+          }}
+        />
+        <ProfileReviewsSection
+          title="My Reviews"
+          reviews={reviews}
+          ratings={ratings}
+          isLoading={isReviewsLoading}
+          isFetching={isReviewsFetching}
+          isError={isReviewsError}
+          isRatingsError={isRatingsError}
+          emptyTitle="No reviews yet"
+          emptyDescription="Your thoughts on finished books will show up here."
+          emptyActionLabel="Find a book"
+          emptyActionTo={routePaths.search}
+          canDelete
+          isDeleting={profileActions.isDeletingReview}
+          onRetry={() => {
+            void refetchReviews();
+            void refetchRatings();
+          }}
+          onDeleteReview={(review) => {
+            setPendingReviewDelete(review);
+          }}
+        />
+      </div>
       <DeleteBookDialog
         book={pendingBookDelete?.book ?? null}
         isDeleting={profileActions.isDeletingBook}
@@ -155,6 +157,6 @@ export default function Profile(): ReactElement {
           setPendingReviewDelete(null);
         }}
       />
-    </div>
+    </>
   );
 }
