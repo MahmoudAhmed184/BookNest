@@ -1,22 +1,10 @@
-import {
-  createContext,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 
-export interface AuthContextValue {
-  user: boolean;
-  token: string | null;
-  userLogin: (userData: unknown, authToken: string) => void;
-  logout: () => void;
-}
+import { AuthContext } from "./authContext";
 
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [token, setToken] = useState<string | null>(

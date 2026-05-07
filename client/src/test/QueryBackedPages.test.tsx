@@ -20,6 +20,7 @@ import { useProfileActions } from "../features/profile/hooks/useProfileActions";
 import { useProfilePageData } from "../features/profile/hooks/useProfilePageData";
 import { useSettingsProfile } from "../features/settings/hooks/useSettingsProfile";
 import { useUserProfilePageData } from "../features/profile/hooks/useUserProfilePageData";
+import { AuthContext } from "../features/auth/store/authContext";
 
 vi.mock("../features/catalog/hooks/useExploreCatalog", () => ({
   useExploreCatalog: vi.fn(),
@@ -54,7 +55,18 @@ vi.mock("../features/notifications/hooks/useNotifications", () => ({
 
 function renderPage(page: ReactElement): void {
   cleanup();
-  render(<MemoryRouter>{page}</MemoryRouter>);
+  render(
+    <AuthContext.Provider
+      value={{
+        user: true,
+        token: "token",
+        userLogin: vi.fn(),
+        logout: vi.fn(),
+      }}
+    >
+      <MemoryRouter>{page}</MemoryRouter>
+    </AuthContext.Provider>
+  );
 }
 
 const refetch = vi.fn();

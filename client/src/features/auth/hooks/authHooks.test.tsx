@@ -4,7 +4,7 @@ import { renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
-import { AuthContext } from "../store/AuthContext";
+import { AuthContext } from "../store/authContext";
 import { useLoginMutation } from "./useLoginMutation";
 import { useRegisterMutation } from "./useRegisterMutation";
 

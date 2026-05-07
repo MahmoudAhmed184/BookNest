@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Logo from "/logo.svg";
 import { routePaths } from "../../../routes/paths";
 
-export interface FooterProps extends ComponentProps<"footer"> {}
+export type FooterProps = ComponentProps<"footer">;
 
 const footerLinks = [
   { to: routePaths.explore, label: "Explore" },

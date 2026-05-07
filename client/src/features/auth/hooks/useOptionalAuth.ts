@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { AuthContext, type AuthContextValue } from "../store/AuthContext";
+import { AuthContext, type AuthContextValue } from "../store/authContext";
 
 const fallbackAuth: AuthContextValue = {
   user: false,

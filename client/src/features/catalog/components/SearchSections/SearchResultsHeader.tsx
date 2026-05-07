@@ -27,7 +27,7 @@ export function SearchResultsHeader({
         </h2>
         {hasActiveSearch ? (
           <p className="mt-2 text-sm text-primary-gray" role="status" aria-live="polite">
-            {resultCount} results for "{searchTerm}"{isUpdating ? " · updating" : ""}
+            {resultCount} results for {searchTerm}{isUpdating ? " · updating" : ""}
           </p>
         ) : null}
       </div>

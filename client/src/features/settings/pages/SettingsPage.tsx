@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ErrorState } from "../../../components/ui";
-import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { routePaths } from "../../../routes/paths";
 import {
   SettingsProfileOverview,
@@ -24,7 +24,7 @@ import { getPasswordUpdateError } from "../utils/settingsValidation";
 
 export default function Settings(): ReactElement {
   const navigate = useNavigate();
-  const { token, logout } = useOptionalAuth();
+  const { token, logout } = useAuth();
   const {
     user,
     isLoading,

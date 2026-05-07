@@ -21,12 +21,18 @@ export function ProfileReviewCard({
   isDeleting,
   onDeleteReview,
 }: ProfileReviewCardProps): ReactElement {
+  const cover = <ReviewCover src={review.book_cover} title={review.book_title} />;
+
   return (
     <article className="glass-card card-lift p-4 text-primary-white">
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Link to={routeBuilders.book(review.book)} className="shrink-0">
-          <ReviewCover src={review.book_cover} title={review.book_title} />
-        </Link>
+        {review.book ? (
+          <Link to={routeBuilders.book(review.book)} className="shrink-0">
+            {cover}
+          </Link>
+        ) : (
+          <div className="shrink-0">{cover}</div>
+        )}
         <div className="flex grow flex-col gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <strong className="line-clamp-2 text-lg" title={review.book_title || undefined}>

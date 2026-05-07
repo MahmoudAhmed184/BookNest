@@ -128,7 +128,7 @@ export function BookCard({
               <CoverFallback title={title} />
             )}
           </div>
-          <figcaption className="glass-card absolute inset-x-3 bottom-3 z-20 translate-y-[calc(100%-3.25rem)] px-4 py-3 text-left transition-transform duration-200 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0">
+          <figcaption className="absolute inset-x-3 bottom-3 z-20 translate-y-[calc(100%-3.25rem)] rounded-lg border border-[var(--surface-glass-border)] bg-primary-black/80 px-4 py-3 text-left shadow-lg backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0">
             <h3 className="book-title line-clamp-2 text-base" title={title}>
               {title}
             </h3>

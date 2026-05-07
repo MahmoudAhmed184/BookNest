@@ -2,7 +2,7 @@ import { useState, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
-import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
+import { useAuth } from "../../auth/hooks/useAuth";
 import type { Book, BookReview } from "../../catalog/types/book";
 import { routePaths } from "../../../routes/paths";
 import {
@@ -25,7 +25,7 @@ interface PendingBookDelete {
 }
 
 export default function Profile(): ReactElement {
-  const { token } = useOptionalAuth();
+  const { token } = useAuth();
   const [pendingBookDelete, setPendingBookDelete] = useState<PendingBookDelete | null>(null);
   const [pendingReviewDelete, setPendingReviewDelete] = useState<BookReview | null>(null);
   const {

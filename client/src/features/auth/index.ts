@@ -1,4 +1,5 @@
-export { AuthProvider, AuthContext, type AuthContextValue } from "./store/AuthContext";
+export { AuthProvider } from "./store/AuthContext";
+export { AuthContext, type AuthContextValue } from "./store/authContext";
 export { useAuth } from "./hooks/useAuth";
 export { useLoginMutation } from "./hooks/useLoginMutation";
 export { useRegisterMutation } from "./hooks/useRegisterMutation";

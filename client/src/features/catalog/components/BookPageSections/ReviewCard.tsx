@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 
 import { MoodBadge, StarRating } from "../../../../components/ui";
 import { routeBuilders } from "../../../../routes/paths";
-import { getFallbackHueStyle, getInitials, colorFromString } from "../../../../utils/colorFromString";
-import { moodColorTokens, moodOptions } from "../../constants/moodColors";
+import { getFallbackHueStyle, getInitials } from "../../../../utils/colorFromString";
+import { moodColorTokens } from "../../constants/moodColors";
 import type { BookReview } from "../../types/book";
 import type { MoodTag } from "../../types/filters";
 
@@ -19,46 +19,55 @@ function resolveProfileImage(src?: string | null): string | undefined {
   return src.endsWith("image") ? `${src}.svg` : src;
 }
 
-export function getReviewMood(review: BookReview): MoodTag {
-  const seed = colorFromString(`${review.review_text} ${review.book_title ?? ""}`);
-  return moodOptions[seed % moodOptions.length]?.value ?? "hopeful";
-}
-
 export function ReviewCard({ review, rating, mood }: ReviewCardProps): ReactElement {
   const [isHelpful, setIsHelpful] = useState(false);
   const username = review.username || "Reader";
   const profileImage = resolveProfileImage(review.profile_pic);
+  const profilePath = review.profile_id === null || review.profile_id === undefined
+    ? null
+    : routeBuilders.userProfile(review.profile_id);
+  const avatar = profileImage ? (
+    <img
+      src={profileImage}
+      className="h-full w-full object-cover"
+      alt={`${username} avatar`}
+      loading="lazy"
+      decoding="async"
+    />
+  ) : (
+    <span
+      className="fallback-gradient flex h-full w-full items-center justify-center text-sm font-bold text-primary-white"
+      style={getFallbackHueStyle(username)}
+    >
+      {getInitials(username)}
+    </span>
+  );
 
   return (
     <article className="glass-card card-lift p-4 text-primary-white">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link
-            to={routeBuilders.userProfile(review.profile_id)}
-            className="h-11 w-11 overflow-hidden rounded-xl bg-primary-gray"
-            aria-label={`View ${username} profile`}
-          >
-            {profileImage ? (
-              <img
-                src={profileImage}
-                className="h-full w-full object-cover"
-                alt={`${username} avatar`}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <span
-                className="fallback-gradient flex h-full w-full items-center justify-center text-sm font-bold text-primary-white"
-                style={getFallbackHueStyle(username)}
-              >
-                {getInitials(username)}
-              </span>
-            )}
-          </Link>
-          <strong>
-            <Link to={routeBuilders.userProfile(review.profile_id)} className="hover:text-accent">
-              {username}
+          {profilePath ? (
+            <Link
+              to={profilePath}
+              className="h-11 w-11 overflow-hidden rounded-xl bg-primary-gray"
+              aria-label={`View ${username} profile`}
+            >
+              {avatar}
             </Link>
+          ) : (
+            <span className="h-11 w-11 overflow-hidden rounded-xl bg-primary-gray">
+              {avatar}
+            </span>
+          )}
+          <strong>
+            {profilePath ? (
+              <Link to={profilePath} className="hover:text-accent">
+                {username}
+              </Link>
+            ) : (
+              username
+            )}
           </strong>
         </div>
         <StarRating value={rating} size="sm" label={`Reader rating ${rating} out of 5`} />

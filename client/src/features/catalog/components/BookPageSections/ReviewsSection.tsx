@@ -3,7 +3,8 @@ import type { ReactElement } from "react";
 import { EmptyState, ErrorState } from "../../../../components/ui";
 import type { BookRating, BookReview } from "../../types/book";
 import type { MoodTag } from "../../types/filters";
-import { ReviewCard, getReviewMood } from "./ReviewCard";
+import { ReviewCard } from "./ReviewCard";
+import { getReviewMood } from "./reviewMood";
 
 const skeletonKeys = ["review-skeleton-1", "review-skeleton-2"];
 const moodOrder: MoodTag[] = ["adventurous", "emotional", "dark", "funny", "hopeful"];

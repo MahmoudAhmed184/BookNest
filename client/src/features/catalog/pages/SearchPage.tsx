@@ -36,7 +36,8 @@ function clearSearchScrollPosition(): void {
   const state: unknown = window.history.state;
   if (!state || typeof state !== "object") return;
 
-  const { [searchScrollKey]: _removed, ...nextState } = state as Record<string, unknown>;
+  const nextState = { ...(state as Record<string, unknown>) };
+  delete nextState[searchScrollKey];
   window.history.replaceState(nextState, "");
 }
 

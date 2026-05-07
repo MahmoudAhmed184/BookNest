@@ -19,7 +19,7 @@ export function BookCardSkeleton({
     >
       <div className="flex h-full flex-col items-center justify-center gap-4 sm:gap-5">
         <div className="aspect-[2/3] w-full max-w-[210px] rounded-xl animate-shimmer" />
-        <div className="glass-card w-full px-4 py-3">
+        <div className="w-full rounded-lg border border-[var(--surface-glass-border)] bg-primary-black/80 px-4 py-3">
           <div className="h-5 w-3/4 rounded-full animate-shimmer" />
           {showAuthor ? (
             <div className="mt-3 h-4 w-1/2 rounded-full animate-shimmer" />

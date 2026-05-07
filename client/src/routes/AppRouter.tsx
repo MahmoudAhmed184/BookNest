@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "../components/layout";
 import { BookCardSkeleton } from "../components/ui";
 import { routePaths } from "./paths";
+import { RequireAuth } from "./RequireAuth";
 
 const Login = lazy(() => import("../features/auth/pages/LoginPage"));
 const Register = lazy(() => import("../features/auth/pages/RegisterPage"));
@@ -56,7 +57,6 @@ export function AppRouter(): ReactElement {
           <Route path={routePaths.search} element={withSuspense(<Search />)} />
           <Route path={routePaths.searchQuery} element={withSuspense(<Search />)} />
           <Route path={routePaths.author} element={withSuspense(<Author />)} />
-          <Route path={routePaths.myProfile} element={withSuspense(<Profile />)} />
           <Route
             path={routePaths.userProfile}
             element={withSuspense(<UserProfile />)}
@@ -66,12 +66,21 @@ export function AppRouter(): ReactElement {
             element={withSuspense(<Categories />)}
           />
           <Route path={routePaths.feed} element={withSuspense(<Feed />)} />
-          <Route path={routePaths.settings} element={withSuspense(<Settings />)} />
           <Route path={routePaths.book} element={withSuspense(<Book />)} />
-          <Route
-            path={routePaths.notifications}
-            element={withSuspense(<Notifications />)}
-          />
+          <Route element={<RequireAuth />}>
+            <Route
+              path={routePaths.myProfile}
+              element={withSuspense(<Profile />)}
+            />
+            <Route
+              path={routePaths.settings}
+              element={withSuspense(<Settings />)}
+            />
+            <Route
+              path={routePaths.notifications}
+              element={withSuspense(<Notifications />)}
+            />
+          </Route>
           <Route path={routePaths.notFound} element={withSuspense(<NotFound />)} />
           {/* Catch-all route for 404 */}
         </Route>

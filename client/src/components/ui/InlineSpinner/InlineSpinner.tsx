@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactElement } from "react";
 
-interface InlineSpinnerProps extends ComponentProps<"svg"> {}
+type InlineSpinnerProps = ComponentProps<"svg">;
 
 export function InlineSpinner({
   className = "h-4 w-4",

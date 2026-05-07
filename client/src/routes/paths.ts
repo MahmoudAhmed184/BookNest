@@ -38,11 +38,16 @@ export interface UserProfileRouteParams {
   id: string;
 }
 
+type RouteParam = string | number;
+
+function routeParam(value: RouteParam): string {
+  return encodeURIComponent(String(value));
+}
+
 export const routeBuilders = {
   searchQuery: (query: string): SearchRoute =>
     `/search/${encodeURIComponent(query)}`,
-  book: (id: string | number | undefined): BookRoute => `/book/${String(id)}`,
-  author: (id: string | number | undefined): AuthorRoute => `/author/${String(id)}`,
-  userProfile: (id: string | number | null | undefined): UserProfileRoute =>
-    `/profile/${String(id)}`,
+  book: (id: RouteParam): BookRoute => `/book/${routeParam(id)}`,
+  author: (id: RouteParam): AuthorRoute => `/author/${routeParam(id)}`,
+  userProfile: (id: RouteParam): UserProfileRoute => `/profile/${routeParam(id)}`,
 } as const;

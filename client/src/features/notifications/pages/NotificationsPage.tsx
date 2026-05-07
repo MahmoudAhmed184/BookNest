@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
-import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { routePaths } from "../../../routes/paths";
 import { useNotifications } from "../hooks/useNotifications";
 
@@ -20,7 +20,7 @@ function NotificationsSkeleton(): ReactElement {
 }
 
 export default function Notifications(): ReactElement {
-  const { token } = useOptionalAuth();
+  const { token } = useAuth();
   const {
     notifications,
     isLoading,
