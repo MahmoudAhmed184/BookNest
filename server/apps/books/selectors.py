@@ -10,6 +10,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from apps.books.models import Author, Book, BookRating, BookReview, Genre, ReadingList
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from django.db.models import QuerySet
 
     from apps.books.managers import BookRatingQuerySet, BookReviewQuerySet, ReadingListQuerySet  # noqa: F401
@@ -115,12 +117,42 @@ def related_books_for_book(*, book_id: str, limit: int) -> QuerySet[Book]:
     )
 
 
-def recent_reviews(*, limit: int) -> BookReviewQuerySet:
-    return BookReview.objects.with_related().order_by("-created_at")[:limit]
+def recent_reviews(
+    *,
+    limit: int,
+    cursor_created_at: datetime | None = None,
+    cursor_kind: str | None = None,
+    cursor_object_id: int | None = None,
+) -> BookReviewQuerySet:
+    queryset = BookReview.objects.with_related()
+
+    if cursor_created_at is not None:
+        cursor_filter = Q(created_at__lt=cursor_created_at)
+        if cursor_kind == "review" and cursor_object_id is not None:
+            cursor_filter |= Q(created_at=cursor_created_at, review_id__lt=cursor_object_id)
+        queryset = queryset.filter(cursor_filter)
+
+    return queryset.order_by("-created_at", "-review_id")[:limit]
 
 
-def recent_ratings(*, limit: int) -> BookRatingQuerySet:
-    return BookRating.objects.with_related().order_by("-created_at")[:limit]
+def recent_ratings(
+    *,
+    limit: int,
+    cursor_created_at: datetime | None = None,
+    cursor_kind: str | None = None,
+    cursor_object_id: int | None = None,
+) -> BookRatingQuerySet:
+    queryset = BookRating.objects.with_related()
+
+    if cursor_created_at is not None:
+        cursor_filter = Q(created_at__lt=cursor_created_at)
+        if cursor_kind == "review":
+            cursor_filter |= Q(created_at=cursor_created_at)
+        elif cursor_kind == "rating" and cursor_object_id is not None:
+            cursor_filter |= Q(created_at=cursor_created_at, rate_id__lt=cursor_object_id)
+        queryset = queryset.filter(cursor_filter)
+
+    return queryset.order_by("-created_at", "-rate_id")[:limit]
 
 
 def books_for_author(*, author_id: int | None = None, author_name: str | None = None) -> QuerySet[Book]:

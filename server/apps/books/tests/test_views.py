@@ -1,7 +1,10 @@
-from datetime import date
+from datetime import date, datetime, timedelta
+from typing import TypeVar
+from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -9,6 +12,7 @@ from apps.books.models import Author, Book, BookRating, BookReview, Genre
 from apps.users.models.profile import Profile
 
 User = get_user_model()
+ActivityModel = TypeVar("ActivityModel", BookReview, BookRating)
 
 
 class BookAPITests(APITestCase):
@@ -137,6 +141,92 @@ class BookAPITests(APITestCase):
         self.assertEqual(rating.user, self.user)
         self.assertEqual(float(rating.rate), 4.0)
         self.assertNotIn("user", response.data)
+
+
+class FeedActivityAPITests(APITestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="feeduser", email="feeduser@example.com", password="testpassword"
+        )
+        self.other_user = User.objects.create_user(
+            username="otherfeeduser", email="otherfeeduser@example.com", password="testpassword"
+        )
+        Profile.objects.get_or_create(user=self.user, defaults={"bio": "Feed user profile"})
+        Profile.objects.get_or_create(user=self.other_user, defaults={"bio": "Other feed user profile"})
+
+        self.book1 = Book.objects.create(isbn13="9780000000101", title="Feed Book 1")
+        self.book2 = Book.objects.create(isbn13="9780000000102", title="Feed Book 2")
+        self.feed_url = reverse("feed-activity-list")
+
+    def _set_created_at(self, activity: ActivityModel, created_at: datetime) -> ActivityModel:
+        activity.__class__.objects.filter(pk=activity.pk).update(created_at=created_at)
+        activity.refresh_from_db()
+        return activity
+
+    def _create_review(self, *, created_at: datetime) -> BookReview:
+        review = BookReview.objects.create(user=self.user, book=self.book1, review_text="Great read")
+        return self._set_created_at(review, created_at)
+
+    def _create_rating(self, *, created_at: datetime, book: Book | None = None) -> BookRating:
+        rating = BookRating.objects.create(user=self.other_user, book=book or self.book2, rate=4)
+        return self._set_created_at(rating, created_at)
+
+    def _cursor_from_next_url(self, next_url: str) -> str:
+        query = parse_qs(urlparse(next_url).query)
+        return query["cursor"][0]
+
+    def test_feed_returns_cursor_paginated_envelope(self) -> None:
+        now = timezone.now()
+        newest_review = self._create_review(created_at=now)
+        newest_rating = self._create_rating(created_at=now - timedelta(minutes=1))
+        older_review = self._create_review(created_at=now - timedelta(minutes=2))
+
+        response = self.client.get(self.feed_url, {"limit": 2})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("next", response.data)
+        self.assertIn("previous", response.data)
+        self.assertIn("results", response.data)
+        self.assertIsNone(response.data["previous"])
+        self.assertIsNotNone(response.data["next"])
+        self.assertEqual(
+            [activity["id"] for activity in response.data["results"]],
+            [f"review-{newest_review.review_id}", f"rating-{newest_rating.rate_id}"],
+        )
+
+        cursor = self._cursor_from_next_url(response.data["next"])
+        next_response = self.client.get(self.feed_url, {"limit": 2, "cursor": cursor})
+
+        self.assertEqual(next_response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(next_response.data["next"])
+        self.assertEqual(
+            [activity["id"] for activity in next_response.data["results"]],
+            [f"review-{older_review.review_id}"],
+        )
+
+    def test_feed_cursor_keeps_same_timestamp_tie_items(self) -> None:
+        created_at = timezone.now()
+        review = self._create_review(created_at=created_at)
+        rating = self._create_rating(created_at=created_at)
+
+        response = self.client.get(self.feed_url, {"limit": 1})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["id"], f"review-{review.review_id}")
+
+        cursor = self._cursor_from_next_url(response.data["next"])
+        next_response = self.client.get(self.feed_url, {"limit": 1, "cursor": cursor})
+
+        self.assertEqual(next_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(next_response.data["results"][0]["id"], f"rating-{rating.rate_id}")
+        self.assertIsNone(next_response.data["next"])
+
+    def test_feed_rejects_invalid_cursor(self) -> None:
+        response = self.client.get(self.feed_url, {"cursor": "not-a-valid-cursor"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "Invalid feed cursor")
 
 
 class AuthorAPITests(APITestCase):
