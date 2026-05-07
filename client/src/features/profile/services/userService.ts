@@ -22,6 +22,9 @@ import type {
   UserReviewsResponse,
 } from "../types/user";
 
+// intentionally deferred: GET /api/v1/profiles/?username=&profile_type= is a people-discovery surface,
+// and the current product uses profile/follow pages instead of a global profile search page.
+
 export async function getMyProfile(token?: string | null): Promise<UserProfile> {
   try {
     const response = await getData<ProfileResponseEnvelope>(

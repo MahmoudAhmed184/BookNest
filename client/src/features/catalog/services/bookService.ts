@@ -38,6 +38,9 @@ import type {
   ReviewSortParams,
 } from "../types/book";
 
+// intentionally deferred: global GET /api/v1/reviews/ and GET /api/v1/ratings/
+// are not productized as feeds; the UI uses book-scoped and user-scoped review/rating surfaces.
+
 export interface SearchBooksParams extends OffsetPageParams {
   query: string;
   includeExternal?: boolean | undefined;

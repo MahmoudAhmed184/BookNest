@@ -12,6 +12,10 @@ import type {
   NotificationType,
 } from "../types/notification";
 
+// intentionally deferred: POST /api/v1/notifications/ is treated as an internal/admin creation path.
+// intentionally deferred: GET/PUT/PATCH /api/v1/notifications/{id}/ and
+// GET /api/v1/notification-types/{id}/ do not have standalone detail/edit screens.
+
 export interface MarkNotificationsReadResponse {
   updated: number;
 }
