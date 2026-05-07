@@ -6,9 +6,12 @@ export interface ReviewFormProps {
   rating: number;
   reviewText: string;
   isSubmitting: boolean;
+  isDeletingRating: boolean;
+  canDeleteRating: boolean;
   submitLabel: string;
   onRatingChange: (rating: number) => void;
   onReviewTextChange: (value: string) => void;
+  onDeleteRating: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -16,9 +19,12 @@ export function ReviewForm({
   rating,
   reviewText,
   isSubmitting,
+  isDeletingRating,
+  canDeleteRating,
   submitLabel,
   onRatingChange,
   onReviewTextChange,
+  onDeleteRating,
   onSubmit,
 }: ReviewFormProps): ReactElement {
   return (
@@ -49,14 +55,26 @@ export function ReviewForm({
             placeholder="Write your review here..."
           />
         </div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white"
-        >
-          {isSubmitting ? <InlineSpinner /> : null}
-          {submitLabel}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white"
+          >
+            {isSubmitting ? <InlineSpinner /> : null}
+            {submitLabel}
+          </button>
+          {canDeleteRating ? (
+            <button
+              type="button"
+              disabled={isDeletingRating}
+              className="min-h-[44px] rounded-full px-5 py-2 text-sm font-semibold text-accent hover:bg-primary-black"
+              onClick={onDeleteRating}
+            >
+              {isDeletingRating ? "Deleting..." : "Delete rating"}
+            </button>
+          ) : null}
+        </div>
       </form>
     </section>
   );

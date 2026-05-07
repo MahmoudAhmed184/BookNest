@@ -9,5 +9,6 @@ export const catalogKeys = {
   authorBooks: (id: string | undefined) => ["author", id, "books"] as const,
   reviews: (id: string | undefined) => ["reviews", id] as const,
   ratings: (id: string | undefined) => ["ratings", id] as const,
-  feedActivities: () => ["feed-activities"] as const,
+  myRating: (id: string | undefined) => ["ratings", id, "me"] as const,
+  feedActivities: (pageSize: number) => ["feed-activities", pageSize] as const,
 };

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getBook,
   getBookRatings,
+  getRatingForBook,
   getReviews,
 } from "../services/bookService";
 import { getCollections } from "../../collections/services/collectionService";
@@ -16,6 +17,7 @@ interface UseBookPageDataResult {
   book?: Book | undefined;
   reviews?: BookReview[] | undefined;
   ratings?: BookRating[] | undefined;
+  userRating?: BookRating | null | undefined;
   isBookLoading: boolean;
   isBookFetching: boolean;
   isBookError: boolean;
@@ -50,12 +52,19 @@ export function useBookPageData(
     queryFn: () => getBookRatings(id, token),
     refetchInterval: 5000,
   });
+  const userRatingQuery = useQuery({
+    queryKey: catalogKeys.myRating(id),
+    queryFn: () => getRatingForBook(id, token),
+    enabled: Boolean(id && token),
+    retry: false,
+  });
 
   return {
     collections: collectionsQuery.data,
     book: bookQuery.data,
     reviews: reviewsQuery.data,
     ratings: ratingsQuery.data,
+    userRating: userRatingQuery.data,
     isBookLoading: bookQuery.isLoading,
     isBookFetching: bookQuery.isFetching,
     isBookError: bookQuery.isError,

@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import {
   createRating,
   createReview,
+  deleteRating,
+  updateRating,
 } from "../services/bookService";
 import { addToCollection } from "../../collections/services/collectionService";
 import { catalogKeys } from "./catalog.keys";
@@ -12,9 +14,11 @@ import { profileKeys } from "../../profile/hooks/profile.keys";
 interface UseBookActionsOptions {
   id: string | undefined;
   completedListId: number | null;
+  currentRatingId?: string | number | null | undefined;
   rating: number;
   reviewText: string;
   token?: string | null | undefined;
+  onRatingDeleted: () => void;
   onReviewSubmitted: () => void;
 }
 
@@ -22,8 +26,10 @@ interface UseBookActionsResult {
   isAddingBook: boolean;
   isMarkingAsRead: boolean;
   isSubmittingReview: boolean;
+  isDeletingRating: boolean;
   addBookToList: (listId: number) => void;
   markAsRead: () => void;
+  deleteRating: () => void;
   submitRating: () => void;
   submitReview: () => void;
 }
@@ -31,13 +37,28 @@ interface UseBookActionsResult {
 export function useBookActions({
   id,
   completedListId,
+  currentRatingId,
   rating,
   reviewText,
   token,
+  onRatingDeleted,
   onReviewSubmitted,
 }: UseBookActionsOptions): UseBookActionsResult {
   const queryClient = useQueryClient();
   const ratingPayload = () => ({ book: id, rate: rating });
+  const invalidateRatingState = (): void => {
+    queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
+    queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
+    queryClient.invalidateQueries({ queryKey: catalogKeys.myRating(id) });
+    queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
+  };
+  const saveRating = (): Promise<unknown> => {
+    if (currentRatingId !== null && currentRatingId !== undefined) {
+      return updateRating(currentRatingId, rating, token);
+    }
+
+    return createRating(ratingPayload(), token);
+  };
 
   const addBookMutation = useMutation({
     mutationFn: (listId: number) =>
@@ -62,31 +83,44 @@ export function useBookActions({
   });
   const reviewMutation = useMutation({
     mutationFn: async () => {
-      await createRating(ratingPayload(), token);
+      await saveRating();
       return createReview({ book: id, review_text: reviewText.trim() }, token);
     },
     onSuccess: () => {
       onReviewSubmitted();
       toast.success("Review submitted!");
-      queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
-      queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
+      invalidateRatingState();
       queryClient.invalidateQueries({ queryKey: catalogKeys.reviews(id) });
-      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
     },
     onError: () => {
       toast.error("Couldn't submit your review. Try again.");
     },
   });
   const ratingMutation = useMutation({
-    mutationFn: () => createRating(ratingPayload(), token),
+    mutationFn: saveRating,
     onSuccess: () => {
       toast.success("Rating saved.");
-      queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
-      queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
-      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
+      invalidateRatingState();
     },
     onError: () => {
       toast.error("Couldn't save your rating. Try again.");
+    },
+  });
+  const deleteRatingMutation = useMutation({
+    mutationFn: () => {
+      if (currentRatingId === null || currentRatingId === undefined) {
+        throw new Error("No rating to delete");
+      }
+
+      return deleteRating(currentRatingId, token);
+    },
+    onSuccess: () => {
+      onRatingDeleted();
+      toast.success("Rating deleted.");
+      invalidateRatingState();
+    },
+    onError: () => {
+      toast.error("Couldn't delete your rating. Try again.");
     },
   });
 
@@ -94,8 +128,10 @@ export function useBookActions({
     isAddingBook: addBookMutation.isPending,
     isMarkingAsRead: markAsReadMutation.isPending,
     isSubmittingReview: reviewMutation.isPending || ratingMutation.isPending,
+    isDeletingRating: deleteRatingMutation.isPending,
     addBookToList: (listId) => addBookMutation.mutate(listId),
     markAsRead: () => markAsReadMutation.mutate(),
+    deleteRating: () => deleteRatingMutation.mutate(),
     submitRating: () => ratingMutation.mutate(),
     submitReview: () => reviewMutation.mutate(),
   };

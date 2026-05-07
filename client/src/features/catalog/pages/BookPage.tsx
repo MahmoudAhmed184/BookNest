@@ -42,6 +42,7 @@ export default function BookPage(): ReactElement {
     book,
     reviews,
     ratings,
+    userRating,
     isBookLoading,
     isBookFetching,
     isBookError,
@@ -57,14 +58,21 @@ export default function BookPage(): ReactElement {
   const bookActions = useBookActions({
     id,
     completedListId: completedList?.list_id ?? null,
+    currentRatingId: userRating?.rate_id,
     rating,
     reviewText,
     token,
-    onReviewSubmitted: () => {
-      setReviewText("");
+    onRatingDeleted: () => {
       setRating(0);
     },
+    onReviewSubmitted: () => {
+      setReviewText("");
+    },
   });
+
+  useEffect(() => {
+    setRating(userRating?.rate ?? 0);
+  }, [userRating?.rate, id]);
 
   const handleSubmitReview = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -117,9 +125,18 @@ export default function BookPage(): ReactElement {
         rating={rating}
         reviewText={reviewText}
         isSubmitting={bookActions.isSubmittingReview}
-        submitLabel={reviewText.trim() ? "Submit Review" : "Save Rating"}
+        isDeletingRating={bookActions.isDeletingRating}
+        canDeleteRating={Boolean(userRating)}
+        submitLabel={
+          reviewText.trim()
+            ? "Submit Review"
+            : userRating
+              ? "Update Rating"
+              : "Save Rating"
+        }
         onRatingChange={setRating}
         onReviewTextChange={setReviewText}
+        onDeleteRating={bookActions.deleteRating}
         onSubmit={handleSubmitReview}
       />
       <ReviewsSection

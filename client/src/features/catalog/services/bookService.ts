@@ -2,9 +2,11 @@ import {
   authHeaders,
   deleteData,
   getData,
+  patchData,
   postData,
   throwApiError,
 } from "../../../lib/axios";
+import axios from "axios";
 import { normalizeEmptyResponse } from "../../../lib/normalizers";
 import type {
   Book,
@@ -175,6 +177,63 @@ export async function createRating(
       }
     );
     return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getRatingForBook(
+  id: string | undefined,
+  token?: string | null
+): Promise<BookRating | null> {
+  try {
+    const response = await getData<BookRating>(
+      `/api/v1/books/${id}/ratings/me/`,
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response;
+  } catch (error: unknown) {
+    if (
+      axios.isAxiosError(error) &&
+      (error.response?.status === 400 || error.response?.status === 404)
+    ) {
+      return null;
+    }
+
+    throwApiError(error);
+  }
+}
+
+export async function updateRating(
+  rateId: string | number,
+  rate: number,
+  token?: string | null
+): Promise<BookRating> {
+  try {
+    const response = await patchData<BookRating, { rate: number }>(
+      `/api/v1/ratings/${rateId}/`,
+      { rate },
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function deleteRating(
+  rateId: string | number,
+  token?: string | null
+): Promise<void> {
+  try {
+    await deleteData<void>(`/api/v1/ratings/${rateId}/`, {
+      headers: authHeaders(token),
+    });
+    return normalizeEmptyResponse();
   } catch (error: unknown) {
     throwApiError(error);
   }

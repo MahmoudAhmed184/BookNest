@@ -104,6 +104,7 @@ describe("catalog hooks", () => {
           completedListId: 3,
           rating: 5,
           reviewText: "Great",
+          onRatingDeleted: vi.fn(),
           onReviewSubmitted: vi.fn(),
         }),
       { wrapper: createQueryWrapper() }
@@ -131,6 +132,7 @@ describe("catalog hooks", () => {
           rating: 5,
           reviewText: "Great",
           token: "token",
+          onRatingDeleted: vi.fn(),
           onReviewSubmitted,
         }),
       { wrapper: createQueryWrapper() }
@@ -164,6 +166,7 @@ describe("catalog hooks", () => {
           rating: 5,
           reviewText: "",
           token: "token",
+          onRatingDeleted: vi.fn(),
           onReviewSubmitted: vi.fn(),
         }),
       { wrapper: createQueryWrapper() }
@@ -197,6 +200,7 @@ describe("catalog hooks", () => {
           rating: 4,
           reviewText: "",
           token: "token",
+          onRatingDeleted: vi.fn(),
           onReviewSubmitted: vi.fn(),
         }),
       { wrapper: createQueryWrapper() }
