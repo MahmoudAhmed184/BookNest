@@ -136,3 +136,22 @@ export interface DeleteBookPayload {
   book_id: string | undefined;
   list_id: number | null;
 }
+
+export interface BookAuthorPayload {
+  name: string;
+  author_id?: number;
+}
+
+export interface BookWritePayload {
+  isbn13?: string;
+  isbn?: string | null;
+  title?: string;
+  authors?: BookAuthorPayload[];
+  genres?: string[];
+  average_rate?: number | string | null;
+  description?: string | null;
+  publication_date?: string | null;
+  number_of_pages?: number | null;
+  cover_img?: string | null;
+  language?: string | null;
+}

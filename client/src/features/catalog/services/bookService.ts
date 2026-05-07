@@ -22,6 +22,7 @@ import type {
   BookReview,
   BookSearchResponse,
   BookSuggestionsResponse,
+  BookWritePayload,
   Author,
   AuthorSearchResponse,
   CatalogGenre,
@@ -306,6 +307,39 @@ export async function getBook(id: string | undefined): Promise<Book> {
   }
 }
 
+export async function createBook(
+  data: BookWritePayload,
+  token?: string | null
+): Promise<Book> {
+  try {
+    const response = await postData<Book, BookWritePayload>("/api/v1/books/", data, {
+      headers: authHeaders(token),
+    });
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateBook(
+  id: string | number,
+  data: BookWritePayload,
+  token?: string | null
+): Promise<Book> {
+  try {
+    const response = await patchData<Book, BookWritePayload>(
+      `/api/v1/books/${id}/`,
+      data,
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function getAuthors(
   params: AuthorListParams
 ): Promise<AuthorSearchResponse> {
@@ -522,9 +556,28 @@ export async function deleteRating(
 }
 
 export async function deleteBook(
+  id: string | number,
+  token?: string | null
+): Promise<void>;
+export async function deleteBook(
   data: DeleteBookPayload,
   token?: string | null
+): Promise<void>;
+export async function deleteBook(
+  data: string | number | DeleteBookPayload,
+  token?: string | null
 ): Promise<void> {
+  if (typeof data === "string" || typeof data === "number") {
+    try {
+      await deleteData<void>(`/api/v1/books/${data}/`, {
+        headers: authHeaders(token),
+      });
+      return normalizeEmptyResponse();
+    } catch (error: unknown) {
+      throwApiError(error);
+    }
+  }
+
   if (!token) {
     throw new Error("Authentication token is missing");
   }

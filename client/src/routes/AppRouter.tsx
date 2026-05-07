@@ -4,6 +4,7 @@ import { Layout } from "../components/layout";
 import { BookCardSkeleton } from "../components/ui";
 import { routePaths } from "./paths";
 import { RequireAuth } from "./RequireAuth";
+import { RequireAdmin } from "./RequireAdmin";
 
 const Login = lazy(() => import("../features/auth/pages/LoginPage"));
 const Register = lazy(() => import("../features/auth/pages/RegisterPage"));
@@ -18,6 +19,7 @@ const Categories = lazy(() => import("../features/catalog/pages/CategoriesPage")
 const Feed = lazy(() => import("../features/catalog/pages/FeedPage"));
 const Settings = lazy(() => import("../features/settings/pages/SettingsPage"));
 const Book = lazy(() => import("../features/catalog/pages/BookPage"));
+const AdminBooks = lazy(() => import("../features/catalog/pages/AdminBooksPage"));
 const Collections = lazy(() => import("../features/collections/pages/CollectionsPage"));
 const CollectionDetail = lazy(() => import("../features/collections/pages/CollectionDetailPage"));
 const Landing = lazy(() => import("../features/home/pages/LandingPage"));
@@ -106,6 +108,12 @@ export function AppRouter(): ReactElement {
               path={routePaths.notifications}
               element={withSuspense(<Notifications />)}
             />
+            <Route element={<RequireAdmin />}>
+              <Route
+                path={routePaths.adminBooks}
+                element={withSuspense(<AdminBooks />)}
+              />
+            </Route>
           </Route>
           <Route path={routePaths.notFound} element={withSuspense(<NotFound />)} />
           {/* Catch-all route for 404 */}

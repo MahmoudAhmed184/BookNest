@@ -1,6 +1,7 @@
 import {
   authHeaders,
   deleteData,
+  getData,
   postData,
   throwApiError,
 } from "../../../lib/axios";
@@ -34,6 +35,19 @@ export async function createProfile(token?: string | null): Promise<Profile> {
     );
 
     return normalizeProfileEnvelope(response).profile;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getCurrentUser(
+  token?: string | null
+): Promise<AuthenticatedUser> {
+  try {
+    const response = await getData<AuthenticatedUser>("/api/v1/users/me/", {
+      headers: authHeaders(token),
+    });
+    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }

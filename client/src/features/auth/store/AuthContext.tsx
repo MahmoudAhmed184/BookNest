@@ -15,7 +15,7 @@ import {
   verifyAccessToken,
 } from "../../../lib/axios";
 import { routePaths } from "../../../routes/paths";
-import { logoutCurrentSession } from "../services/authService";
+import { getCurrentUser, logoutCurrentSession } from "../services/authService";
 import type { AuthenticatedUser } from "../types/auth";
 import { AuthContext } from "./authContext";
 
@@ -26,6 +26,16 @@ interface AuthProviderProps {
 function redirectToLogin(): void {
   if (globalThis.location?.pathname !== routePaths.login) {
     globalThis.location.assign(routePaths.login);
+  }
+}
+
+async function loadCurrentUser(
+  accessToken: string
+): Promise<AuthenticatedUser | null> {
+  try {
+    return await getCurrentUser(accessToken);
+  } catch {
+    return null;
   }
 }
 
@@ -60,9 +70,13 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         await verifyAccessToken(storedAccessToken);
         if (!isActive) return;
 
+        const currentUser = await loadCurrentUser(storedAccessToken);
+        if (!isActive) return;
+
         setUser(true);
         setToken(storedAccessToken);
         setRefreshToken(storedRefreshToken);
+        setAuthUser(currentUser);
       } catch {
         if (!storedRefreshToken) {
           if (!isActive) return;
@@ -76,9 +90,13 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
           const nextAccessToken = await refreshAccessToken(storedRefreshToken);
           if (!isActive) return;
 
+          const currentUser = await loadCurrentUser(nextAccessToken);
+          if (!isActive) return;
+
           setUser(true);
           setToken(nextAccessToken);
           setRefreshToken(getStoredRefreshToken());
+          setAuthUser(currentUser);
         } catch {
           if (!isActive) return;
 
