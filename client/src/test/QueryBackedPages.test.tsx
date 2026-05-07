@@ -203,9 +203,11 @@ describe("query-backed pages", () => {
       isMarkingAsRead: false,
       isSubmittingReview: false,
       isDeletingRating: false,
+      isUpdatingReview: false,
       addBookToList: vi.fn(),
       markAsRead: vi.fn(),
       deleteRating: vi.fn(),
+      editReview: vi.fn(),
       submitRating: vi.fn(),
       submitReview: vi.fn(),
     });

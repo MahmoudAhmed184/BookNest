@@ -6,6 +6,7 @@ import {
   createReview,
   deleteRating,
   updateRating,
+  updateReview,
 } from "../services/bookService";
 import { addToCollection } from "../../collections/services/collectionService";
 import { catalogKeys } from "./catalog.keys";
@@ -27,9 +28,11 @@ interface UseBookActionsResult {
   isMarkingAsRead: boolean;
   isSubmittingReview: boolean;
   isDeletingRating: boolean;
+  isUpdatingReview: boolean;
   addBookToList: (listId: number) => void;
   markAsRead: () => void;
   deleteRating: () => void;
+  editReview: (reviewId: string | number, reviewText: string) => void;
   submitRating: () => void;
   submitReview: () => void;
 }
@@ -90,7 +93,7 @@ export function useBookActions({
       onReviewSubmitted();
       toast.success("Review submitted!");
       invalidateRatingState();
-      queryClient.invalidateQueries({ queryKey: catalogKeys.reviews(id) });
+      queryClient.invalidateQueries({ queryKey: catalogKeys.reviewsBase(id) });
     },
     onError: () => {
       toast.error("Couldn't submit your review. Try again.");
@@ -123,15 +126,34 @@ export function useBookActions({
       toast.error("Couldn't delete your rating. Try again.");
     },
   });
+  const updateReviewMutation = useMutation({
+    mutationFn: ({
+      reviewId,
+      text,
+    }: {
+      reviewId: string | number;
+      text: string;
+    }) => updateReview(reviewId, text, token),
+    onSuccess: () => {
+      toast.success("Review updated.");
+      queryClient.invalidateQueries({ queryKey: catalogKeys.reviewsBase(id) });
+    },
+    onError: () => {
+      toast.error("Couldn't update your review. Try again.");
+    },
+  });
 
   return {
     isAddingBook: addBookMutation.isPending,
     isMarkingAsRead: markAsReadMutation.isPending,
     isSubmittingReview: reviewMutation.isPending || ratingMutation.isPending,
     isDeletingRating: deleteRatingMutation.isPending,
+    isUpdatingReview: updateReviewMutation.isPending,
     addBookToList: (listId) => addBookMutation.mutate(listId),
     markAsRead: () => markAsReadMutation.mutate(),
     deleteRating: () => deleteRatingMutation.mutate(),
+    editReview: (reviewId, text) =>
+      updateReviewMutation.mutate({ reviewId, text }),
     submitRating: () => ratingMutation.mutate(),
     submitReview: () => reviewMutation.mutate(),
   };

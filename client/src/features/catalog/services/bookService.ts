@@ -9,6 +9,13 @@ import {
 import axios from "axios";
 import { normalizeEmptyResponse } from "../../../lib/normalizers";
 import type {
+  CursorPageParams,
+  LimitOffsetApiResponse,
+  OffsetPageParams,
+  OffsetPaginatedResponse,
+  PageNumberApiResponse,
+} from "../../../types/api";
+import type {
   Book,
   BookRating,
   BookReview,
@@ -18,25 +25,130 @@ import type {
   CreateRatingPayload,
   CreateReviewPayload,
   DeleteBookPayload,
-  FeedActivity,
+  FeedActivityResponse,
   GenreSearchResponse,
   RecommendedBook,
+  ReviewSortParams,
 } from "../types/book";
 
-export async function getBooks(
-  query: string
-): Promise<BookSearchResponse> {
+export interface SearchBooksParams extends OffsetPageParams {
+  query: string;
+}
+
+type SearchBooksInput = string | SearchBooksParams;
+
+const defaultSearchPageParams: OffsetPageParams = {
+  page: 1,
+  pageSize: 24,
+};
+
+function buildLimitOffsetParams(params: OffsetPageParams): URLSearchParams {
+  return new URLSearchParams({
+    limit: String(params.pageSize),
+    offset: String((params.page - 1) * params.pageSize),
+  });
+}
+
+function normalizeLimitOffsetResponse<T>(
+  response: LimitOffsetApiResponse<T>,
+  params: OffsetPageParams
+): OffsetPaginatedResponse<T> {
+  const count = response.count ?? response.results.length;
+  const totalPages = count > 0 ? Math.ceil(count / params.pageSize) : 0;
+  const hasNext =
+    response.next !== undefined ? response.next !== null : params.page < totalPages;
+  const hasPrevious =
+    response.previous !== undefined ? response.previous !== null : params.page > 1;
+
+  return {
+    count,
+    next: response.next ?? null,
+    previous: response.previous ?? null,
+    results: response.results,
+    page: params.page,
+    pageSize: params.pageSize,
+    totalPages,
+    hasNext,
+    hasPrevious,
+  };
+}
+
+function normalizePageNumberResponse<T>(
+  response: PageNumberApiResponse<T>,
+  params: OffsetPageParams
+): OffsetPaginatedResponse<T> {
+  const pagination = response.pagination;
+  const page = pagination?.current_page ?? params.page;
+  const pageSize = pagination?.page_size ?? params.pageSize;
+  const count = pagination?.total_count ?? response.results.length;
+  const totalPages =
+    pagination?.total_pages ?? (count > 0 ? Math.ceil(count / pageSize) : 0);
+  const hasNext = pagination?.has_next ?? page < totalPages;
+  const hasPrevious = pagination?.has_previous ?? page > 1;
+
+  return {
+    count,
+    next: null,
+    previous: null,
+    results: response.results,
+    page,
+    pageSize,
+    totalPages,
+    hasNext,
+    hasPrevious,
+  };
+}
+
+function normalizeSearchInput(input: SearchBooksInput): SearchBooksParams {
+  if (typeof input === "string") {
+    return {
+      query: input,
+      ...defaultSearchPageParams,
+    };
+  }
+
+  return input;
+}
+
+function buildFeedUrl(params: CursorPageParams): string {
+  const searchParams = new URLSearchParams({
+    limit: String(params.pageSize),
+  });
+
+  if (params.cursor) {
+    searchParams.set("cursor", params.cursor);
+  }
+
+  return `/api/v1/feed-activities/?${searchParams.toString()}`;
+}
+
+export async function getBooks(query: string): Promise<BookSearchResponse> {
   const params = new URLSearchParams({
     q: query,
     page_size: "50",
   });
 
   try {
-    const response = await getData<BookSearchResponse>(
+    const response = await getData<PageNumberApiResponse<Book>>(
       `/api/v1/books/search-results/?${params.toString()}`
     );
 
-    return response;
+    return normalizePageNumberResponse(response, { page: 1, pageSize: 50 });
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getCatalogBooks(
+  params: OffsetPageParams
+): Promise<BookSearchResponse> {
+  const searchParams = buildLimitOffsetParams(params);
+
+  try {
+    const response = await getData<LimitOffsetApiResponse<Book>>(
+      `/api/v1/books/?${searchParams.toString()}`
+    );
+    return normalizeLimitOffsetResponse(response, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -44,10 +156,23 @@ export async function getBooks(
 
 export async function getPopularBooks(limit = 12): Promise<Book[]> {
   try {
-    const response = await getData<BookSearchResponse>(
-      `/api/v1/books/?limit=${limit}`
+    const response = await getCatalogBooks({ page: 1, pageSize: limit });
+    return response.results;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getGenresPage(
+  params: OffsetPageParams
+): Promise<GenreSearchResponse> {
+  const searchParams = buildLimitOffsetParams(params);
+
+  try {
+    const response = await getData<LimitOffsetApiResponse<CatalogGenre>>(
+      `/api/v1/genres/?${searchParams.toString()}`
     );
-    return response.results || [];
+    return normalizeLimitOffsetResponse(response, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -55,10 +180,8 @@ export async function getPopularBooks(limit = 12): Promise<Book[]> {
 
 export async function getGenres(limit = 50): Promise<CatalogGenre[]> {
   try {
-    const response = await getData<GenreSearchResponse>(
-      `/api/v1/genres/?limit=${limit}`
-    );
-    return response.results || [];
+    const response = await getGenresPage({ page: 1, pageSize: limit });
+    return response.results;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -84,10 +207,10 @@ export async function getAuthor(id: string | undefined): Promise<Author> {
 
 export async function getAuthorBooks(id: string | undefined): Promise<Book[]> {
   try {
-    const response = await getData<BookSearchResponse>(
+    const response = await getData<LimitOffsetApiResponse<Book>>(
       `/api/v1/authors/${id}/books/?limit=24`
     );
-    return response.results || [];
+    return response.results;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -104,41 +227,68 @@ export async function getRelatedBooks(id: string | undefined): Promise<Book[]> {
   }
 }
 
-export async function getFeedActivities(limit = 20): Promise<FeedActivity[]> {
+export async function getFeedActivities(
+  params: CursorPageParams = { pageSize: 20 }
+): Promise<FeedActivityResponse> {
   try {
-    const response = await getData<FeedActivity[]>(
-      `/api/v1/feed-activities/?limit=${limit}`
-    );
+    const response = await getData<FeedActivityResponse>(buildFeedUrl(params));
     return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
-export async function searchBooks(
-  query: string
-): Promise<BookSearchResponse> {
+export async function searchBooks(input: SearchBooksInput): Promise<BookSearchResponse> {
+  const search = normalizeSearchInput(input);
   const params = new URLSearchParams({
-    q: query,
-    page_size: "24",
+    q: search.query,
+    page: String(search.page),
+    page_size: String(search.pageSize),
   });
 
   try {
-    const response = await getData<BookSearchResponse>(
+    const response = await getData<PageNumberApiResponse<Book>>(
       `/api/v1/books/search-results/?${params.toString()}`
     );
-    return response;
+    return normalizePageNumberResponse(response, search);
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function getReviews(
-  id: string | undefined
+  id: string | undefined,
+  sort?: ReviewSortParams
 ): Promise<BookReview[]> {
+  const params = new URLSearchParams();
+  if (sort) {
+    params.set("sort_by", sort.sortBy);
+    params.set("order", sort.order);
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+
   try {
     const response = await getData<BookReview[]>(
-      `/api/v1/books/${id}/reviews/`
+      `/api/v1/books/${id}/reviews/${query}`
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateReview(
+  reviewId: string | number,
+  reviewText: string,
+  token?: string | null
+): Promise<BookReview> {
+  try {
+    const response = await patchData<BookReview, { review_text: string }>(
+      `/api/v1/reviews/${reviewId}/`,
+      { review_text: reviewText },
+      {
+        headers: authHeaders(token),
+      }
     );
     return response;
   } catch (error: unknown) {

@@ -1,13 +1,15 @@
 import type { ReactElement } from "react";
 
 import { EmptyState, ErrorState } from "../../../../components/ui";
-import type { BookRating, BookReview } from "../../types/book";
-import type { MoodTag } from "../../types/filters";
+import type {
+  BookRating,
+  BookReview,
+  ReviewSortBy,
+  ReviewSortOrder,
+} from "../../types/book";
 import { ReviewCard } from "./ReviewCard";
-import { getReviewMood } from "./reviewMood";
 
 const skeletonKeys = ["review-skeleton-1", "review-skeleton-2"];
-const moodOrder: MoodTag[] = ["adventurous", "emotional", "dark", "funny", "hopeful"];
 
 interface GroupedReview {
   review: BookReview;
@@ -21,28 +23,23 @@ export interface ReviewsSectionProps {
   isFetching: boolean;
   isError: boolean;
   isRatingsError: boolean;
+  sortBy: ReviewSortBy;
+  order: ReviewSortOrder;
+  currentUsername?: string | null | undefined;
+  isUpdatingReview: boolean;
+  onSortChange: (sortBy: ReviewSortBy, order: ReviewSortOrder) => void;
+  onUpdateReview: (reviewId: string | number, reviewText: string) => void;
   onRetry: () => void;
 }
 
-function groupReviews(reviews: BookReview[], ratings?: BookRating[]): Record<MoodTag, GroupedReview[]> {
-  const grouped: Record<MoodTag, GroupedReview[]> = {
-    adventurous: [],
-    emotional: [],
-    dark: [],
-    funny: [],
-    hopeful: [],
-  };
-
-  reviews.forEach((review, index) => {
-    const mood = getReviewMood(review);
-    grouped[mood].push({ review, rating: ratings?.[index]?.rate ?? 0 });
-  });
-
-  return grouped;
-}
-
-function labelize(value: string): string {
-  return value.slice(0, 1).toUpperCase() + value.slice(1);
+function pairReviewsWithRatings(
+  reviews: BookReview[],
+  ratings?: BookRating[]
+): GroupedReview[] {
+  return reviews.map((review, index) => ({
+    review,
+    rating: ratings?.[index]?.rate ?? 0,
+  }));
 }
 
 export function ReviewsSection({
@@ -52,17 +49,51 @@ export function ReviewsSection({
   isFetching,
   isError,
   isRatingsError,
+  sortBy,
+  order,
+  currentUsername,
+  isUpdatingReview,
+  onSortChange,
+  onUpdateReview,
   onRetry,
 }: ReviewsSectionProps): ReactElement {
-  const grouped = groupReviews(reviews ?? [], ratings);
+  const reviewItems = pairReviewsWithRatings(reviews ?? [], ratings);
 
   return (
     <section className="flex flex-col gap-5" aria-labelledby="reviews-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 id="reviews-title" className="text-xl font-bold text-primary-white">Reader Reviews</h2>
-        {isFetching && reviews?.length ? (
-          <p className="text-xs text-primary-gray" role="status">Updating reviews...</p>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-xs font-semibold text-primary-gray">
+            Sort
+            <select
+              className="field min-h-[44px] text-primary-white"
+              value={sortBy}
+              onChange={(event) =>
+                onSortChange(event.target.value as ReviewSortBy, order)
+              }
+            >
+              <option value="created_at">Date</option>
+              <option value="upvotes">Upvotes</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-primary-gray">
+            Order
+            <select
+              className="field min-h-[44px] text-primary-white"
+              value={order}
+              onChange={(event) =>
+                onSortChange(sortBy, event.target.value as ReviewSortOrder)
+              }
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+          </label>
+          {isFetching && reviews?.length ? (
+            <p className="text-xs text-primary-gray" role="status">Updating reviews...</p>
+          ) : null}
+        </div>
       </div>
       {isLoading ? <ReviewsSkeleton /> : null}
       {isError || isRatingsError ? (
@@ -72,17 +103,19 @@ export function ReviewsSection({
         <EmptyState title="No reviews yet" description="Be the first reader to leave a thoughtful note about this book." />
       ) : null}
       {!isLoading && !isError && !isRatingsError ? (
-        <div className="flex flex-col gap-6">
-          {moodOrder.map((mood) =>
-            grouped[mood].length > 0 ? (
-              <section key={mood} className="flex flex-col gap-3" aria-label={`${mood} reviews`}>
-                <h3 className="text-sm font-bold uppercase text-primary-gray">{labelize(mood)}</h3>
-                {grouped[mood].map((item) => (
-                  <ReviewCard key={item.review.review_id} review={item.review} rating={item.rating} mood={mood} />
-                ))}
-              </section>
-            ) : null
-          )}
+        <div className="flex flex-col gap-4">
+          {reviewItems.map((item) => (
+            <ReviewCard
+              key={item.review.review_id}
+              review={item.review}
+              rating={item.rating}
+              canEdit={Boolean(
+                currentUsername && item.review.username === currentUsername
+              )}
+              isUpdating={isUpdatingReview}
+              onUpdate={onUpdateReview}
+            />
+          ))}
         </div>
       ) : null}
     </section>

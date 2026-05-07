@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type ReactElement,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ErrorState } from "../../../components/ui";
@@ -21,6 +21,7 @@ import { useBookActions } from "../hooks/useBookActions";
 import { useBookPageData } from "../hooks/useBookPageData";
 import type { BookRouteParams } from "../../../routes/paths";
 import type { ReadingList } from "../../collections/types/collection";
+import type { ReviewSortBy, ReviewSortOrder } from "../types/book";
 
 function findReadingListByType(
   collections: ReadingList[] | undefined,
@@ -31,7 +32,10 @@ function findReadingListByType(
 
 export default function BookPage(): ReactElement {
   const { id } = useParams<BookRouteParams>();
-  const { token } = useOptionalAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { token, authUser } = useOptionalAuth();
+  const sortBy = parseReviewSortBy(searchParams.get("sort_by"));
+  const order = parseReviewSortOrder(searchParams.get("order"));
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [isListDialogOpen, setIsListDialogOpen] = useState(false);
@@ -53,7 +57,7 @@ export default function BookPage(): ReactElement {
     refetchBook,
     refetchReviews,
     refetchRatings,
-  } = useBookPageData(id, token);
+  } = useBookPageData(id, token, { sortBy, order });
   const completedList = findReadingListByType(collections, "done");
   const bookActions = useBookActions({
     id,
@@ -146,6 +150,17 @@ export default function BookPage(): ReactElement {
         isFetching={isReviewsFetching}
         isError={isReviewsError}
         isRatingsError={isRatingsError}
+        sortBy={sortBy}
+        order={order}
+        currentUsername={authUser?.username ?? userRating?.username}
+        isUpdatingReview={bookActions.isUpdatingReview}
+        onSortChange={(nextSortBy, nextOrder) => {
+          const params = new URLSearchParams(searchParams);
+          params.set("sort_by", nextSortBy);
+          params.set("order", nextOrder);
+          setSearchParams(params, { replace: true });
+        }}
+        onUpdateReview={bookActions.editReview}
         onRetry={() => {
           refetchReviews();
           refetchRatings();
@@ -164,6 +179,14 @@ export default function BookPage(): ReactElement {
       />
     </div>
   );
+}
+
+function parseReviewSortBy(value: string | null): ReviewSortBy {
+  return value === "upvotes" ? "upvotes" : "created_at";
+}
+
+function parseReviewSortOrder(value: string | null): ReviewSortOrder {
+  return value === "asc" ? "asc" : "desc";
 }
 
 interface AddToListDialogProps {

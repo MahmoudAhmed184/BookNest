@@ -1,3 +1,8 @@
+import type {
+  CursorApiResponse,
+  OffsetPaginatedResponse,
+} from "../../../types/api";
+
 export interface Author {
   author_id?: number;
   name: string;
@@ -29,23 +34,11 @@ export interface Book {
   reviews_count?: number;
   language?: string | null;
   source?: string | null;
-  moods?: string[];
-  pace?: string | null;
 }
 
-export interface BookSearchResponse {
-  count?: number;
-  next?: string | null;
-  previous?: string | null;
-  results: Book[];
-}
+export type BookSearchResponse = OffsetPaginatedResponse<Book>;
 
-export interface GenreSearchResponse {
-  count?: number;
-  next?: string | null;
-  previous?: string | null;
-  results: CatalogGenre[];
-}
+export type GenreSearchResponse = OffsetPaginatedResponse<CatalogGenre>;
 
 export interface BookReview {
   review_id: string | number;
@@ -95,9 +88,19 @@ export interface FeedActivity {
   };
 }
 
+export type FeedActivityResponse = CursorApiResponse<FeedActivity>;
+
 export interface CreateReviewPayload {
   book: string | undefined;
   review_text: string;
+}
+
+export type ReviewSortBy = "created_at" | "upvotes";
+export type ReviewSortOrder = "asc" | "desc";
+
+export interface ReviewSortParams {
+  sortBy: ReviewSortBy;
+  order: ReviewSortOrder;
 }
 
 export interface CreateRatingPayload {

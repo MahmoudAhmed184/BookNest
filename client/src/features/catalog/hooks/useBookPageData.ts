@@ -8,7 +8,7 @@ import {
 } from "../services/bookService";
 import { getCollections } from "../../collections/services/collectionService";
 import type { ReadingList } from "../../collections/types/collection";
-import type { Book, BookRating, BookReview } from "../types/book";
+import type { Book, BookRating, BookReview, ReviewSortParams } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 
@@ -32,7 +32,8 @@ interface UseBookPageDataResult {
 
 export function useBookPageData(
   id: string | undefined,
-  token?: string | null
+  token?: string | null,
+  reviewSort: ReviewSortParams = { sortBy: "created_at", order: "desc" }
 ): UseBookPageDataResult {
   const collectionsQuery = useQuery({
     queryKey: profileKeys.collections(),
@@ -44,8 +45,8 @@ export function useBookPageData(
     queryFn: () => getBook(id),
   });
   const reviewsQuery = useQuery({
-    queryKey: catalogKeys.reviews(id),
-    queryFn: () => getReviews(id),
+    queryKey: catalogKeys.reviews(id, reviewSort.sortBy, reviewSort.order),
+    queryFn: () => getReviews(id, reviewSort),
   });
   const ratingsQuery = useQuery({
     queryKey: catalogKeys.ratings(id),
