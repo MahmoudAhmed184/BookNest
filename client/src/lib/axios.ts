@@ -47,6 +47,25 @@ export const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
+export class ApiRequestError extends Error {
+  status: number | undefined;
+  data: ApiErrorResponse;
+  retryAfterSeconds: number | undefined;
+
+  constructor(
+    message: string,
+    data: ApiErrorResponse,
+    status?: number,
+    retryAfterSeconds?: number
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.data = data;
+    this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
 function getStorage(): Storage | null {
   try {
     return globalThis.localStorage ?? null;
@@ -348,6 +367,55 @@ export function getApiErrorMessage(error: unknown): string {
   }
 
   return "API request failed";
+}
+
+function parseRetryAfter(value: unknown): number | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+
+  const text = String(value).trim();
+  if (!text) return undefined;
+
+  const seconds = Number(text);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, Math.ceil(seconds));
+  }
+
+  const retryDate = Date.parse(text);
+  if (Number.isNaN(retryDate)) return undefined;
+
+  return Math.max(0, Math.ceil((retryDate - Date.now()) / 1000));
+}
+
+function getHeaderValue(headers: unknown, name: string): unknown {
+  if (headers instanceof AxiosHeaders) {
+    return headers.get(name);
+  }
+
+  if (!isRecord(headers)) return undefined;
+
+  return headers[name] ?? headers[name.toLowerCase()];
+}
+
+export function toApiRequestError(error: unknown): ApiRequestError {
+  const data = getApiError(error);
+  const message = getApiErrorMessage(error);
+
+  if (axios.isAxiosError<ApiErrorResponse>(error)) {
+    const retryAfter = getHeaderValue(error.response?.headers, "retry-after");
+
+    return new ApiRequestError(
+      message,
+      data,
+      error.response?.status,
+      parseRetryAfter(retryAfter)
+    );
+  }
+
+  return new ApiRequestError(message, data);
+}
+
+export function throwApiRequestError(error: unknown): never {
+  throw toApiRequestError(error);
 }
 
 export function throwApiError(error: unknown): never {

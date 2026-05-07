@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 
-import { EmptyState, ErrorState } from "../../../../components/ui";
+import { EmptyState, ErrorState, Pagination } from "../../../../components/ui";
 import { routePaths } from "../../../../routes/paths";
+import type { OffsetPaginatedResponse } from "../../../../types/api";
 import type { Book } from "../../types/book";
 import { SearchResultsGrid } from "./SearchResultsGrid";
 import { SearchResultsHeader, type SortMode } from "./SearchResultsHeader";
@@ -14,11 +15,14 @@ export interface SearchResultsSectionProps {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  isPaginationDisabled: boolean;
   hasData: boolean;
+  pagination: OffsetPaginatedResponse<Book>;
   onRetry: () => void;
   onClearSearch: () => void;
   onSortChange: (mode: SortMode) => void;
   onRememberScroll: () => void;
+  onPageChange: (page: number) => void;
 }
 
 export function SearchResultsSection({
@@ -28,11 +32,14 @@ export function SearchResultsSection({
   isLoading,
   isFetching,
   isError,
+  isPaginationDisabled,
   hasData,
+  pagination,
   onRetry,
   onClearSearch,
   onSortChange,
   onRememberScroll,
+  onPageChange,
 }: SearchResultsSectionProps): ReactElement {
   const trimmedSearch = searchTerm.trim();
   const hasActiveSearch = trimmedSearch.length > 0;
@@ -41,7 +48,7 @@ export function SearchResultsSection({
     <section className="flex flex-col gap-5" aria-labelledby="search-results-title">
       <SearchResultsHeader
         hasActiveSearch={hasActiveSearch}
-        resultCount={books.length}
+        resultCount={pagination.count}
         searchTerm={trimmedSearch}
         sortMode={sortMode}
         isUpdating={isFetching && hasData}
@@ -55,21 +62,32 @@ export function SearchResultsSection({
         <EmptyState
           title="Start with a title, author, or genre"
           description="Your results will appear here as you type."
-          actionLabel="Browse by mood"
+          actionLabel="Explore catalog"
           actionTo={routePaths.explore}
         />
       ) : null}
       {hasActiveSearch && !isLoading && !isError && books.length === 0 ? (
         <EmptyState
           title={`No books found for "${trimmedSearch}"`}
-          description="Try fewer words, another author, or browse by mood to loosen the search."
-          actionLabel="Browse by mood"
+          description="Try fewer words, another author, or browse the catalog by genre."
+          actionLabel="Explore catalog"
           actionTo={routePaths.explore}
           onAction={onClearSearch}
         />
       ) : null}
       {books.length > 0 && !isError ? (
         <SearchResultsGrid books={books} onRememberScroll={onRememberScroll} />
+      ) : null}
+      {hasActiveSearch && !isLoading && !isError ? (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          hasPreviousPage={pagination.hasPrevious}
+          hasNextPage={pagination.hasNext}
+          onPageChange={onPageChange}
+          isDisabled={isPaginationDisabled}
+          ariaLabel="Search results pagination"
+        />
       ) : null}
     </section>
   );

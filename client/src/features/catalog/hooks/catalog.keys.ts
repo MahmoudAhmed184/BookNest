@@ -1,8 +1,12 @@
 import type { CatalogBookFilters } from "../services/bookService";
 
 export const catalogKeys = {
-  books: (query: string, page: number, pageSize: number) =>
-    ["books", "search", query, page, pageSize] as const,
+  books: (
+    query: string,
+    page: number,
+    pageSize: number,
+    includeExternal = false
+  ) => ["books", "search", query, page, pageSize, includeExternal] as const,
   suggestions: (query: string, limit: number) =>
     ["books", "suggestions", query, limit] as const,
   catalogBooks: (

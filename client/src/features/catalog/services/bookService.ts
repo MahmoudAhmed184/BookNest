@@ -5,6 +5,7 @@ import {
   patchData,
   postData,
   throwApiError,
+  throwApiRequestError,
 } from "../../../lib/axios";
 import axios from "axios";
 import { normalizeEmptyResponse } from "../../../lib/normalizers";
@@ -35,6 +36,7 @@ import type {
 
 export interface SearchBooksParams extends OffsetPageParams {
   query: string;
+  includeExternal?: boolean | undefined;
 }
 
 export interface CatalogBookFilters {
@@ -370,6 +372,9 @@ export async function searchBooks(input: SearchBooksInput): Promise<BookSearchRe
     page: String(search.page),
     page_size: String(search.pageSize),
   });
+  if (search.includeExternal) {
+    params.set("include_external", "true");
+  }
 
   try {
     const response = await getData<PageNumberApiResponse<Book>>(
@@ -377,7 +382,7 @@ export async function searchBooks(input: SearchBooksInput): Promise<BookSearchRe
     );
     return normalizePageNumberResponse(response, search);
   } catch (error: unknown) {
-    throwApiError(error);
+    throwApiRequestError(error);
   }
 }
 

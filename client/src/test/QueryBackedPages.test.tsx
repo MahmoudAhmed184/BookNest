@@ -166,6 +166,7 @@ function searchState(
     isLoading: false,
     isFetching: false,
     isError: false,
+    error: null,
     isPlaceholderData: false,
     hasData: books.length > 0,
     refetch,

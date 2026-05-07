@@ -1,13 +1,16 @@
 import type { FormEvent, ReactElement } from "react";
 
-import { InlineSpinner } from "../../../../components/ui";
+import { ToggleSwitch } from "../../../../components/ui";
 
 export interface SearchFormProps {
   searchInput: string;
   searchTerm: string;
+  includeExternal: boolean;
+  validationMessages: string[];
   isFetchingInitialResults: boolean;
   resultCount: number;
   onChange: (value: string) => void;
+  onIncludeExternalChange: (checked: boolean) => void;
   onClear: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
@@ -15,9 +18,12 @@ export interface SearchFormProps {
 export function SearchForm({
   searchInput,
   searchTerm,
+  includeExternal,
+  validationMessages,
   isFetchingInitialResults,
   resultCount,
   onChange,
+  onIncludeExternalChange,
   onClear,
   onSubmit,
 }: SearchFormProps): ReactElement {
@@ -62,10 +68,28 @@ export function SearchForm({
           disabled={!searchInput.trim() || isFetchingInitialResults}
           className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg"
         >
-          {isFetchingInitialResults ? <InlineSpinner /> : null}
-          Search
+          {isFetchingInitialResults ? "Searching..." : "Search"}
         </button>
       </div>
+      <ToggleSwitch
+        checked={includeExternal}
+        label="Include external results"
+        description="Search outside the local catalog when available."
+        onChange={onIncludeExternalChange}
+      />
+      {validationMessages.length > 0 ? (
+        <div
+          className="rounded-xl border border-[var(--color-error-border)] bg-[var(--color-error-surface)] p-3 text-sm text-primary-white"
+          role="alert"
+        >
+          <p className="font-semibold">Search filters need attention</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-primary-gray">
+            {validationMessages.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
         <p role="status" aria-live="polite">
           {hasActiveSearch ? `Searching for "${searchTerm.trim()}"` : "Enter at least one keyword to begin."}
