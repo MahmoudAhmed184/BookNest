@@ -1,4 +1,6 @@
 export { CollectionsShelf } from "./CollectionsShelf";
+export { DeleteBookDialog } from "./DeleteBookDialog";
+export { DeleteReviewDialog } from "./DeleteReviewDialog";
 export { ProfileBio } from "./ProfileBio";
 export { ProfileBooksSection } from "./ProfileBooksSection";
 export { ProfileHeader } from "./ProfileHeader";
@@ -7,6 +9,8 @@ export { ProfileSkeleton } from "./ProfileSkeleton";
 export { ReadingStats } from "./ReadingStats";
 export { getInitials, resolveProfileImage } from "../../utils/profileDisplay";
 export type { CollectionsShelfProps } from "./CollectionsShelf";
+export type { DeleteBookDialogProps } from "./DeleteBookDialog";
+export type { DeleteReviewDialogProps } from "./DeleteReviewDialog";
 export type { ProfileBioProps } from "./ProfileBio";
 export type { ProfileBooksSectionProps } from "./ProfileBooksSection";
 export type { ProfileHeaderProps } from "./ProfileHeader";

@@ -15,7 +15,7 @@ export interface BookShelfCarouselProps {
   primaryCollection?: ReadingList | undefined;
   canDelete: boolean;
   isDeleting: boolean;
-  onDeleteBook?: ((bookId: string | undefined, listId: number | null) => void) | undefined;
+  onDeleteBook?: ((book: Book, listId: number | null) => void) | undefined;
 }
 
 export function BookShelfCarousel({

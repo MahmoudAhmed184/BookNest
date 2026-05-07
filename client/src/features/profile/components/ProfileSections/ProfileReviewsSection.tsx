@@ -21,7 +21,7 @@ export interface ProfileReviewsSectionProps {
   canDelete?: boolean | undefined;
   isDeleting?: boolean | undefined;
   onRetry: () => void;
-  onDeleteReview?: ((reviewId: string | number) => void) | undefined;
+  onDeleteReview?: ((review: BookReview) => void) | undefined;
 }
 
 export function ProfileReviewsSection({

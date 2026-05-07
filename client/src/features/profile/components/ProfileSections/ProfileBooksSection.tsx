@@ -15,7 +15,7 @@ export interface ProfileBooksSectionProps {
   emptyDescription: string;
   canDelete?: boolean | undefined;
   isDeleting?: boolean | undefined;
-  onDeleteBook?: ((bookId: string | undefined, listId: number | null) => void) | undefined;
+  onDeleteBook?: ((book: Book, listId: number | null) => void) | undefined;
 }
 
 export function ProfileBooksSection({

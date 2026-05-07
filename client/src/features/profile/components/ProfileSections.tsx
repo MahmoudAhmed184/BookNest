@@ -1,5 +1,7 @@
 export {
   CollectionsShelf,
+  DeleteBookDialog,
+  DeleteReviewDialog,
   ProfileBio,
   ProfileBooksSection,
   ProfileHeader,

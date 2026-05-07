@@ -11,7 +11,7 @@ export interface ProfileReviewCardProps {
   rating: number;
   canDelete: boolean;
   isDeleting: boolean;
-  onDeleteReview?: ((reviewId: string | number) => void) | undefined;
+  onDeleteReview?: ((review: BookReview) => void) | undefined;
 }
 
 export function ProfileReviewCard({
@@ -40,7 +40,7 @@ export function ProfileReviewCard({
             {canDelete && onDeleteReview ? (
               <button
                 type="button"
-                onClick={() => onDeleteReview(review.review_id)}
+                onClick={() => onDeleteReview(review)}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-2 font-medium text-primary-white hover:bg-primary-black"
                 aria-label={`Delete review for ${review.book_title || "book"}`}
                 disabled={isDeleting}

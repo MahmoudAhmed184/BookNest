@@ -1,11 +1,14 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
 import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
+import type { Book, BookReview } from "../../catalog/types/book";
 import { routePaths } from "../../../routes/paths";
 import {
   CollectionsShelf,
+  DeleteBookDialog,
+  DeleteReviewDialog,
   ProfileBio,
   ProfileBooksSection,
   ProfileHeader,
@@ -16,8 +19,15 @@ import {
 import { useProfileActions } from "../hooks/useProfileActions";
 import { useProfilePageData } from "../hooks/useProfilePageData";
 
+interface PendingBookDelete {
+  book: Book;
+  listId: number | null;
+}
+
 export default function Profile(): ReactElement {
   const { token } = useOptionalAuth();
+  const [pendingBookDelete, setPendingBookDelete] = useState<PendingBookDelete | null>(null);
+  const [pendingReviewDelete, setPendingReviewDelete] = useState<BookReview | null>(null);
   const {
     user,
     reviews,
@@ -94,10 +104,8 @@ export default function Profile(): ReactElement {
         emptyDescription="Start building your shelf with books you want to read, love, or recommend."
         canDelete
         isDeleting={profileActions.isDeletingBook}
-        onDeleteBook={(bookId, listId) => {
-          if (window.confirm("Are you sure you want to delete this book from the library?")) {
-            profileActions.deleteBookFromShelf({ book_id: bookId, list_id: listId });
-          }
+        onDeleteBook={(book, listId) => {
+          setPendingBookDelete({ book, listId });
         }}
       />
       <ProfileReviewsSection
@@ -118,10 +126,33 @@ export default function Profile(): ReactElement {
           void refetchReviews();
           void refetchRatings();
         }}
-        onDeleteReview={(reviewId) => {
-          if (window.confirm("Are you sure you want to delete this review?")) {
-            profileActions.deleteProfileReview(reviewId);
-          }
+        onDeleteReview={(review) => {
+          setPendingReviewDelete(review);
+        }}
+      />
+      <DeleteBookDialog
+        book={pendingBookDelete?.book ?? null}
+        isDeleting={profileActions.isDeletingBook}
+        onCancel={() => setPendingBookDelete(null)}
+        onConfirm={() => {
+          if (!pendingBookDelete) return;
+
+          profileActions.deleteBookFromShelf({
+            book_id: pendingBookDelete.book.isbn13,
+            list_id: pendingBookDelete.listId,
+          });
+          setPendingBookDelete(null);
+        }}
+      />
+      <DeleteReviewDialog
+        review={pendingReviewDelete}
+        isDeleting={profileActions.isDeletingReview}
+        onCancel={() => setPendingReviewDelete(null)}
+        onConfirm={() => {
+          if (!pendingReviewDelete) return;
+
+          profileActions.deleteProfileReview(pendingReviewDelete.review_id);
+          setPendingReviewDelete(null);
         }}
       />
     </div>
