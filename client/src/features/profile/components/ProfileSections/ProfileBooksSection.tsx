@@ -49,7 +49,6 @@ export function ProfileBooksSection({
       ) : (
         <BookShelfCarousel
           books={books}
-          navigationClass={canDelete ? "profile-books" : "user-books"}
           primaryCollection={primaryCollection}
           canDelete={canDelete}
           isDeleting={isDeleting}

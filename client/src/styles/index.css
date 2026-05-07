@@ -446,32 +446,9 @@
 
 .swiper {
   --swiper-theme-color: var(--color-accent);
-  --swiper-navigation-color: var(--color-accent);
   --swiper-pagination-color: var(--color-accent);
   --swiper-pagination-bullet-inactive-color: var(--color-primary-gray);
   --swiper-pagination-bullet-inactive-opacity: 0.4;
-}
-
-.swiper .swiper-button-prev,
-.swiper .swiper-button-next {
-  color: var(--swiper-navigation-color);
-  z-index: 20;
-  background: color-mix(in srgb, var(--color-primary-black) 30%, transparent);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-}
-.swiper .swiper-button-prev:hover,
-.swiper .swiper-button-next:hover {
-  background: color-mix(in srgb, var(--color-primary-black) 50%, transparent);
-}
-.swiper .swiper-button-prev:after,
-.swiper .swiper-button-next:after {
-  font-size: 20px;
 }
 
 .swiper.landing-trending-swiper,

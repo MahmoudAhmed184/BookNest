@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { A11y, Autoplay, Navigation, Pagination } from "swiper/modules";
+import { A11y, Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { BookCard, EmptyState } from "../../../components/ui";
@@ -89,13 +89,9 @@ export function AuthorBooks({ books }: AuthorBooksProps): ReactElement {
         />
       ) : (
         <Swiper
-          modules={[Navigation, Pagination, A11y, Autoplay]}
+          modules={[Pagination, A11y, Autoplay]}
           spaceBetween={20}
           slidesPerView={1}
-          navigation={{
-            prevEl: ".author-books-prev",
-            nextEl: ".author-books-next",
-          }}
           pagination={{ clickable: true }}
           autoplay={{ delay: 3000, disableOnInteraction: false }}
           breakpoints={{
@@ -117,8 +113,6 @@ export function AuthorBooks({ books }: AuthorBooksProps): ReactElement {
               />
             </SwiperSlide>
           ))}
-          <div className="swiper-button-prev author-books-prev"></div>
-          <div className="swiper-button-next author-books-next"></div>
         </Swiper>
       )}
     </section>

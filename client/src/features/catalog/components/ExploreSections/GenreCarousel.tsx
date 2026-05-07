@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
-import { A11y, Autoplay, Navigation } from "swiper/modules";
+import { A11y, Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { routeBuilders } from "../../../../routes/paths";
@@ -16,10 +16,9 @@ export function GenreCarousel({ categories }: GenreCarouselProps): ReactElement 
     <section className="flex flex-col gap-5" aria-labelledby="popular-genres">
       <SectionTitle id="popular-genres">Popular Genres</SectionTitle>
       <Swiper
-        modules={[Navigation, A11y, Autoplay]}
+        modules={[A11y, Autoplay]}
         spaceBetween={16}
         slidesPerView={1}
-        navigation={{ prevEl: ".explore-genres-prev", nextEl: ".explore-genres-next" }}
         autoplay={{ delay: 3000, disableOnInteraction: false }}
         breakpoints={{
           640: { slidesPerView: 2, spaceBetween: 16 },
@@ -38,8 +37,6 @@ export function GenreCarousel({ categories }: GenreCarouselProps): ReactElement 
             </Link>
           </SwiperSlide>
         ))}
-        <div className="swiper-button-prev explore-genres-prev" />
-        <div className="swiper-button-next explore-genres-next" />
       </Swiper>
     </section>
   );

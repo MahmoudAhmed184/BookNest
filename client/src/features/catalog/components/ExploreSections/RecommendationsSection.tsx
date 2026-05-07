@@ -45,7 +45,6 @@ export function RecommendationsSection({
       {!isLoading && !isError && recommendations.length > 0 ? (
         <BookCarousel
           items={recommendations}
-          navigationClass="explore-recommendations"
           keyExtractor={(book) => book.book}
           renderBook={(book) => (
             <BookCard

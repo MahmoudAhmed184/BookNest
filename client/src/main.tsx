@@ -10,7 +10,6 @@ import "@fontsource/montserrat/600.css";
 import "@fontsource/montserrat/700.css";
 
 import "swiper/css";
-import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const rootElement = document.getElementById("root");

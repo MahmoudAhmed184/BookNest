@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { A11y, Autoplay, Navigation, Pagination } from "swiper/modules";
+import { A11y, Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { BookCard } from "../../../../components/ui";
@@ -11,7 +11,6 @@ import { DeleteBookButton } from "./DeleteBookButton";
 
 export interface BookShelfCarouselProps {
   books: Book[];
-  navigationClass: string;
   primaryCollection?: ReadingList | undefined;
   canDelete: boolean;
   isDeleting: boolean;
@@ -20,7 +19,6 @@ export interface BookShelfCarouselProps {
 
 export function BookShelfCarousel({
   books,
-  navigationClass,
   primaryCollection,
   canDelete,
   isDeleting,
@@ -28,10 +26,9 @@ export function BookShelfCarousel({
 }: BookShelfCarouselProps): ReactElement {
   return (
     <Swiper
-      modules={[Navigation, Pagination, A11y, Autoplay]}
+      modules={[Pagination, A11y, Autoplay]}
       spaceBetween={20}
       slidesPerView={1}
-      navigation={{ prevEl: `.${navigationClass}-prev`, nextEl: `.${navigationClass}-next` }}
       pagination={{ clickable: true }}
       autoplay={{ delay: 3200, disableOnInteraction: false }}
       breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
@@ -57,8 +54,6 @@ export function BookShelfCarousel({
           </div>
         </SwiperSlide>
       ))}
-      <div className={`swiper-button-prev ${navigationClass}-prev`} />
-      <div className={`swiper-button-next ${navigationClass}-next`} />
     </Swiper>
   );
 }
