@@ -9,6 +9,8 @@ export const routePaths = {
   author: "/author/:id",
   myProfile: "/profile/me",
   userProfile: "/profile/:id",
+  profileFollowers: "/profile/:id/followers",
+  profileFollowing: "/profile/:id/following",
   categories: "/categories",
   collections: "/collections",
   collection: "/collections/:id",
@@ -24,6 +26,8 @@ export type SearchRoute = `/search/${string}`;
 export type BookRoute = `/book/${string}`;
 export type AuthorRoute = `/author/${string}`;
 export type UserProfileRoute = `/profile/${string}`;
+export type ProfileFollowersRoute = `/profile/${string}/followers`;
+export type ProfileFollowingRoute = `/profile/${string}/following`;
 export type CollectionRoute = `/collections/${string}`;
 
 export interface BookRouteParams {
@@ -58,5 +62,9 @@ export const routeBuilders = {
   book: (id: RouteParam): BookRoute => `/book/${routeParam(id)}`,
   author: (id: RouteParam): AuthorRoute => `/author/${routeParam(id)}`,
   userProfile: (id: RouteParam): UserProfileRoute => `/profile/${routeParam(id)}`,
+  profileFollowers: (id: RouteParam): ProfileFollowersRoute =>
+    `/profile/${routeParam(id)}/followers`,
+  profileFollowing: (id: RouteParam): ProfileFollowingRoute =>
+    `/profile/${routeParam(id)}/following`,
   collection: (id: RouteParam): CollectionRoute => `/collections/${routeParam(id)}`,
 } as const;

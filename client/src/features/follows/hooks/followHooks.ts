@@ -47,23 +47,25 @@ export function useMyFollowing(token?: string | null) {
 
 export function useProfileFollowers(
   profileId: string | number | undefined,
-  token?: string | null
+  token?: string | null,
+  enabled = true
 ) {
   return useQuery({
     queryKey: followKeys.followers(profileId),
     queryFn: () => getProfileFollowers(profileId, token),
-    enabled: Boolean(profileId && token),
+    enabled: Boolean(profileId && token && enabled),
   });
 }
 
 export function useProfileFollowing(
   profileId: string | number | undefined,
-  token?: string | null
+  token?: string | null,
+  enabled = true
 ) {
   return useQuery({
     queryKey: followKeys.following(profileId),
     queryFn: () => getProfileFollowing(profileId, token),
-    enabled: Boolean(profileId && token),
+    enabled: Boolean(profileId && token && enabled),
   });
 }
 

@@ -22,6 +22,7 @@ const Landing = lazy(() => import("../features/home/pages/LandingPage"));
 const Notifications = lazy(() => import("../features/notifications/pages/NotificationsPage"));
 const NotFound = lazy(() => import("../features/errors/pages/NotFoundPage"));
 const UserProfile = lazy(() => import("../features/profile/pages/UserProfilePage"));
+const ProfileConnections = lazy(() => import("../features/follows/pages/ProfileConnectionsPage"));
 const fallbackSkeletonKeys = ["route-skeleton-1", "route-skeleton-2", "route-skeleton-3", "route-skeleton-4"];
 
 const routeFallback = (
@@ -85,6 +86,14 @@ export function AppRouter(): ReactElement {
             <Route
               path={routePaths.collection}
               element={withSuspense(<CollectionDetail />)}
+            />
+            <Route
+              path={routePaths.profileFollowers}
+              element={withSuspense(<ProfileConnections />)}
+            />
+            <Route
+              path={routePaths.profileFollowing}
+              element={withSuspense(<ProfileConnections />)}
             />
             <Route
               path={routePaths.notifications}

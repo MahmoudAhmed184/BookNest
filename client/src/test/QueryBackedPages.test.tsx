@@ -12,6 +12,7 @@ import Notifications from "../features/notifications/pages/NotificationsPage";
 import Profile from "../features/profile/pages/ProfilePage";
 import Settings from "../features/settings/pages/SettingsPage";
 import UserProfile from "../features/profile/pages/UserProfilePage";
+import ProfileConnections from "../features/follows/pages/ProfileConnectionsPage";
 import { useBookActions } from "../features/catalog/hooks/useBookActions";
 import { useBookPageData } from "../features/catalog/hooks/useBookPageData";
 import { useExploreCatalog } from "../features/catalog/hooks/useExploreCatalog";
@@ -26,6 +27,12 @@ import { useProfileActions } from "../features/profile/hooks/useProfileActions";
 import { useProfilePageData } from "../features/profile/hooks/useProfilePageData";
 import { useSettingsProfile } from "../features/settings/hooks/useSettingsProfile";
 import { useUserProfilePageData } from "../features/profile/hooks/useUserProfilePageData";
+import {
+  useFollowMutations,
+  useFollows,
+  useProfileFollowers,
+  useProfileFollowing,
+} from "../features/follows/hooks/followHooks";
 import { AuthContext } from "../features/auth/store/authContext";
 import type { OffsetPaginatedResponse } from "../types/api";
 
@@ -62,6 +69,12 @@ vi.mock("../features/settings/hooks/useSettingsProfile", () => ({
 }));
 vi.mock("../features/notifications/hooks/useNotifications", () => ({
   useNotifications: vi.fn(),
+}));
+vi.mock("../features/follows/hooks/followHooks", () => ({
+  useFollowMutations: vi.fn(),
+  useFollows: vi.fn(),
+  useProfileFollowers: vi.fn(),
+  useProfileFollowing: vi.fn(),
 }));
 
 function renderPage(page: ReactElement): void {
@@ -187,6 +200,20 @@ function collectionDetailState(
   return { ...state, ...overrides };
 }
 
+function followRowsState(
+  overrides: Partial<ReturnType<typeof useProfileFollowers>> = {}
+): ReturnType<typeof useProfileFollowers> {
+  const state = {
+    data: [],
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    refetch,
+  };
+
+  return { ...state, ...overrides } as ReturnType<typeof useProfileFollowers>;
+}
+
 describe("query-backed pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -225,6 +252,23 @@ describe("query-backed pages", () => {
       isDeletingReview: false,
       deleteBookFromShelf: vi.fn(),
       deleteProfileReview: vi.fn(),
+    });
+    vi.mocked(useFollows).mockReturnValue(
+      {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        isError: false,
+        refetch,
+      } as unknown as ReturnType<typeof useFollows>
+    );
+    vi.mocked(useProfileFollowers).mockReturnValue(followRowsState());
+    vi.mocked(useProfileFollowing).mockReturnValue(followRowsState());
+    vi.mocked(useFollowMutations).mockReturnValue({
+      followProfile: vi.fn(),
+      unfollowById: vi.fn(),
+      isFollowing: false,
+      isUnfollowing: false,
     });
   });
 
@@ -397,6 +441,43 @@ describe("query-backed pages", () => {
     vi.mocked(useUserProfilePageData).mockReturnValue(profileState({ user }));
     renderPage(<UserProfile />);
     expect(screen.getByText("reader")).toBeTruthy();
+  });
+
+  it("renders profile connection lists", () => {
+    vi.mocked(useProfileFollowers).mockReturnValue(
+      followRowsState({
+        data: [
+          {
+            id: 1,
+            profile: {
+              id: 2,
+              user_id: 32,
+              username: "follower",
+              bio: "Reads mysteries",
+            },
+          },
+        ],
+      })
+    );
+
+    cleanup();
+    render(
+      <AuthContext.Provider
+        value={{
+          user: true,
+          token: "token",
+          userLogin: vi.fn(),
+          logout: vi.fn(),
+        }}
+      >
+        <MemoryRouter initialEntries={["/profile/1/followers"]}>
+          <ProfileConnections />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    );
+
+    expect(screen.getByText("Followers")).toBeTruthy();
+    expect(screen.getByText("follower")).toBeTruthy();
   });
 
   it("renders Settings loading, error, and success states", () => {
