@@ -12,6 +12,7 @@ import {
   getPopularBooks,
   getRecommendedBooks,
   getReviews,
+  getSuggestions,
 } from "../services/bookService";
 import {
   addToCollection,
@@ -19,6 +20,7 @@ import {
 } from "../../collections/services/collectionService";
 import { useBookActions } from "./useBookActions";
 import { useBookPageData } from "./useBookPageData";
+import { useBookSuggestions } from "./useBookSuggestions";
 import { useExploreCatalog } from "./useExploreCatalog";
 import { useSearchBooks } from "./useSearchBooks";
 
@@ -32,6 +34,7 @@ vi.mock("../services/bookService", () => ({
   getPopularBooks: vi.fn(),
   getRecommendedBooks: vi.fn(),
   getReviews: vi.fn(),
+  getSuggestions: vi.fn(),
   searchBooks: vi.fn(),
 }));
 
@@ -77,6 +80,20 @@ describe("catalog hooks", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.books[0]?.title).toBe("Search Result");
+  });
+
+  it("loads typeahead suggestions", async () => {
+    vi.mocked(getSuggestions).mockResolvedValue([
+      { isbn13: "3", title: "Suggested Book" },
+    ]);
+
+    const { result } = renderHook(() => useBookSuggestions("suggest", 5), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(getSuggestions).toHaveBeenCalledWith("suggest", 5);
+    expect(result.current.suggestions[0]?.title).toBe("Suggested Book");
   });
 
   it("loads book page data", async () => {

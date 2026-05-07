@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 
 import { routePaths } from "../../../routes/paths";
 import { MobileAccountLinks } from "./NavbarMobileLinks";
+import { NavbarSearch } from "./NavbarSearch";
 import { mobileNavLinkClass, primaryLinks } from "./navbarUtils";
 
 export interface MobileMenuButtonProps {
@@ -64,6 +65,7 @@ export function NavbarMobileMenu({
       }`}
     >
       <div className="flex flex-col gap-4">
+        <NavbarSearch onNavigate={onCloseMenus} />
         <div className="flex flex-col gap-2">
           {primaryLinks.map((link) => (
             <NavLink

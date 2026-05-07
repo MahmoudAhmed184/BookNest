@@ -1,6 +1,8 @@
 export const catalogKeys = {
   books: (query: string, page: number, pageSize: number) =>
     ["books", "search", query, page, pageSize] as const,
+  suggestions: (query: string, limit: number) =>
+    ["books", "suggestions", query, limit] as const,
   catalogBooks: (page: number, pageSize: number) =>
     ["books", "catalog", page, pageSize] as const,
   popularBooks: (limit: number) => ["books", "popular", limit] as const,

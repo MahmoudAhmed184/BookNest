@@ -8,6 +8,7 @@ import { DesktopLinks, GuestLinks } from "./NavbarLinks";
 import { NavbarBrand } from "./NavbarBrand";
 import { MobileMenuButton, NavbarMobileMenu } from "./NavbarMobileMenu";
 import { NavbarProfileMenu } from "./NavbarProfileMenu";
+import { NavbarSearch } from "./NavbarSearch";
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = "a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -99,6 +100,7 @@ export function Navbar(): ReactElement {
           />
           <div className="hidden grow items-center gap-6 lg:flex">
             <DesktopLinks user={user} />
+            <NavbarSearch className="w-72 shrink-0" />
             <div className="flex items-center gap-3">
               {!user ? <GuestLinks /> : null}
               {user ? (

@@ -20,6 +20,7 @@ import type {
   BookRating,
   BookReview,
   BookSearchResponse,
+  BookSuggestionsResponse,
   Author,
   CatalogGenre,
   CreateRatingPayload,
@@ -134,6 +135,25 @@ export async function getBooks(query: string): Promise<BookSearchResponse> {
     );
 
     return normalizePageNumberResponse(response, { page: 1, pageSize: 50 });
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getSuggestions(
+  query: string,
+  limit = 5
+): Promise<Book[]> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+  });
+
+  try {
+    const response = await getData<BookSuggestionsResponse>(
+      `/api/v1/books/suggestions/?${params.toString()}`
+    );
+    return response.suggestions;
   } catch (error: unknown) {
     throwApiError(error);
   }

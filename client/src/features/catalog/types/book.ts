@@ -38,6 +38,12 @@ export interface Book {
 
 export type BookSearchResponse = OffsetPaginatedResponse<Book>;
 
+export interface BookSuggestionsResponse {
+  query: string;
+  suggestions: Book[];
+  count: number;
+}
+
 export type GenreSearchResponse = OffsetPaginatedResponse<CatalogGenre>;
 
 export interface BookReview {
