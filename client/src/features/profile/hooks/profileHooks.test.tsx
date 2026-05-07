@@ -6,6 +6,7 @@ import { getNotifications } from "../../notifications/services/notificationServi
 import {
   getMyProfile,
   getProfile,
+  getUserDataAggregate,
   getUserRatings,
   getUserReviews,
 } from "../services/userService";
@@ -35,6 +36,7 @@ vi.mock("../services/userService", () => ({
   deleteReview: vi.fn(),
   getMyProfile: vi.fn(),
   getProfile: vi.fn(),
+  getUserDataAggregate: vi.fn(),
   getUserRatings: vi.fn(),
   getUserReviews: vi.fn(),
   updateBio: vi.fn(),
@@ -83,6 +85,14 @@ describe("profile hooks", () => {
 
   it("loads public profile page data", async () => {
     vi.mocked(getProfile).mockResolvedValue(user);
+    vi.mocked(getUserDataAggregate).mockResolvedValue({
+      id: 31,
+      username: "reader",
+      profile: user,
+      reading_lists: [{ list_id: 2, name: "Public" }],
+      ratings: [{ rate_id: 2, rate: 4 }],
+      reviews: [{ review_id: 2, review_text: "Public" }],
+    });
     vi.mocked(getUserReviews).mockResolvedValue([{ review_id: 2, review_text: "Public" }]);
     vi.mocked(getUserRatings).mockResolvedValue([{ rate_id: 2, rate: 4 }]);
     vi.mocked(getUserCollections).mockResolvedValue([{ list_id: 2, name: "Public" }]);

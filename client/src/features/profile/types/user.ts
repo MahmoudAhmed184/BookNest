@@ -1,4 +1,5 @@
 import type { BookRating, BookReview } from "../../catalog/types/book";
+import type { ReadingList } from "../../collections/types/collection";
 
 export interface User {
   pk?: number;
@@ -53,7 +54,10 @@ export interface UpdateUserPayload {
 }
 
 export interface UpdateBioPayload {
-  bio: string;
+  bio?: string;
+  interests?: ProfileInterest[];
+  social_links?: ProfileSocialLink[];
+  profile_type?: string;
 }
 
 export interface UploadProfilePictureResponse {
@@ -63,3 +67,24 @@ export interface UploadProfilePictureResponse {
 
 export type UserReviewsResponse = BookReview[];
 export type UserRatingsResponse = BookRating[];
+
+export interface UserDataAggregate {
+  id: number;
+  username: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  profile: Profile;
+  reading_lists: ReadingList[];
+  ratings: BookRating[];
+  reviews: BookReview[];
+  total_books_rated?: number;
+  total_books_reviewed?: number;
+  total_reading_lists?: number;
+}
+
+export interface UserDataAggregateEnvelope {
+  success: boolean;
+  message?: string;
+  data: UserDataAggregate;
+}

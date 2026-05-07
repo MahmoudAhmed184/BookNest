@@ -1,11 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getUserCollections } from "../../collections/services/collectionService";
-import {
-  getProfile,
-  getUserRatings,
-  getUserReviews,
-} from "../services/userService";
+import { getUserDataAggregate } from "../services/userService";
 import type { BookRating, BookReview } from "../../catalog/types/book";
 import type { ReadingList } from "../../collections/types/collection";
 import type { UserProfile } from "../types/user";
@@ -38,44 +33,29 @@ export function useUserProfilePageData(
 ): UseUserProfilePageDataResult {
   const userQuery = useQuery({
     queryKey: profileKeys.profile(id),
-    queryFn: () => getProfile(id, token),
+    queryFn: () => getUserDataAggregate(id, token),
     enabled: !!id,
   });
-  const userId = userQuery.data?.user_id;
-  const reviewsQuery = useQuery({
-    queryKey: profileKeys.userReviews(id),
-    queryFn: () => getUserReviews(userId, token),
-    enabled: !!userId,
-  });
-  const ratingsQuery = useQuery({
-    queryKey: profileKeys.userRatings(id),
-    queryFn: () => getUserRatings(userId, token),
-    enabled: !!userId,
-  });
-  const collectionsQuery = useQuery({
-    queryKey: profileKeys.userCollections(id),
-    queryFn: () => getUserCollections(userId, token),
-    enabled: !!userId,
-  });
+  const aggregate = userQuery.data;
 
   return {
-    user: userQuery.data,
-    reviews: reviewsQuery.data,
-    ratings: ratingsQuery.data,
-    collections: collectionsQuery.data,
+    user: aggregate?.profile,
+    reviews: aggregate?.reviews,
+    ratings: aggregate?.ratings,
+    collections: aggregate?.reading_lists,
     isUserLoading: userQuery.isLoading,
     isUserFetching: userQuery.isFetching,
     isUserError: userQuery.isError,
-    isReviewsLoading: reviewsQuery.isLoading,
-    isReviewsFetching: reviewsQuery.isFetching,
-    isReviewsError: reviewsQuery.isError,
-    isRatingsError: ratingsQuery.isError,
-    isCollectionsLoading: collectionsQuery.isLoading,
-    isCollectionsFetching: collectionsQuery.isFetching,
-    isCollectionsError: collectionsQuery.isError,
+    isReviewsLoading: userQuery.isLoading,
+    isReviewsFetching: userQuery.isFetching,
+    isReviewsError: userQuery.isError,
+    isRatingsError: userQuery.isError,
+    isCollectionsLoading: userQuery.isLoading,
+    isCollectionsFetching: userQuery.isFetching,
+    isCollectionsError: userQuery.isError,
     refetchUser: () => void userQuery.refetch(),
-    refetchReviews: () => void reviewsQuery.refetch(),
-    refetchRatings: () => void ratingsQuery.refetch(),
-    refetchCollections: () => void collectionsQuery.refetch(),
+    refetchReviews: () => void userQuery.refetch(),
+    refetchRatings: () => void userQuery.refetch(),
+    refetchCollections: () => void userQuery.refetch(),
   };
 }

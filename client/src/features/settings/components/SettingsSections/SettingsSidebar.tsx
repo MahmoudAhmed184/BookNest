@@ -11,6 +11,9 @@ export interface SettingsSidebarProps {
   activeTab: SettingsTab;
   username: string;
   bio: string;
+  profileType: string;
+  interestsText: string;
+  socialLinksText: string;
   newPassword: string;
   confirmPassword: string;
   passwordError: string;
@@ -19,6 +22,9 @@ export interface SettingsSidebarProps {
   isSavingProfile: boolean;
   onUsernameChange: (value: string) => void;
   onBioChange: (value: string) => void;
+  onProfileTypeChange: (value: string) => void;
+  onInterestsTextChange: (value: string) => void;
+  onSocialLinksTextChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
   onToggleNewPassword: () => void;
@@ -32,6 +38,9 @@ export function SettingsSidebar({
   activeTab,
   username,
   bio,
+  profileType,
+  interestsText,
+  socialLinksText,
   newPassword,
   confirmPassword,
   passwordError,
@@ -40,6 +49,9 @@ export function SettingsSidebar({
   isSavingProfile,
   onUsernameChange,
   onBioChange,
+  onProfileTypeChange,
+  onInterestsTextChange,
+  onSocialLinksTextChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
   onToggleNewPassword,
@@ -54,9 +66,15 @@ export function SettingsSidebar({
         <ProfileSettingsForm
           username={username}
           bio={bio}
+          profileType={profileType}
+          interestsText={interestsText}
+          socialLinksText={socialLinksText}
           isSavingProfile={isSavingProfile}
           onUsernameChange={onUsernameChange}
           onBioChange={onBioChange}
+          onProfileTypeChange={onProfileTypeChange}
+          onInterestsTextChange={onInterestsTextChange}
+          onSocialLinksTextChange={onSocialLinksTextChange}
           onUpdateInfo={onUpdateInfo}
         />
       ) : null}

@@ -58,9 +58,18 @@ export function useSettingsProfile(token?: string | null): UseSettingsProfileRes
     isUploadingPicture: uploadPictureMutation.isPending,
     refetch: () => void profileQuery.refetch(),
     updateProfile: async (payload) => {
+      const userPayload: UpdateUserPayload = {};
+      const profilePayload: UpdateBioPayload = {};
+
+      if (payload.username !== undefined) userPayload.username = payload.username;
+      if (payload.bio !== undefined) profilePayload.bio = payload.bio;
+      if (payload.interests !== undefined) profilePayload.interests = payload.interests;
+      if (payload.social_links !== undefined) profilePayload.social_links = payload.social_links;
+      if (payload.profile_type !== undefined) profilePayload.profile_type = payload.profile_type;
+
       await Promise.all([
-        updateMutation.mutateAsync(payload),
-        updateBioMutation.mutateAsync({ bio: payload.bio }),
+        updateMutation.mutateAsync(userPayload),
+        updateBioMutation.mutateAsync(profilePayload),
       ]);
       toast.success("Profile updated.");
       queryClient.invalidateQueries({ queryKey: profileKeys.me() });

@@ -40,6 +40,9 @@ export default function Settings(): ReactElement {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [profileType, setProfileType] = useState("reader");
+  const [interestsText, setInterestsText] = useState("");
+  const [socialLinksText, setSocialLinksText] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -51,6 +54,13 @@ export default function Settings(): ReactElement {
     if (user) {
       setUsername(user.username || "");
       setBio(user.bio || "");
+      setProfileType(user.profile_type || "reader");
+      setInterestsText((user.interests ?? []).map((item) => item.interest).join(", "));
+      setSocialLinksText(
+        (user.social_links ?? [])
+          .map((item) => `${item.platform},${item.url}`)
+          .join("\n")
+      );
     }
   }, [user]);
 
@@ -59,7 +69,13 @@ export default function Settings(): ReactElement {
     if (!username.trim()) return;
 
     try {
-      await updateProfile({ username, bio });
+      await updateProfile({
+        username,
+        bio,
+        profile_type: profileType,
+        interests: parseInterests(interestsText),
+        social_links: parseSocialLinks(socialLinksText),
+      });
     } catch {
       toast.error("Couldn't update profile. Try again.");
     }
@@ -143,6 +159,9 @@ export default function Settings(): ReactElement {
               activeTab={activeTab}
               username={username}
               bio={bio}
+              profileType={profileType}
+              interestsText={interestsText}
+              socialLinksText={socialLinksText}
               newPassword={newPassword}
               confirmPassword={confirmPassword}
               passwordError={passwordError}
@@ -151,6 +170,9 @@ export default function Settings(): ReactElement {
               isSavingProfile={isSavingProfile}
               onUsernameChange={setUsername}
               onBioChange={setBio}
+              onProfileTypeChange={setProfileType}
+              onInterestsTextChange={setInterestsText}
+              onSocialLinksTextChange={setSocialLinksText}
               onNewPasswordChange={setNewPassword}
               onConfirmPasswordChange={setConfirmPassword}
               onToggleNewPassword={() => setShowNewPassword((current) => !current)}
@@ -163,4 +185,27 @@ export default function Settings(): ReactElement {
       </div>
     </div>
   );
+}
+
+function parseInterests(value: string): { interest: string }[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((interest) => ({ interest }));
+}
+
+function parseSocialLinks(value: string): { platform: string; url: string }[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [platform = "", ...urlParts] = line.split(",");
+      return {
+        platform: platform.trim(),
+        url: urlParts.join(",").trim(),
+      };
+    })
+    .filter((item) => item.platform && item.url);
 }

@@ -15,6 +15,8 @@ import type {
   UpdateUserPayload,
   UploadProfilePictureResponse,
   User,
+  UserDataAggregate,
+  UserDataAggregateEnvelope,
   UserProfile,
   UserRatingsResponse,
   UserReviewsResponse,
@@ -65,6 +67,23 @@ export async function getUserProfile(
       }
     );
     return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getUserDataAggregate(
+  id: number | string | undefined,
+  token?: string | null
+): Promise<UserDataAggregate> {
+  try {
+    const response = await getData<UserDataAggregateEnvelope>(
+      `/api/v1/users/${id}/data/`,
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response.data;
   } catch (error: unknown) {
     throwApiError(error);
   }
