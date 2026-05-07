@@ -6,6 +6,7 @@ import {
 } from "../../../lib/axios";
 import type {
   AddToCollectionPayload,
+  AddToCollectionResponse,
   CreateCollectionPayload,
   ReadingList,
 } from "../types/collection";
@@ -47,9 +48,9 @@ export async function createCollection(
 export async function addToCollection(
   data: AddToCollectionPayload,
   token?: string | null
-): Promise<ReadingList> {
+): Promise<AddToCollectionResponse> {
   try {
-    const response = await postData<ReadingList, Record<string, never>>(
+    const response = await postData<AddToCollectionResponse, Record<string, never>>(
       `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
       {},
       {

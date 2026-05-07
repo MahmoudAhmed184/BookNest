@@ -1,4 +1,4 @@
-import type { UserProfile } from "../../profile/types/user";
+import type { AuthEnvelopeMeta } from "../../../lib/normalizers";
 
 export interface LoginPayload {
   email: string;
@@ -12,10 +12,20 @@ export interface RegisterPayload {
   password2: string;
 }
 
+export interface AuthenticatedUser {
+  id: number;
+  username: string;
+  email: string;
+  has_profile?: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+}
+
 export interface AuthTokens {
   access: string;
-  refresh?: string;
-  user?: UserProfile;
+  refresh: string;
+  user: AuthenticatedUser;
+  meta?: AuthEnvelopeMeta;
 }
 
 export interface EmailResetPayload {

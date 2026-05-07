@@ -156,7 +156,7 @@ describe("catalog hooks", () => {
   });
 
   it("uses separate reading lists for library and completed actions", async () => {
-    vi.mocked(addToCollection).mockResolvedValue({ list_id: 1, name: "Shelf" });
+    vi.mocked(addToCollection).mockResolvedValue({ message: "Book added." });
 
     const { result } = renderHook(
       () =>

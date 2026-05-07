@@ -6,12 +6,15 @@ import {
   postData,
   throwApiError,
 } from "../../../lib/axios";
-import type { ApiDetailResponse } from "../../../types/api";
+import { normalizeProfileEnvelope, type ProfileEnvelope } from "../../../lib/normalizers";
+import type { ApiDetailResponse, ApiEnvelope } from "../../../types/api";
 import type {
+  Profile,
   ProfileResponseEnvelope,
   UpdateBioPayload,
   UpdateUserPayload,
   UploadProfilePictureResponse,
+  User,
   UserProfile,
   UserRatingsResponse,
   UserReviewsResponse,
@@ -70,9 +73,9 @@ export async function getUserProfile(
 export async function updateUser(
   token: string | null | undefined,
   data: UpdateUserPayload
-): Promise<UserProfile> {
+): Promise<User> {
   try {
-    const response = await patchData<UserProfile, UpdateUserPayload>(
+    const response = await patchData<User, UpdateUserPayload>(
       "/api/v1/users/me/",
       data,
       {
@@ -88,16 +91,17 @@ export async function updateUser(
 export async function updateBio(
   data: UpdateBioPayload,
   token?: string | null
-): Promise<UserProfile> {
+): Promise<Profile> {
   try {
-    const response = await patchData<UserProfile, UpdateBioPayload>(
+    const response = await patchData<ProfileEnvelope<Profile>, UpdateBioPayload>(
       "/api/v1/profiles/me/",
       data,
       {
         headers: authHeaders(token),
       }
     );
-    return response;
+
+    return normalizeProfileEnvelope(response).profile;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -111,14 +115,14 @@ export async function uploadProfilePicture(
   formData.append("profile_pic", file);
 
   try {
-    const response = await postData<UploadProfilePictureResponse, FormData>(
+    const response = await postData<ApiEnvelope<UploadProfilePictureResponse>, FormData>(
       "/api/v1/profiles/me/picture/",
       formData,
       {
         headers: authHeaders(tokenOverride),
       }
     );
-    return response;
+    return response.data;
   } catch (error: unknown) {
     throwApiError(error);
   }

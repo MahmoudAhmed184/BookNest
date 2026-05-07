@@ -5,7 +5,7 @@ import {
   postData,
   throwApiError,
 } from "../../../lib/axios";
-import type { ApiDetailResponse } from "../../../types/api";
+import { normalizeEmptyResponse } from "../../../lib/normalizers";
 import type {
   Book,
   BookRating,
@@ -183,20 +183,20 @@ export async function createRating(
 export async function deleteBook(
   data: DeleteBookPayload,
   token?: string | null
-): Promise<ApiDetailResponse> {
+): Promise<void> {
   if (!token) {
     throw new Error("Authentication token is missing");
   }
 
   try {
-    const response = await deleteData<ApiDetailResponse, DeleteBookPayload>(
+    await deleteData<void, DeleteBookPayload>(
       `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
       {
         headers: authHeaders(token),
         data,
       }
     );
-    return response;
+    return normalizeEmptyResponse();
   } catch (error: unknown) {
     throwApiError(error);
   }

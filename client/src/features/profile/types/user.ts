@@ -1,5 +1,17 @@
 import type { BookRating, BookReview } from "../../catalog/types/book";
 
+export interface User {
+  pk?: number;
+  id?: number;
+  username: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+  has_profile?: boolean;
+}
+
 export interface ProfileInterest {
   interest: string;
 }
@@ -9,7 +21,7 @@ export interface ProfileSocialLink {
   url: string;
 }
 
-export interface UserProfile {
+export interface Profile {
   id: number;
   user_id: number;
   username: string;
@@ -27,9 +39,11 @@ export interface UserProfile {
   is_complete?: boolean;
 }
 
+export type UserProfile = Profile;
+
 export interface ProfileResponseEnvelope {
   data: {
-    profile: UserProfile;
+    profile: Profile;
   };
 }
 
@@ -43,8 +57,8 @@ export interface UpdateBioPayload {
 }
 
 export interface UploadProfilePictureResponse {
-  profile_pic?: string | null;
-  detail?: string;
+  profile_pic_url: string;
+  cloudinary_public_id: string;
 }
 
 export type UserReviewsResponse = BookReview[];

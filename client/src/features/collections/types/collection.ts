@@ -22,3 +22,7 @@ export interface AddToCollectionPayload {
   book_id: string | undefined;
   list_id: number | null;
 }
+
+export interface AddToCollectionResponse {
+  message: string;
+}
