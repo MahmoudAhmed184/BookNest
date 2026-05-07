@@ -27,6 +27,9 @@ export const catalogKeys = {
   authors: (page: number, pageSize: number, query: string) =>
     ["authors", "page", page, pageSize, query] as const,
   recommendations: () => ["recommendations"] as const,
+  recommendationModels: () => ["recommendation-models"] as const,
+  recommendationModel: (id: string | number) =>
+    ["recommendation-models", id] as const,
   book: (id: string | undefined) => ["book", id] as const,
   relatedBooks: (id: string | undefined) => ["book", id, "related"] as const,
   author: (id: string | undefined) => ["author", id] as const,

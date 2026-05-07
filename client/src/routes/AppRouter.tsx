@@ -20,6 +20,7 @@ const Feed = lazy(() => import("../features/catalog/pages/FeedPage"));
 const Settings = lazy(() => import("../features/settings/pages/SettingsPage"));
 const Book = lazy(() => import("../features/catalog/pages/BookPage"));
 const AdminBooks = lazy(() => import("../features/catalog/pages/AdminBooksPage"));
+const AdminRecommendations = lazy(() => import("../features/catalog/pages/AdminRecommendationsPage"));
 const Collections = lazy(() => import("../features/collections/pages/CollectionsPage"));
 const CollectionDetail = lazy(() => import("../features/collections/pages/CollectionDetailPage"));
 const Landing = lazy(() => import("../features/home/pages/LandingPage"));
@@ -112,6 +113,10 @@ export function AppRouter(): ReactElement {
               <Route
                 path={routePaths.adminBooks}
                 element={withSuspense(<AdminBooks />)}
+              />
+              <Route
+                path={routePaths.adminRecommendations}
+                element={withSuspense(<AdminRecommendations />)}
               />
             </Route>
           </Route>

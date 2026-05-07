@@ -100,6 +100,18 @@ export type RecommendationRefreshResponse =
   | RecommendedBook[]
   | AsyncRecommendationRefreshResponse;
 
+export interface RecommendationModel {
+  id: number;
+  model_type: string;
+  created_at?: string;
+  is_active?: boolean;
+  min_ratings_per_user?: number;
+  n_factors?: number;
+  knn_k?: number;
+  rmse?: number | null;
+  mae?: number | null;
+}
+
 export interface FeedActivity {
   id: string;
   username: string;

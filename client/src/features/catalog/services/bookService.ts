@@ -33,6 +33,7 @@ import type {
   GenreSearchResponse,
   RecommendationRefreshOptions,
   RecommendationRefreshResponse,
+  RecommendationModel,
   RecommendedBook,
   ReviewSortParams,
 } from "../types/book";
@@ -624,6 +625,39 @@ export async function refreshRecommendations(
     >("/api/v1/recommendation-refreshes/", options, {
       headers: authHeaders(token),
     });
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function listRecommendationModels(
+  token?: string | null
+): Promise<RecommendationModel[]> {
+  try {
+    const response = await getData<RecommendationModel[]>(
+      "/api/v1/recommendation-models/",
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getRecommendationModel(
+  id: string | number,
+  token?: string | null
+): Promise<RecommendationModel> {
+  try {
+    const response = await getData<RecommendationModel>(
+      `/api/v1/recommendation-models/${id}/`,
+      {
+        headers: authHeaders(token),
+      }
+    );
     return response;
   } catch (error: unknown) {
     throwApiError(error);

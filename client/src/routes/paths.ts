@@ -21,6 +21,7 @@ export const routePaths = {
   book: "/book/:id",
   notifications: "/notifications",
   adminBooks: "/admin/books",
+  adminRecommendations: "/admin/recommendations",
   notFound: "*",
 } as const;
 
