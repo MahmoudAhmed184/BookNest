@@ -1,6 +1,12 @@
-import { authHeaders, postData, throwApiError } from "../../../lib/axios";
+import {
+  authHeaders,
+  deleteData,
+  postData,
+  throwApiError,
+} from "../../../lib/axios";
 import {
   normalizeAuthEnvelope,
+  normalizeEmptyResponse,
   normalizeProfileEnvelope,
   type AuthEnvelope,
   type ProfileEnvelope,
@@ -12,6 +18,10 @@ import type {
   LoginPayload,
   RegisterPayload,
 } from "../types/auth";
+
+interface LogoutPayload {
+  refresh?: string;
+}
 
 export async function createProfile(token?: string | null): Promise<Profile> {
   try {
@@ -54,6 +64,21 @@ export async function register(
     );
 
     return normalizeAuthEnvelope(response);
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function logoutCurrentSession(
+  refreshToken?: string | null
+): Promise<void> {
+  const data: LogoutPayload = refreshToken ? { refresh: refreshToken } : {};
+
+  try {
+    await deleteData<void, LogoutPayload>("/api/v1/auth/sessions/current/", {
+      data,
+    });
+    return normalizeEmptyResponse();
   } catch (error: unknown) {
     throwApiError(error);
   }

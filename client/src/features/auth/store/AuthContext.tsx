@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
   type ReactElement,
@@ -14,6 +15,7 @@ import {
   verifyAccessToken,
 } from "../../../lib/axios";
 import { routePaths } from "../../../routes/paths";
+import { logoutCurrentSession } from "../services/authService";
 import type { AuthenticatedUser } from "../types/auth";
 import { AuthContext } from "./authContext";
 
@@ -34,6 +36,14 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   );
   const [authUser, setAuthUser] = useState<AuthenticatedUser | null>(null);
   const [user, setUser] = useState<boolean>(Boolean(getStoredAccessToken()));
+
+  const clearLocalSession = useCallback((): void => {
+    setUser(false);
+    setToken(null);
+    setRefreshToken(null);
+    setAuthUser(null);
+    clearStoredAuthTokens();
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -57,11 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         if (!storedRefreshToken) {
           if (!isActive) return;
 
-          setUser(false);
-          setToken(null);
-          setRefreshToken(null);
-          setAuthUser(null);
-          clearStoredAuthTokens();
+          clearLocalSession();
           redirectToLogin();
           return;
         }
@@ -76,11 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         } catch {
           if (!isActive) return;
 
-          setUser(false);
-          setToken(null);
-          setRefreshToken(null);
-          setAuthUser(null);
-          clearStoredAuthTokens();
+          clearLocalSession();
           redirectToLogin();
         }
       }
@@ -91,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [clearLocalSession]);
 
   const userLogin = (
     userData: AuthenticatedUser | null,
@@ -106,11 +108,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   };
 
   const logout = (): void => {
-    setUser(false);
-    setToken(null);
-    setRefreshToken(null);
-    setAuthUser(null);
-    clearStoredAuthTokens();
+    const tokenToRevoke = refreshToken ?? getStoredRefreshToken();
+
+    void logoutCurrentSession(tokenToRevoke)
+      .catch(() => undefined)
+      .finally(clearLocalSession);
   };
 
   return (
