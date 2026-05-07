@@ -72,15 +72,6 @@
   --color-success-surface: rgba(22, 101, 52, 0.2);
   --color-accent-contrast: #fff8e8;
 
-  --mood-adventurous: #f4b860;
-  --mood-emotional: #ef9a9a;
-  --mood-dark: #9aa0a6;
-  --mood-funny: #f2d16b;
-  --mood-hopeful: #84d4a4;
-  --pace-fast: #7dd3fc;
-  --pace-medium: #cfc8b8;
-  --pace-slow: #c4b5fd;
-
   --transition-lift:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.2s ease;
@@ -167,6 +158,22 @@
   }
 }
 
+@utility catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-items: stretch;
+  gap: 1rem;
+
+  @media (width >= 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+
+  @media (width >= 1280px) {
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
 @utility fallback-gradient {
   background:
     radial-gradient(
@@ -190,16 +197,12 @@
     ),
     radial-gradient(
       circle at 78% 70%,
-      color-mix(in srgb, var(--mood-hopeful) 12%, transparent),
+      color-mix(in srgb, var(--color-primary-gray) 12%, transparent),
       transparent 30%
     ),
     var(--background-image-primary-black-vertical);
   background-size: 120% 120%;
   animation: gradientDrift 18s ease-in-out infinite alternate;
-}
-
-@utility mood-dot {
-  background-color: var(--mood-color, var(--color-accent));
 }
 
 @utility unread-surface {

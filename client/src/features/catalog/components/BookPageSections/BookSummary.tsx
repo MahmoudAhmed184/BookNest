@@ -1,9 +1,8 @@
 import type { ReactElement } from "react";
 
-import { MoodBadge, StarRating } from "../../../../components/ui";
-import { moodColorTokens } from "../../constants/moodColors";
+import { StarRating } from "../../../../components/ui";
 import type { Book } from "../../types/book";
-import { getBookGenres, getBookMoodTags, getBookPace } from "../../utils/bookFacets";
+import { getBookGenres } from "../../utils/bookFacets";
 
 export interface BookSummaryProps {
   book: Book;
@@ -16,13 +15,7 @@ function normalizeRating(value?: number | string | null): number {
   return 0;
 }
 
-function labelize(value: string): string {
-  return value.slice(0, 1).toUpperCase() + value.slice(1);
-}
-
 export function BookSummary({ book, authors }: BookSummaryProps): ReactElement {
-  const moods = getBookMoodTags(book);
-  const pace = getBookPace(book);
   const genres = getBookGenres(book);
   const averageRating = normalizeRating(book.average_rate);
 
@@ -44,12 +37,6 @@ export function BookSummary({ book, authors }: BookSummaryProps): ReactElement {
         <span className="text-sm text-primary-gray">
           {book.number_of_ratings || 0} ratings
         </span>
-      </div>
-      <div className="flex flex-wrap gap-2" aria-label="Mood and pace tags">
-        <MoodBadge label={`${labelize(pace)} pace`} colorToken={moodColorTokens[pace]} />
-        {moods.map((mood) => (
-          <MoodBadge key={mood} label={labelize(mood)} colorToken={moodColorTokens[mood]} />
-        ))}
       </div>
       {genres.length ? (
         <div className="flex flex-wrap gap-2" aria-label="Book genres">

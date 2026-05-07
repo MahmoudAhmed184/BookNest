@@ -30,12 +30,18 @@ function normalizeRating(rating?: number | string | null): number | null {
 
 function badgeClass(variant: BookCardVariant): string {
   const base =
-    "absolute left-3 top-3 z-20 rounded-full px-3 py-1 text-xs font-bold uppercase text-primary-black shadow-md";
+    "absolute left-2 top-2 z-20 rounded-full px-2.5 py-1 text-xs font-bold uppercase text-primary-black shadow-md";
 
   if (variant === "new") return `${base} animate-soft-pulse bg-accent`;
-  if (variant === "trending") return `${base} bg-[var(--mood-hopeful)]`;
+  if (variant === "trending") return `${base} bg-primary-white`;
 
-  return `${base} bg-[var(--mood-adventurous)]`;
+  return `${base} bg-accent`;
+}
+
+function badgeLabel(variant: BookCardVariant): string {
+  if (variant === "new") return "New";
+  if (variant === "trending") return "Trending";
+  return "Featured";
 }
 
 interface CoverFallbackProps {
@@ -74,7 +80,7 @@ export function BookCard({
   const normalizedRating = normalizeRating(rating);
   const authorLabel = author ? ` by ${author}` : "";
   const ariaLabel = `${title}${authorLabel}`;
-  const coverWidthClass = variant === "featured" ? "max-w-[260px]" : "max-w-[210px]";
+  const coverWidthClass = variant === "featured" ? "max-w-[240px]" : "max-w-[180px]";
 
   if (!title.trim()) return null;
 
@@ -82,53 +88,41 @@ export function BookCard({
     <article
       role="article"
       aria-label={ariaLabel}
-      className={`glass-card card-lift group relative h-full overflow-hidden ${className}`}
+      className={`glass-card card-lift group h-full overflow-hidden ${className}`}
     >
       <Link
         to={to}
         onClick={onClick}
-        className="block h-full rounded-xl focus-visible:outline-accent"
+        className="flex h-full rounded-xl p-3 focus-visible:outline-accent sm:p-4"
         aria-label={ariaLabel}
         {...linkProps}
       >
-        <figure className="relative flex h-full min-h-[360px] flex-col items-center justify-center gap-4 overflow-hidden p-4 sm:gap-5 sm:p-6">
-          <div className="absolute inset-0 bg-secondary-black/80" aria-hidden="true" />
-          {variant ? (
-            <span className={badgeClass(variant)}>{variant}</span>
-          ) : null}
-          {canShowImage ? (
-            <img
-              src={cover ?? undefined}
-              className={`absolute inset-0 h-full w-full object-cover opacity-0 blur-[80px] transition-opacity duration-300 ease-out group-hover:opacity-50 ${
-                isCoverLoaded ? "opacity-30" : ""
-              }`}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-            />
-          ) : null}
-          <div
-            className={`relative z-10 w-full ${coverWidthClass} overflow-hidden rounded-xl bg-primary-black shadow-xl`}
-          >
-            {canShowImage ? (
-              <img
-                src={cover ?? undefined}
-                alt={`Cover of ${title}`}
-                className={`aspect-[2/3] h-auto w-full object-cover opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.03] ${
-                  isCoverLoaded ? "animate-cover-fade opacity-100" : ""
-                }`}
-                width="220"
-                height="330"
-                loading="lazy"
-                decoding="async"
-                onLoad={() => setIsCoverLoaded(true)}
-                onError={() => setHasImageError(true)}
-              />
-            ) : (
-              <CoverFallback title={title} />
-            )}
+        <figure className="flex h-full w-full flex-col gap-3">
+          <div className={`relative mx-auto w-full ${coverWidthClass}`}>
+            {variant ? (
+              <span className={badgeClass(variant)}>{badgeLabel(variant)}</span>
+            ) : null}
+            <div className="overflow-hidden rounded-lg bg-primary-black shadow-xl">
+              {canShowImage ? (
+                <img
+                  src={cover ?? undefined}
+                  alt={`Cover of ${title}`}
+                  className={`aspect-[2/3] h-auto w-full object-cover opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.03] ${
+                    isCoverLoaded ? "animate-cover-fade opacity-100" : ""
+                  }`}
+                  width="220"
+                  height="330"
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={() => setIsCoverLoaded(true)}
+                  onError={() => setHasImageError(true)}
+                />
+              ) : (
+                <CoverFallback title={title} />
+              )}
+            </div>
           </div>
-          <figcaption className="absolute inset-x-3 bottom-3 z-20 translate-y-[calc(100%-3.25rem)] rounded-lg border border-[var(--surface-glass-border)] bg-primary-black/80 px-4 py-3 text-left shadow-lg backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0">
+          <figcaption className="flex min-h-[76px] flex-col text-left">
             <h3 className="book-title line-clamp-2 text-base" title={title}>
               {title}
             </h3>

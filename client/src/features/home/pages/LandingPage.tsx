@@ -9,7 +9,7 @@ import { useLandingCatalog } from "../../catalog/hooks/useLandingCatalog";
 import { getAuthorNames } from "../../catalog/utils/bookFacets";
 
 const valueCards = [
-  { id: "mood", title: "Mood-led discovery", copy: "Browse by tone, pace, and the feeling you want your next read to leave behind." },
+  { id: "genres", title: "Guided discovery", copy: "Browse by genre, author, and community signals without losing the full catalog context." },
   { id: "shelf", title: "Living collections", copy: "Shape reading lists that feel like shelves, projects, and recommendations in one place." },
   { id: "social", title: "Reader signals", copy: "Use ratings and thoughtful reviews to find books with real community texture." },
 ] as const;
@@ -27,7 +27,7 @@ export default function Landing(): ReactElement | null {
         aria-labelledby="landing-title"
       >
         <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,color-mix(in_srgb,var(--color-accent)_20%,transparent),transparent_28%),radial-gradient(circle_at_80%_70%,color-mix(in_srgb,var(--mood-hopeful)_14%,transparent),transparent_32%)]"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,color-mix(in_srgb,var(--color-accent)_20%,transparent),transparent_28%),radial-gradient(circle_at_80%_70%,color-mix(in_srgb,var(--color-primary-gray)_14%,transparent),transparent_32%)]"
           aria-hidden="true"
         />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
@@ -37,8 +37,8 @@ export default function Landing(): ReactElement | null {
                 Discover Your Next Favorite Book
               </h1>
               <p className="max-w-2xl text-base leading-relaxed text-primary-gray md:text-lg">
-                Track what you read, follow the feeling of each story, and
-                uncover shelves that match your taste.
+                Track what you read, explore the catalog by genre, and uncover
+                shelves that match your taste.
               </p>
             </div>
             <div className="animate-fade-up flex flex-wrap gap-3" style={{ animationDelay: "100ms" }}>

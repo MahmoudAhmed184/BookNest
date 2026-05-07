@@ -1,14 +1,10 @@
-import type { CSSProperties, ReactElement } from "react";
-
-interface MoodDotStyle extends CSSProperties {
-  "--mood-color": string;
-}
+import type { ReactElement } from "react";
 
 export interface FilterOptionProps {
   id: string;
   label: string;
   checked: boolean;
-  colorToken?: string | undefined;
+  count?: number | undefined;
   onToggle: () => void;
 }
 
@@ -16,19 +12,15 @@ export function FilterOption({
   id,
   label,
   checked,
-  colorToken,
+  count,
   onToggle,
 }: FilterOptionProps): ReactElement {
-  const dotStyle: MoodDotStyle | undefined = colorToken
-    ? { "--mood-color": colorToken }
-    : undefined;
-
   return (
     <label
       htmlFor={id}
-      className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 ease-out ${
+      className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ease-out ${
         checked
-          ? "bg-primary-black text-primary-white"
+          ? "bg-primary-black text-primary-white ring-1 ring-accent/70"
           : "text-primary-gray hover:bg-primary-black/70 hover:text-primary-white"
       }`}
     >
@@ -47,14 +39,12 @@ export function FilterOption({
       >
         {checked ? "✓" : null}
       </span>
-      {colorToken ? (
-        <span
-          className="mood-dot h-2.5 w-2.5 rounded-full"
-          style={dotStyle}
-          aria-hidden="true"
-        />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {typeof count === "number" ? (
+        <span className="min-w-8 rounded-full bg-secondary-black px-2 py-0.5 text-center text-xs font-semibold text-primary-gray">
+          {count}
+        </span>
       ) : null}
-      <span>{label}</span>
     </label>
   );
 }

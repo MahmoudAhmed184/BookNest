@@ -109,7 +109,7 @@ src/
 |       |-- ErrorState/
 |       |-- FieldError/
 |       |-- InlineSpinner/
-|       |-- MoodBadge/
+|       |-- Pagination/
 |       |-- StarRating/
 |       |-- ToggleSwitch/
 |       `-- index.ts
@@ -228,7 +228,7 @@ Shared UI primitives:
 - `ErrorState`: reusable inline error state with retry support.
 - `FieldError`: accessible inline form error with warning icon.
 - `InlineSpinner`: small submit/progress indicator for buttons.
-- `MoodBadge`: compact genre/mood badge with deterministic color support.
+- `Pagination`: accessible page navigation with responsive compact and expanded layouts.
 - `StarRating`: reusable rating display/control for book and review flows.
 - `ToggleSwitch`: accessible binary setting control.
 - `ErrorBoundary`: graceful runtime fallback wrapper used by `Layout`.

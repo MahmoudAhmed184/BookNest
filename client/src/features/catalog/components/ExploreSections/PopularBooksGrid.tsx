@@ -14,16 +14,14 @@ export function PopularBooksGrid({ books }: PopularBooksGridProps): ReactElement
   return (
     <section className="flex flex-col gap-5" aria-labelledby="popular-books">
       <SectionTitle id="popular-books">Popular Books</SectionTitle>
-      <div className="bento-grid">
-        {books.map((book, position) => (
+      <div className="catalog-grid">
+        {books.map((book) => (
           <BookCard
             key={book.isbn13}
             to={routeBuilders.book(book.isbn13)}
             title={book.title}
             author={getAuthorNames(book)}
             coverSrc={book.cover_img}
-            variant={position === 0 ? "featured" : "trending"}
-            className={position === 0 ? "md:col-span-2 md:row-span-2" : ""}
           />
         ))}
       </div>
