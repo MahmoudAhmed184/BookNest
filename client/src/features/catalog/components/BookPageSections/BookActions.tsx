@@ -28,7 +28,7 @@ export function BookActions({
         className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-primary-white shadow-md hover:-translate-y-0.5 hover:shadow-lg"
       >
         {isAddPending ? <InlineSpinner /> : null}
-        Add to Library
+        Add to List
       </button>
       <button
         type="button"

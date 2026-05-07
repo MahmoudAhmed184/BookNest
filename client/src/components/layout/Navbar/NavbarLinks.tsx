@@ -21,12 +21,20 @@ export function DesktopLinks({ user }: DesktopLinksProps): ReactElement {
         </NavLink>
       ))}
       {user ? (
-        <NavLink
-          to={routePaths.myProfile}
-          className={({ isActive }) => navLinkClass(isActive)}
-        >
-          Profile
-        </NavLink>
+        <>
+          <NavLink
+            to={routePaths.collections}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            Collections
+          </NavLink>
+          <NavLink
+            to={routePaths.myProfile}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            Profile
+          </NavLink>
+        </>
       ) : null}
     </div>
   );

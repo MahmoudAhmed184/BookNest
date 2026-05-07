@@ -11,7 +11,6 @@ import { profileKeys } from "../../profile/hooks/profile.keys";
 
 interface UseBookActionsOptions {
   id: string | undefined;
-  libraryListId: number | null;
   completedListId: number | null;
   rating: number;
   reviewText: string;
@@ -23,7 +22,7 @@ interface UseBookActionsResult {
   isAddingBook: boolean;
   isMarkingAsRead: boolean;
   isSubmittingReview: boolean;
-  addBook: () => void;
+  addBookToList: (listId: number) => void;
   markAsRead: () => void;
   submitRating: () => void;
   submitReview: () => void;
@@ -31,7 +30,6 @@ interface UseBookActionsResult {
 
 export function useBookActions({
   id,
-  libraryListId,
   completedListId,
   rating,
   reviewText,
@@ -42,7 +40,8 @@ export function useBookActions({
   const ratingPayload = () => ({ book: id, rate: rating });
 
   const addBookMutation = useMutation({
-    mutationFn: () => addToCollection({ book_id: id, list_id: libraryListId }, token),
+    mutationFn: (listId: number) =>
+      addToCollection({ book_id: id, list_id: listId }, token),
     onSuccess: () => {
       toast.success("Added to your shelf!");
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
@@ -95,7 +94,7 @@ export function useBookActions({
     isAddingBook: addBookMutation.isPending,
     isMarkingAsRead: markAsReadMutation.isPending,
     isSubmittingReview: reviewMutation.isPending || ratingMutation.isPending,
-    addBook: () => addBookMutation.mutate(),
+    addBookToList: (listId) => addBookMutation.mutate(listId),
     markAsRead: () => markAsReadMutation.mutate(),
     submitRating: () => ratingMutation.mutate(),
     submitReview: () => reviewMutation.mutate(),

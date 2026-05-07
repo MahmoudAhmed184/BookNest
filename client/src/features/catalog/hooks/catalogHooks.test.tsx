@@ -101,7 +101,6 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "1",
-          libraryListId: 1,
           completedListId: 3,
           rating: 5,
           reviewText: "Great",
@@ -110,7 +109,7 @@ describe("catalog hooks", () => {
       { wrapper: createQueryWrapper() }
     );
 
-    expect(typeof result.current.addBook).toBe("function");
+    expect(typeof result.current.addBookToList).toBe("function");
     expect(typeof result.current.markAsRead).toBe("function");
     expect(typeof result.current.submitRating).toBe("function");
     expect(typeof result.current.submitReview).toBe("function");
@@ -128,7 +127,6 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "9780000000001",
-          libraryListId: 1,
           completedListId: 3,
           rating: 5,
           reviewText: "Great",
@@ -162,7 +160,6 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "9780000000001",
-          libraryListId: 1,
           completedListId: 3,
           rating: 5,
           reviewText: "",
@@ -173,7 +170,7 @@ describe("catalog hooks", () => {
     );
 
     act(() => {
-      result.current.addBook();
+      result.current.addBookToList(1);
       result.current.markAsRead();
     });
 
@@ -196,7 +193,6 @@ describe("catalog hooks", () => {
       () =>
         useBookActions({
           id: "9780000000001",
-          libraryListId: 1,
           completedListId: 3,
           rating: 4,
           reviewText: "",

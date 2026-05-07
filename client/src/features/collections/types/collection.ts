@@ -18,6 +18,8 @@ export interface CreateCollectionPayload {
   privacy?: string;
 }
 
+export type UpdateCollectionPayload = Partial<CreateCollectionPayload>;
+
 export interface AddToCollectionPayload {
   book_id: string | undefined;
   list_id: number | null;

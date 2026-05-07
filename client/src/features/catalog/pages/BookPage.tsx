@@ -1,4 +1,10 @@
-import { useState, type FormEvent, type ReactElement } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -18,7 +24,7 @@ import type { ReadingList } from "../../collections/types/collection";
 
 function findReadingListByType(
   collections: ReadingList[] | undefined,
-  type: "todo" | "doing" | "done"
+  type: "done"
 ): ReadingList | undefined {
   return collections?.find((collection) => collection.type === type);
 }
@@ -28,6 +34,7 @@ export default function BookPage(): ReactElement {
   const { token } = useOptionalAuth();
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [isListDialogOpen, setIsListDialogOpen] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
   const {
@@ -46,13 +53,9 @@ export default function BookPage(): ReactElement {
     refetchReviews,
     refetchRatings,
   } = useBookPageData(id, token);
-  const libraryList = findReadingListByType(collections, "todo")
-    ?? collections?.find((collection) => collection.type !== "done")
-    ?? collections?.[0];
   const completedList = findReadingListByType(collections, "done");
   const bookActions = useBookActions({
     id,
-    libraryListId: libraryList?.list_id ?? null,
     completedListId: completedList?.list_id ?? null,
     rating,
     reviewText,
@@ -103,9 +106,9 @@ export default function BookPage(): ReactElement {
         coverFailed={coverFailed}
         isAddPending={bookActions.isAddingBook}
         isMarkReadPending={bookActions.isMarkingAsRead}
-        canAddToList={Boolean(libraryList)}
+        canAddToList={Boolean(collections?.length)}
         canMarkAsRead={Boolean(completedList)}
-        onAddBook={bookActions.addBook}
+        onAddBook={() => setIsListDialogOpen(true)}
         onMarkAsRead={bookActions.markAsRead}
         onToggleDescription={() => setIsDescriptionExpanded((current) => !current)}
         onCoverError={() => setCoverFailed(true)}
@@ -132,6 +135,110 @@ export default function BookPage(): ReactElement {
         }}
       />
       <RelatedBooksCarousel currentBookId={book.isbn13} />
+      <AddToListDialog
+        open={isListDialogOpen}
+        collections={collections ?? []}
+        isPending={bookActions.isAddingBook}
+        onClose={() => setIsListDialogOpen(false)}
+        onSelect={(listId) => {
+          bookActions.addBookToList(listId);
+          setIsListDialogOpen(false);
+        }}
+      />
     </div>
+  );
+}
+
+interface AddToListDialogProps {
+  open: boolean;
+  collections: ReadingList[];
+  isPending: boolean;
+  onClose: () => void;
+  onSelect: (listId: number) => void;
+}
+
+function AddToListDialog({
+  open,
+  collections,
+  isPending,
+  onClose,
+  onSelect,
+}: AddToListDialogProps): ReactElement {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open && !dialog.open) {
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
+    }
+
+    if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="glass-card w-[min(92vw,520px)] border-none p-0 text-primary-white backdrop:bg-primary-black/80"
+      aria-labelledby="add-to-list-title"
+      onClose={onClose}
+      onCancel={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="flex flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="add-to-list-title" className="text-xl font-bold">
+              Choose a list
+            </h2>
+            <p className="mt-1 text-sm text-primary-gray">
+              Save this book to one of your collections.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-primary-gray hover:bg-primary-black hover:text-primary-white"
+            aria-label="Close list selector"
+            onClick={onClose}
+          >
+            X
+          </button>
+        </div>
+        <div className="grid gap-2">
+          {collections.map((collection) => (
+            <button
+              key={collection.list_id}
+              type="button"
+              className="flex min-h-[56px] items-center justify-between gap-3 rounded-xl border border-[var(--surface-glass-border)] px-4 py-3 text-left hover:bg-primary-black"
+              disabled={isPending}
+              onClick={() => onSelect(collection.list_id)}
+            >
+              <span>
+                <span className="block font-semibold text-primary-white">
+                  {collection.name}
+                </span>
+                <span className="text-xs text-primary-gray">
+                  {collection.type ?? "custom"} / {collection.privacy ?? "private"}
+                </span>
+              </span>
+              <span className="text-sm font-semibold text-accent">
+                {collection.book_count ?? collection.books?.length ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </dialog>
   );
 }

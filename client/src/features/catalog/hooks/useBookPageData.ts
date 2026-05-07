@@ -35,6 +35,7 @@ export function useBookPageData(
   const collectionsQuery = useQuery({
     queryKey: profileKeys.collections(),
     queryFn: () => getCollections(token),
+    enabled: Boolean(token),
   });
   const bookQuery = useQuery({
     queryKey: catalogKeys.book(id),

@@ -77,14 +77,24 @@ export function NavbarMobileMenu({
             </NavLink>
           ))}
           {user ? (
-            <NavLink
-              to={routePaths.myProfile}
-              tabIndex={isOpen ? 0 : -1}
-              className={({ isActive }) => mobileNavLinkClass(isActive)}
-              onClick={onCloseMenus}
-            >
-              Profile
-            </NavLink>
+            <>
+              <NavLink
+                to={routePaths.collections}
+                tabIndex={isOpen ? 0 : -1}
+                className={({ isActive }) => mobileNavLinkClass(isActive)}
+                onClick={onCloseMenus}
+              >
+                Collections
+              </NavLink>
+              <NavLink
+                to={routePaths.myProfile}
+                tabIndex={isOpen ? 0 : -1}
+                className={({ isActive }) => mobileNavLinkClass(isActive)}
+                onClick={onCloseMenus}
+              >
+                Profile
+              </NavLink>
+            </>
           ) : null}
         </div>
         <MobileAccountLinks

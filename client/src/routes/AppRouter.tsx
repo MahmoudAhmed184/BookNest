@@ -16,6 +16,8 @@ const Categories = lazy(() => import("../features/catalog/pages/CategoriesPage")
 const Feed = lazy(() => import("../features/catalog/pages/FeedPage"));
 const Settings = lazy(() => import("../features/settings/pages/SettingsPage"));
 const Book = lazy(() => import("../features/catalog/pages/BookPage"));
+const Collections = lazy(() => import("../features/collections/pages/CollectionsPage"));
+const CollectionDetail = lazy(() => import("../features/collections/pages/CollectionDetailPage"));
 const Landing = lazy(() => import("../features/home/pages/LandingPage"));
 const Notifications = lazy(() => import("../features/notifications/pages/NotificationsPage"));
 const NotFound = lazy(() => import("../features/errors/pages/NotFoundPage"));
@@ -75,6 +77,14 @@ export function AppRouter(): ReactElement {
             <Route
               path={routePaths.settings}
               element={withSuspense(<Settings />)}
+            />
+            <Route
+              path={routePaths.collections}
+              element={withSuspense(<Collections />)}
+            />
+            <Route
+              path={routePaths.collection}
+              element={withSuspense(<CollectionDetail />)}
             />
             <Route
               path={routePaths.notifications}
