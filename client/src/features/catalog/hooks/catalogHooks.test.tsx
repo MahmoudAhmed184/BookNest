@@ -8,6 +8,7 @@ import {
   getBook,
   getBookRatings,
   getBooks,
+  getCatalogBooks,
   getGenres,
   getPopularBooks,
   getRecommendedBooks,
@@ -23,6 +24,7 @@ import { useBookPageData } from "./useBookPageData";
 import { useBookSuggestions } from "./useBookSuggestions";
 import { useExploreCatalog } from "./useExploreCatalog";
 import { useSearchBooks } from "./useSearchBooks";
+import type { OffsetPaginatedResponse } from "../../../types/api";
 
 vi.mock("../services/bookService", () => ({
   createRating: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock("../services/bookService", () => ({
   getBook: vi.fn(),
   getBookRatings: vi.fn(),
   getBooks: vi.fn(),
+  getCatalogBooks: vi.fn(),
   getGenres: vi.fn(),
   getPopularBooks: vi.fn(),
   getRecommendedBooks: vi.fn(),
@@ -43,6 +46,24 @@ vi.mock("../../collections/services/collectionService", () => ({
   getCollections: vi.fn(),
 }));
 
+function offsetPagination<T>(
+  results: T[],
+  page = 1,
+  pageSize = 24
+): OffsetPaginatedResponse<T> {
+  return {
+    count: results.length,
+    next: null,
+    previous: null,
+    results,
+    page,
+    pageSize,
+    totalPages: results.length > 0 ? 1 : 0,
+    hasNext: false,
+    hasPrevious: page > 1,
+  };
+}
+
 describe("catalog hooks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,6 +74,9 @@ describe("catalog hooks", () => {
       { book: "1", book_title: "Python 101" },
     ]);
     vi.mocked(getGenres).mockResolvedValue([{ id: 1, name: "Fiction" }]);
+    vi.mocked(getCatalogBooks).mockResolvedValue(
+      offsetPagination([{ isbn13: "1", title: "Python 101" }])
+    );
     vi.mocked(getPopularBooks).mockResolvedValue([
       { isbn13: "1", title: "Python 101" },
     ]);
@@ -64,15 +88,16 @@ describe("catalog hooks", () => {
     await waitFor(() => expect(result.current.isBooksLoading).toBe(false));
     expect(result.current.books[0]?.title).toBe("Python 101");
     expect(getBooks).not.toHaveBeenCalled();
-    expect(getPopularBooks).toHaveBeenCalledWith(24);
+    expect(getCatalogBooks).toHaveBeenCalledWith({ page: 1, pageSize: 24 });
+    expect(getPopularBooks).toHaveBeenCalledWith(12);
     expect(result.current.recommendations[0]?.book_title).toBe("Python 101");
   });
 
   it("loads search results", async () => {
     const { searchBooks } = await import("../services/bookService");
-    vi.mocked(searchBooks).mockResolvedValue({
-      results: [{ isbn13: "2", title: "Search Result" }],
-    });
+    vi.mocked(searchBooks).mockResolvedValue(
+      offsetPagination([{ isbn13: "2", title: "Search Result" }])
+    );
 
     const { result } = renderHook(() => useSearchBooks("fiction"), {
       wrapper: createQueryWrapper(),

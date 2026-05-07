@@ -1,7 +1,5 @@
-import { colorFromString } from "../../../utils/colorFromString";
-import { moodOptions, paceOptions } from "../constants/moodColors";
 import type { Book, Author } from "../types/book";
-import type { CatalogFilters, MoodTag, PaceTag } from "../types/filters";
+import type { CatalogFilters } from "../types/filters";
 
 function isAuthor(value: string | Author): value is Author {
   return typeof value !== "string";
@@ -25,54 +23,44 @@ export function getBookGenres(book: Book): string[] {
   return book.genres?.filter(Boolean) ?? [];
 }
 
-export function getBookPace(book: Book): PaceTag {
-  if (book.pace === "fast" || book.pace === "medium" || book.pace === "slow") {
-    return book.pace;
-  }
-
-  if (typeof book.number_of_pages === "number") {
-    if (book.number_of_pages <= 260) return "fast";
-    if (book.number_of_pages >= 460) return "slow";
-    return "medium";
-  }
-
-  return paceOptions[colorFromString(book.title) % paceOptions.length]?.value ?? "medium";
-}
-
-export function getBookMoodTags(book: Book): MoodTag[] {
-  const apiMoods = book.moods?.filter(
-    (mood): mood is MoodTag =>
-      mood === "adventurous" ||
-      mood === "emotional" ||
-      mood === "dark" ||
-      mood === "funny" ||
-      mood === "hopeful"
-  );
-
-  if (apiMoods?.length) return apiMoods.slice(0, 3);
-
-  const seed = colorFromString(`${book.title} ${getAuthorNames(book)}`);
-  const first = moodOptions[seed % moodOptions.length]?.value ?? "hopeful";
-  const second = moodOptions[(seed + 2) % moodOptions.length]?.value ?? "emotional";
-  return first === second ? [first] : [first, second];
-}
-
 export function filterBooksByCatalogFilters(
   books: Book[],
   filters: CatalogFilters
 ): Book[] {
   return books.filter((book) => {
     const genres = getBookGenres(book).map(normalize);
-    const moods = getBookMoodTags(book);
-    const pace = getBookPace(book);
+    const authors = getAuthorNames(book).toLowerCase();
+    const averageRating =
+      typeof book.average_rate === "string"
+        ? Number.parseFloat(book.average_rate)
+        : book.average_rate;
+    const pageCount = book.number_of_pages ?? 0;
     const genreMatch =
-      filters.genres.length === 0 ||
-      filters.genres.some((genre) => genres.includes(normalize(genre)));
-    const moodMatch =
-      filters.moods.length === 0 ||
-      filters.moods.some((mood) => moods.includes(mood));
-    const paceMatch = filters.pace.length === 0 || filters.pace.includes(pace);
+      !filters.genre || genres.includes(normalize(filters.genre));
+    const authorMatch =
+      !filters.author || authors.includes(normalize(filters.author));
+    const ratingMatch =
+      !filters.min_rating ||
+      (typeof averageRating === "number" &&
+        Number.isFinite(averageRating) &&
+        averageRating >= Number(filters.min_rating));
+    const minPagesMatch =
+      !filters.num_pages_min || pageCount >= Number(filters.num_pages_min);
+    const maxPagesMatch =
+      !filters.num_pages_max || pageCount <= Number(filters.num_pages_max);
+    const publicationDate = book.publication_date ?? "";
+    const dateFromMatch =
+      !filters.pub_date_from || publicationDate >= filters.pub_date_from;
+    const dateToMatch = !filters.pub_date_to || publicationDate <= filters.pub_date_to;
 
-    return genreMatch && moodMatch && paceMatch;
+    return (
+      genreMatch &&
+      authorMatch &&
+      ratingMatch &&
+      minPagesMatch &&
+      maxPagesMatch &&
+      dateFromMatch &&
+      dateToMatch
+    );
   });
 }

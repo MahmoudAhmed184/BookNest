@@ -36,6 +36,20 @@ export interface SearchBooksParams extends OffsetPageParams {
   query: string;
 }
 
+export interface CatalogBookFilters {
+  author?: string | undefined;
+  genre?: string | undefined;
+  min_rating?: number | undefined;
+  pub_date_from?: string | undefined;
+  pub_date_to?: string | undefined;
+  num_pages_min?: number | undefined;
+  num_pages_max?: number | undefined;
+}
+
+export interface CatalogBooksParams
+  extends OffsetPageParams,
+    CatalogBookFilters {}
+
 type SearchBooksInput = string | SearchBooksParams;
 
 const defaultSearchPageParams: OffsetPageParams = {
@@ -48,6 +62,39 @@ function buildLimitOffsetParams(params: OffsetPageParams): URLSearchParams {
     limit: String(params.pageSize),
     offset: String((params.page - 1) * params.pageSize),
   });
+}
+
+function appendCatalogFilters(
+  searchParams: URLSearchParams,
+  filters: CatalogBookFilters
+): void {
+  if (filters.author) {
+    searchParams.set("authors__name__icontains", filters.author);
+  }
+
+  if (filters.genre) {
+    searchParams.set("genres__name__exact", filters.genre);
+  }
+
+  if (typeof filters.min_rating === "number") {
+    searchParams.set("average_rate__gte", String(filters.min_rating));
+  }
+
+  if (filters.pub_date_from) {
+    searchParams.set("publication_date__gte", filters.pub_date_from);
+  }
+
+  if (filters.pub_date_to) {
+    searchParams.set("publication_date__lte", filters.pub_date_to);
+  }
+
+  if (typeof filters.num_pages_min === "number") {
+    searchParams.set("number_of_pages__gte", String(filters.num_pages_min));
+  }
+
+  if (typeof filters.num_pages_max === "number") {
+    searchParams.set("number_of_pages__lte", String(filters.num_pages_max));
+  }
 }
 
 function normalizeLimitOffsetResponse<T>(
@@ -123,11 +170,27 @@ function buildFeedUrl(params: CursorPageParams): string {
   return `/api/v1/feed-activities/?${searchParams.toString()}`;
 }
 
-export async function getBooks(query: string): Promise<BookSearchResponse> {
+export async function getBooks(
+  query: string,
+  filters: CatalogBookFilters = {}
+): Promise<BookSearchResponse> {
   const params = new URLSearchParams({
     q: query,
     page_size: "50",
   });
+  if (filters.author) params.set("authors", filters.author);
+  if (filters.genre) params.set("genres", filters.genre);
+  if (typeof filters.min_rating === "number") {
+    params.set("min_rating", String(filters.min_rating));
+  }
+  if (filters.pub_date_from) params.set("pub_date_from", filters.pub_date_from);
+  if (filters.pub_date_to) params.set("pub_date_to", filters.pub_date_to);
+  if (typeof filters.num_pages_min === "number") {
+    params.set("num_pages", String(filters.num_pages_min));
+  }
+  if (typeof filters.num_pages_max === "number") {
+    params.set("num_pages_max", String(filters.num_pages_max));
+  }
 
   try {
     const response = await getData<PageNumberApiResponse<Book>>(
@@ -160,9 +223,10 @@ export async function getSuggestions(
 }
 
 export async function getCatalogBooks(
-  params: OffsetPageParams
+  params: CatalogBooksParams
 ): Promise<BookSearchResponse> {
   const searchParams = buildLimitOffsetParams(params);
+  appendCatalogFilters(searchParams, params);
 
   try {
     const response = await getData<LimitOffsetApiResponse<Book>>(

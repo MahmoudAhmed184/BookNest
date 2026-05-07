@@ -1,7 +1,9 @@
+export { ExploreControls } from "./ExploreControls";
 export { ExploreBooksSection } from "./ExploreBooksSection";
 export { GenreCarousel } from "./GenreCarousel";
 export { PopularBooksGrid } from "./PopularBooksGrid";
 export { RecommendationsSection } from "./RecommendationsSection";
+export type { ActiveExploreFilter, ExploreControlsProps, ExploreSortMode } from "./ExploreControls";
 export type { ExploreBooksSectionProps } from "./ExploreBooksSection";
 export type { GenreCarouselProps } from "./GenreCarousel";
 export type { PopularBooksGridProps } from "./PopularBooksGrid";
