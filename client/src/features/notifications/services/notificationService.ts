@@ -10,6 +10,26 @@ export interface MarkNotificationsReadResponse {
   updated: number;
 }
 
+export interface UnreadNotificationCountResponse {
+  count: number;
+}
+
+export async function getUnreadNotificationCount(
+  token: string | null
+): Promise<number> {
+  try {
+    const response = await getData<UnreadNotificationCountResponse>(
+      "/api/v1/notification-counts/unread/",
+      {
+        headers: authHeaders(token),
+      }
+    );
+    return response.count;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function getNotifications(
   token: string | null
 ): Promise<Notification[]> {

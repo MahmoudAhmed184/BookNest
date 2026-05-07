@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
 import { useAuth } from "../../../features/auth/hooks/useAuth";
-import { useNotifications } from "../../../features/notifications/hooks/useNotifications";
+import { useUnreadNotificationCount } from "../../../features/notifications/hooks/useNotifications";
 import { useNavbarProfile } from "../../../features/profile/hooks/useNavbarProfile";
 import { useScrolled } from "../../../hooks/useScrolled";
 import { DesktopLinks, GuestLinks } from "./NavbarLinks";
@@ -20,13 +20,15 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 export function Navbar(): ReactElement {
   const { user, token, logout } = useAuth();
   const { profile } = useNavbarProfile(user, token);
-  const { notifications } = useNotifications(token, user && Boolean(token));
+  const { unreadCount } = useUnreadNotificationCount(
+    token,
+    user && Boolean(token)
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileDialogRef = useRef<HTMLDivElement>(null);
   const isScrolled = useScrolled(48);
-  const unreadCount = notifications.filter((item) => item.read === false).length;
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent): void {
