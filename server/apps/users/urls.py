@@ -1,39 +1,51 @@
-from dj_rest_auth.jwt_auth import get_refresh_view
-from dj_rest_auth.views import UserDetailsView
-from django.urls import path
-from rest_framework_simplejwt.views import TokenVerifyView
+from django.urls import include, path
 
-from apps.users.views import (
-    CurrentSessionAPIView,
-    CustomLoginView,
-    CustomRegisterView,
-    ProfileViewSet,
-    UserDataDetailView,
-)
-
-profile_collection = ProfileViewSet.as_view({"get": "list", "post": "create"})
-profile_resource = ProfileViewSet.as_view(
-    {
-        "get": "retrieve",
-        "put": "update",
-        "patch": "partial_update",
-        "delete": "destroy",
-    }
-)
-profile_me = ProfileViewSet.as_view({"get": "me", "patch": "me"})
-profile_picture = ProfileViewSet.as_view({"post": "upload_picture"})
-
+from apps.users import views
 
 urlpatterns = [
-    path("auth/sessions/", CustomLoginView.as_view(), name="session-collection"),
-    path("auth/sessions/current/", CurrentSessionAPIView.as_view(), name="current-session"),
-    path("auth/tokens/refresh/", get_refresh_view().as_view(), name="token-refresh"),
-    path("auth/tokens/verify/", TokenVerifyView.as_view(), name="token-verify"),
-    path("users/", CustomRegisterView.as_view(), name="user-collection"),
-    path("users/me/", UserDetailsView.as_view(), name="current-user"),
-    path("users/<int:id>/data/", UserDataDetailView.as_view(), name="user-data"),
-    path("profiles/", profile_collection, name="profile-collection"),
-    path("profiles/me/", profile_me, name="current-profile"),
-    path("profiles/me/picture/", profile_picture, name="current-profile-picture"),
-    path("profiles/<int:pk>/", profile_resource, name="profile-resource"),
+    path("auth/", include("dj_rest_auth.urls")),
+    path("auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("users/", views.UserCollectionAPIView.as_view(), name="user-collection"),
+    path("users/me/", views.CurrentUserAPIView.as_view(), name="current-user"),
+    path("users/<int:pk>/", views.UserResourceAPIView.as_view(), name="user-resource"),
+    path("users/<int:user_id>/profile/", views.UserProfileAPIView.as_view(), name="user-profile"),
+    path(
+        "users/<int:user_id>/profile-overview/",
+        views.UserProfileOverviewAPIView.as_view(),
+        name="user-profile-overview",
+    ),
+    path("users/<int:user_id>/reviews/", views.UserReviewListAPIView.as_view(), name="user-review-list"),
+    path("users/<int:user_id>/ratings/", views.UserRatingListAPIView.as_view(), name="user-rating-list"),
+    path(
+        "users/<int:user_id>/reading-collections/",
+        views.UserReadingCollectionListAPIView.as_view(),
+        name="user-reading-collection-list",
+    ),
+    path("profiles/", views.ProfileCollectionAPIView.as_view(), name="profile-collection"),
+    path("profiles/me/", views.CurrentProfileAPIView.as_view(), name="current-profile"),
+    path("profiles/me/picture/", views.CurrentProfilePictureAPIView.as_view(), name="current-profile-picture"),
+    path(
+        "profiles/me/interests/",
+        views.ProfileInterestCollectionAPIView.as_view(),
+        name="profile-interest-collection",
+    ),
+    path(
+        "profiles/me/interests/<int:pk>/",
+        views.ProfileInterestResourceAPIView.as_view(),
+        name="profile-interest-resource",
+    ),
+    path(
+        "profiles/me/social-links/",
+        views.UserSocialLinkCollectionAPIView.as_view(),
+        name="profile-social-link-collection",
+    ),
+    path(
+        "profiles/me/social-links/<int:pk>/",
+        views.UserSocialLinkResourceAPIView.as_view(),
+        name="profile-social-link-resource",
+    ),
+    path("profiles/<int:pk>/", views.ProfileResourceAPIView.as_view(), name="profile-resource"),
+    path("preferences/me/", views.CurrentPreferenceAPIView.as_view(), name="current-preferences"),
+    path("user-preferences/", views.UserPreferenceCollectionAPIView.as_view(), name="user-preference-collection"),
+    path("user-preferences/<int:pk>/", views.UserPreferenceResourceAPIView.as_view(), name="user-preference-resource"),
 ]

@@ -1,76 +1,85 @@
-from decimal import Decimal
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from django.db import transaction
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import ValidationError
 
-from apps.books.models import Book, BookRating, BookReview, ReadingList
-from apps.books.selectors import get_book_by_isbn
+from apps.books.models import Author, Book, BookAuthor, BookGenre, Genre
 
-
-def create_review(*, user: Any, book_id: str, serializer: Any) -> BookReview:
-    book = get_book_by_isbn(isbn13=book_id)
-    if BookReview.objects.filter(user=user, book=book).exists():
-        raise ValidationError({"error": "You have already reviewed this book"})
-    review = serializer.save(user=user, book=book)
-    review.full_clean()
-    return review
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
-def create_rating(*, user: Any, book_id: str, serializer: Any) -> BookRating:
-    book = get_book_by_isbn(isbn13=book_id)
-    rating = serializer.save(user=user, book=book)
-    rating.full_clean()
-    recalculate_book_rating(book=book)
-    return rating
+def normalize_label(value: str) -> str:
+    return " ".join(value.casefold().strip().split())
 
 
-def update_rating(*, serializer: Any) -> BookRating:
-    rating = serializer.save()
-    rating.full_clean()
-    recalculate_book_rating(book=rating.book)
-    return rating
+def sync_author_book_count(*, author: Author) -> None:
+    author.books_count = author.book_authors.values("book_id").distinct().count()
+    author.save(update_fields=["books_count", "updated_at"])
 
 
-def delete_rating(*, rating: BookRating) -> None:
-    book = rating.book
-    rating.delete()
-    recalculate_book_rating(book=book)
+def sync_genre_book_count(*, genre: Genre) -> None:
+    genre.books_count = genre.book_genres.values("book_id").distinct().count()
+    genre.save(update_fields=["books_count", "updated_at"])
 
 
-def recalculate_book_rating(*, book: Book) -> Book:
-    stats = BookRating.objects.filter(book=book).aggregate(average=Avg("rate"))
-    book.number_of_ratings = BookRating.objects.filter(book=book).count()
-    average = stats["average"]
-    book.average_rate = average.quantize(Decimal("0.01")) if average is not None else None
-    book.full_clean()
-    book.save(update_fields=["number_of_ratings", "average_rate"])
+def sync_book_denormalized_labels(*, book: Book) -> Book:
+    author_names = list(
+        book.book_authors.select_related("author")
+        .order_by("position", "author__name")
+        .values_list("author__name", flat=True)
+    )
+    genre_labels = list(
+        book.book_genres.select_related("genre")
+        .order_by("position", "genre__name")
+        .values_list("genre__name", flat=True)
+    )
+    book.author_names = ", ".join(author_names)
+    book.genre_labels = ", ".join(genre_labels)
+    book.save(update_fields=["author_names", "genre_labels", "updated_at"])
     return book
 
 
-def create_reading_list(*, user: Any, serializer: Any) -> ReadingList:
-    reading_list = serializer.save(profile=user.profile)
-    reading_list.full_clean()
-    return reading_list
+@transaction.atomic
+def set_book_authors(*, book: Book, author_ids: Iterable[int]) -> Book:
+    existing_authors = set(book.book_authors.values_list("author_id", flat=True))
+    requested_authors = list(dict.fromkeys(author_ids))
+
+    book.book_authors.exclude(author_id__in=requested_authors).delete()
+    for position, author_id in enumerate(requested_authors):
+        BookAuthor.objects.update_or_create(
+            book=book,
+            author_id=author_id,
+            role=BookAuthor.Role.AUTHOR,
+            defaults={"position": position},
+        )
+
+    for author_id in existing_authors | set(requested_authors):
+        sync_author_book_count(author=Author.objects.get(pk=author_id))
+    return sync_book_denormalized_labels(book=book)
 
 
-def add_book_to_reading_list(*, user: Any, book_id: str, list_id: int) -> tuple[Book, ReadingList, bool]:
-    book = get_object_or_404(Book, isbn13=book_id)
-    reading_list = get_object_or_404(ReadingList, list_id=list_id, profile__user=user)
-    with transaction.atomic():
-        created = not reading_list.books.filter(isbn13=book_id).exists()
-        if created:
-            reading_list.books.add(book)
-    return book, reading_list, created
+@transaction.atomic
+def set_book_genres(*, book: Book, genre_ids: Iterable[int]) -> Book:
+    existing_genres = set(book.book_genres.values_list("genre_id", flat=True))
+    requested_genres = list(dict.fromkeys(genre_ids))
+
+    book.book_genres.exclude(genre_id__in=requested_genres).delete()
+    for position, genre_id in enumerate(requested_genres):
+        BookGenre.objects.update_or_create(
+            book=book,
+            genre_id=genre_id,
+            defaults={"position": position, "is_primary": position == 0},
+        )
+
+    for genre_id in existing_genres | set(requested_genres):
+        sync_genre_book_count(genre=Genre.objects.get(pk=genre_id))
+    return sync_book_denormalized_labels(book=book)
 
 
-def remove_book_from_reading_list(*, user: Any, book_id: str, list_id: int) -> tuple[Book, ReadingList, bool]:
-    book = get_object_or_404(Book, isbn13=book_id)
-    reading_list = get_object_or_404(ReadingList, list_id=list_id, profile__user=user)
-    with transaction.atomic():
-        existed = reading_list.books.filter(isbn13=book_id).exists()
-        if existed:
-            reading_list.books.remove(book)
-    return book, reading_list, existed
+@transaction.atomic
+def apply_book_relationships(*, book: Book, author_ids: Iterable[int], genre_ids: Iterable[int]) -> Book:
+    set_book_authors(book=book, author_ids=author_ids)
+    set_book_genres(book=book, genre_ids=genre_ids)
+    return book

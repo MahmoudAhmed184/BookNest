@@ -3,168 +3,79 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
+from apps.notifications.models import Notification
 from apps.notifications.selectors import get_notification_for_user, unread_count_for_user
-
-from .models import Notification, NotificationType
 
 if TYPE_CHECKING:
     from django.db.models import Model
 
 
-class NotificationService:
-    """
-    Service class for creating and managing notifications.
-    Implements a publisher-subscriber pattern for notification handling.
-    """
+def _generic_fk_values(obj: Model | None) -> dict[str, Any]:
+    if obj is None:
+        return {}
+    return {
+        "content_type": ContentType.objects.get_for_model(obj),
+        "object_id": obj.pk,
+    }
 
-    @classmethod
-    def create_notification(
-        cls,
-        *,
-        recipient: Any,
-        verb: str,
-        actor: Model | None = None,
-        target: Model | None = None,
-        action_object: Model | None = None,
-        notification_type: NotificationType | str | None = None,
-        data: dict[str, Any] | None = None,
-    ) -> Notification:
-        """
-        Create a notification with the given parameters.
 
-        Args:
-            recipient: The user who will receive the notification
-            verb: A string describing the action (e.g., "commented on", "liked")
-            actor: The user who performed the action (optional)
-            target: The object the action was performed on (optional)
-            action_object: The object created by the action (optional)
-            notification_type: The type of notification or its name (optional)
-            data: Additional data to store with the notification (optional)
+def create_notification(
+    *,
+    recipient: Any,
+    notification_type: str,
+    action: str,
+    actor: Model | None = None,
+    target: Model | None = None,
+    action_object: Model | None = None,
+    payload: dict[str, Any] | None = None,
+) -> Notification:
+    actor_values = _generic_fk_values(actor)
+    target_values = _generic_fk_values(target)
+    action_object_values = _generic_fk_values(action_object)
+    notification = Notification.objects.create(
+        recipient=recipient,
+        actor_content_type=actor_values.get("content_type"),
+        actor_object_id=actor_values.get("object_id"),
+        target_content_type=target_values.get("content_type"),
+        target_object_id=target_values.get("object_id"),
+        action_object_content_type=action_object_values.get("content_type"),
+        action_object_object_id=action_object_values.get("object_id"),
+        notification_type=notification_type,
+        action=action,
+        payload=payload or {},
+    )
+    return notification
 
-        Returns:
-            The created notification object
-        """
-        if data is None:
-            data = {}
 
-        # Handle notification_type as string or object
-        if isinstance(notification_type, str):
-            notification_type, _ = NotificationType.objects.get_or_create(
-                name=notification_type, defaults={"description": f"Notification for {notification_type}"}
-            )
+def mark_as_read(*, notification_id: int, user: Any) -> Notification:
+    notification = get_notification_for_user(notification_id=notification_id, user=user)
+    notification.is_read = True
+    notification.read_at = timezone.now()
+    notification.save(update_fields=["is_read", "read_at", "updated_at"])
+    return notification
 
-        # Create the notification
-        notification = Notification(recipient=recipient, verb=verb, data=data)
 
-        # Set actor if provided
-        if actor:
-            actor_content_type = ContentType.objects.get_for_model(actor)
-            notification.actor_content_type = actor_content_type
-            notification.actor_object_id = actor.pk
+def mark_as_unread(*, notification_id: int, user: Any) -> Notification:
+    notification = get_notification_for_user(notification_id=notification_id, user=user)
+    notification.is_read = False
+    notification.read_at = None
+    notification.save(update_fields=["is_read", "read_at", "updated_at"])
+    return notification
 
-        # Set target if provided
-        if target:
-            target_content_type = ContentType.objects.get_for_model(target)
-            notification.target_content_type = target_content_type
-            notification.target_object_id = target.pk
 
-        # Set action_object if provided
-        if action_object:
-            action_object_content_type = ContentType.objects.get_for_model(action_object)
-            notification.action_object_content_type = action_object_content_type
-            notification.action_object_id = action_object.pk
+def mark_all_as_read(*, user: Any) -> int:
+    return Notification.objects.for_recipient(user).unread().mark_read()
 
-        # Set notification_type if provided
-        if notification_type:
-            notification.notification_type = notification_type
 
-        notification.full_clean()
-        notification.save()
+def soft_delete_notification(*, notification_id: int, user: Any) -> Notification:
+    notification = get_notification_for_user(notification_id=notification_id, user=user)
+    notification.is_deleted = True
+    notification.deleted_at = timezone.now()
+    notification.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
+    return notification
 
-        # Trigger any additional processing (e.g., sending emails, push notifications)
-        cls._process_notification(notification)
 
-        return notification
-
-    @classmethod
-    def _process_notification(cls, notification: Notification) -> None:
-        """
-        Process a notification after creation.
-        This can be extended to send emails, push notifications, etc.
-
-        Args:
-            notification: The notification object to process
-        """
-        # This is a placeholder for additional notification processing
-        # For example, sending emails or push notifications
-        pass
-
-    @classmethod
-    def get_unread_count(cls, *, user: Any) -> int:
-        """
-        Get the count of unread notifications for a user.
-
-        Args:
-            user: The user to get the count for
-
-        Returns:
-            The count of unread notifications
-        """
-        return unread_count_for_user(user=user)
-
-    @classmethod
-    def mark_all_as_read(cls, *, user: Any) -> int:
-        """
-        Mark all notifications for a user as read.
-
-        Args:
-            user: The user whose notifications to mark as read
-
-        Returns:
-            The number of notifications marked as read
-        """
-        return Notification.objects.filter(recipient=user, read=False).update(read=True)
-
-    @classmethod
-    def mark_as_read(cls, *, notification_id: int, user: Any) -> Notification:
-        notification = get_notification_for_user(notification_id=notification_id, user=user)
-        notification.mark_as_read()
-        return notification
-
-    @classmethod
-    def mark_as_unread(cls, *, notification_id: int, user: Any) -> Notification:
-        notification = get_notification_for_user(notification_id=notification_id, user=user)
-        notification.mark_as_unread()
-        return notification
-
-    @classmethod
-    def delete_read_notifications(cls, *, user: Any, days: int = 30) -> int:
-        """
-        Delete read notifications older than the specified number of days.
-
-        Args:
-            user: The user whose notifications to delete
-            days: The number of days to keep read notifications
-
-        Returns:
-            The number of notifications deleted
-        """
-        from datetime import timedelta
-
-        from django.utils import timezone
-
-        cutoff_date = timezone.now() - timedelta(days=days)
-        return Notification.objects.filter(recipient=user, read=True, timestamp__lt=cutoff_date).delete()[0]
-
-    @classmethod
-    def create_welcome_notification(cls, *, user: Any) -> Notification:
-        welcome_type, _ = NotificationType.objects.get_or_create(
-            name="system", defaults={"description": "Welcome notification for new users"}
-        )
-        return cls.create_notification(
-            recipient=user,
-            verb="Welcome to BookNest! We're excited to have you join our community of readers and authors.",
-            notification_type=welcome_type,
-            data={"welcome_message": True},
-        )
+def get_unread_count(*, user: Any) -> int:
+    return unread_count_for_user(user=user)

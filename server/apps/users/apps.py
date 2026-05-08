@@ -1,8 +1,4 @@
-import logging
-
 from django.apps import AppConfig
-
-logger = logging.getLogger(__name__)
 
 
 class UsersConfig(AppConfig):
@@ -13,5 +9,4 @@ class UsersConfig(AppConfig):
         from importlib import import_module
 
         import_module("apps.users.schema")
-        logger.info("Loading users app signals...")
-        logger.info("Users app signals loaded successfully")
+        import_module("apps.users.signals")

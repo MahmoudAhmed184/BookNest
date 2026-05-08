@@ -20,11 +20,11 @@ app.autodiscover_tasks()
 # Django 6.0's built-in backends are development/test only, so Celery Beat remains the scheduler here.
 app.conf.beat_schedule = {
     "sync-external-books": {
-        "task": "apps.books.tasks.sync_external_books",
+        "task": "apps.integrations.tasks.sync_external_books",
         "schedule": crontab(hour=0, minute=0),  # Run daily at midnight
     },
     "update-book-metadata": {
-        "task": "apps.books.tasks.update_book_metadata",
+        "task": "apps.integrations.tasks.update_book_metadata",
         "schedule": crontab(hour="*/6"),  # Run every 6 hours
     },
 }

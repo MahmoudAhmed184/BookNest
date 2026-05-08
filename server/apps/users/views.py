@@ -1,605 +1,240 @@
-# users/views/register.py
-from __future__ import annotations
-
-import logging
-from typing import TYPE_CHECKING, Any
-
-from cloudinary.exceptions import Error as CloudinaryError
-from dj_rest_auth.registration.views import RegisterView
-from dj_rest_auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import DatabaseError, IntegrityError
-from django.http import Http404
-from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import generics, serializers, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework import generics, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import AllowAny
-from rest_framework.permissions import IsAuthenticated as DRFIsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.permissions import IsAuthenticated as ProfileIsAuthenticated
-from apps.users.permissions import IsOwnerOrReadOnly
-from apps.users.selectors import (
-    get_user_data,
-    profile_exists_for_user,
-    profile_for_user,
-    profile_list,
-    user_data_queryset,
-)
+from apps.collections import selectors as collection_selectors
+from apps.collections.serializers import ReadingCollectionSerializer
+from apps.common.pagination import StandardResultsSetPagination
+from apps.reviews import selectors as review_selectors
+from apps.reviews.serializers import RatingSerializer, ReviewSerializer
+from apps.users import selectors, services
+from apps.users.models import Profile, ProfileInterest, User, UserPreference, UserSocialLink
 from apps.users.serializers import (
-    CustomLoginSerializer,
-    CustomRegisterSerializer,
+    ProfileInterestSerializer,
+    ProfileOverviewSerializer,
+    ProfilePictureUploadSerializer,
     ProfileSerializer,
-    ProfileUpdateSerializer,
-    UserDataSerializer,
-)
-from apps.users.services import (
-    blacklist_logout_tokens,
-    create_profile,
-    update_profile,
-    upload_profile_picture,
-    validate_profile_image,
+    UserPreferenceSerializer,
+    UserSerializer,
+    UserSocialLinkSerializer,
 )
 
-if TYPE_CHECKING:
-    from rest_framework.request import Request
 
-logger = logging.getLogger(__name__)
+class UserCollectionAPIView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
 
-
-class SessionEndResponseSerializer(serializers.Serializer):
-    success = serializers.BooleanField()
-    message = serializers.CharField()
-    data = serializers.JSONField(allow_null=True)
+    def get_queryset(self):
+        return selectors.user_queryset()
 
 
-class CustomRegisterView(RegisterView):
-    serializer_class = CustomRegisterSerializer
-    permission_classes = [AllowAny]
-
-    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """
-        Create a new user account
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            refresh_token = str(refresh)
-            response_data = {
-                "success": True,
-                "message": "Registration successful",
-                "data": {
-                    "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                    },
-                    "access": access_token,
-                    "refresh": refresh_token,
-                },
-                "meta": {"next_action": "create_profile", "profile_required": True},
-            }
-
-            return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
-
-        # Format validation errors
-        error_response = {
-            "success": False,
-            "message": "Registration failed",
-            "errors": self._format_validation_errors(serializer.errors),
-        }
-        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
-        """Format validation errors for consistent response"""
-        formatted_errors = {}
-        for field, error_list in errors.items():
-            if isinstance(error_list, list):
-                formatted_errors[field] = error_list[0] if error_list else None
-            else:
-                formatted_errors[field] = str(error_list)
-        return formatted_errors
+class UserResourceAPIView(generics.RetrieveUpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
 
 
-class CustomLoginView(LoginView):
-    serializer_class = CustomLoginSerializer
-    permission_classes = [AllowAny]
+class CurrentUserAPIView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
 
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """
-        Login user with email and password
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data["user"]
-
-            # Check if user has a profile
-            has_profile = hasattr(user, "profile")
-
-            # Get the login response from parent
-            response = super().post(request, *args, **kwargs)
-
-            if response.status_code == status.HTTP_200_OK:
-                # Customize the response data
-                original_data = response.data
-                access_token = original_data.get("access")
-                refresh_token = original_data.get("refresh")
-
-                response_data = {
-                    "success": True,
-                    "message": "Login successful",
-                    "data": {
-                        "user": {
-                            "id": user.id,
-                            "username": user.username,
-                            "email": user.email,
-                            "has_profile": has_profile,
-                        },
-                        "access": access_token,
-                        "refresh": refresh_token,
-                    },
-                    "meta": {
-                        "profile_required": not has_profile,
-                        "next_action": "create_profile" if not has_profile else None,
-                    },
-                }
-                response.data = response_data
-
-            return response
-
-        # Format validation errors
-        error_response = {
-            "success": False,
-            "message": "Login failed",
-            "errors": self._format_validation_errors(serializer.errors),
-        }
-        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
-        """Format validation errors for consistent response"""
-        formatted_errors = {}
-        for field, error_list in errors.items():
-            if isinstance(error_list, list):
-                formatted_errors[field] = error_list[0] if error_list else None
-            else:
-                formatted_errors[field] = str(error_list)
-        return formatted_errors
+    def get_object(self):
+        return self.request.user
 
 
-class CustomLogoutView(LogoutView):
-    """
-    Custom logout view with token blacklisting
-    """
-
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """
-        Logout user and blacklist refresh token
-        """
-        try:
-            refresh_token = request.data.get("refresh")
-            blacklist_logout_tokens(user=request.user, refresh_token=refresh_token)
-
-            response_data = {"success": True, "message": "Logout successful", "data": None}
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        except TokenError as exc:
-            error_response = {"success": False, "message": "Logout failed", "errors": {"detail": str(exc)}}
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CurrentSessionAPIView(CustomLogoutView):
-    serializer_class = SessionEndResponseSerializer
-
-    @extend_schema(exclude=True)
-    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        return super().get(request, *args, **kwargs)
-
-    @extend_schema(
-        request=None,
-        responses={
-            200: SessionEndResponseSerializer,
-            400: OpenApiResponse(description="Invalid refresh token."),
-        },
-    )
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        return super().post(request, *args, **kwargs)
-
-    @extend_schema(
-        request=None,
-        responses={
-            200: SessionEndResponseSerializer,
-            400: OpenApiResponse(description="Invalid refresh token."),
-        },
-    )
-    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        return self.post(request, *args, **kwargs)
-
-
-class ProfileViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing user profiles
-    """
-
+class ProfileCollectionAPIView(generics.ListCreateAPIView):
     serializer_class = ProfileSerializer
-    permission_classes = [ProfileIsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    def get_serializer_class(self) -> Any:
-        """Return appropriate serializer class based on action"""
-        if self.action in ["update", "partial_update"]:
-            return ProfileUpdateSerializer
-        return ProfileSerializer
+    def get_queryset(self):
+        return selectors.profile_queryset()
 
-    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Create a new profile for the authenticated user"""
-        try:
-            # Check if user already has a profile
-            if profile_exists_for_user(user=request.user):
-                response_data = {
-                    "success": False,
-                    "message": "Profile creation failed",
-                    "errors": {"detail": "User already has a profile"},
-                }
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        serializer.instance = services.create_profile(user=self.request.user, validated_data=serializer.validated_data)
 
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid():
-                create_profile(user=request.user, serializer=serializer)
-                response_data = {
-                    "success": True,
-                    "message": "Profile created successfully",
-                    "data": {"profile": serializer.data},
-                }
-                return Response(response_data, status=status.HTTP_201_CREATED)
 
-            error_response = {
-                "success": False,
-                "message": "Profile creation failed",
-                "errors": self._format_validation_errors(serializer.errors),
-            }
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+class ProfileResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
-            logger.error(f"Profile creation error for user {request.user.id}: {str(e)}")
-            error_response = {
-                "success": False,
-                "message": "Profile creation failed 1",
-                "errors": {"detail": "An unexpected error occurred"},
-            }
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get_queryset(self):
+        return selectors.profile_queryset()
 
-    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Retrieve a specific profile"""
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
 
-            response_data = {
-                "success": True,
-                "message": "Profile retrieved successfully",
-                "data": {"profile": serializer.data},
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
+class CurrentProfileAPIView(generics.RetrieveUpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-        except Http404:
-            error_response = {
-                "success": False,
-                "message": "Profile not found",
-                "errors": {"detail": "The requested profile does not exist"},
-            }
-            return Response(error_response, status=status.HTTP_404_NOT_FOUND)
+    def get_object(self):
+        return selectors.get_profile_for_user(user=self.request.user)
 
-    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Update profile (full update)"""
-        try:
-            partial = kwargs.pop("partial", False)
-            instance = self.get_object()
 
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
-            if serializer.is_valid():
-                update_profile(profile=instance, serializer=serializer)
-                response_data = {
-                    "success": True,
-                    "message": "Profile updated successfully",
-                    "data": {"profile": serializer.data},
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+class CurrentProfilePictureAPIView(generics.GenericAPIView):
+    serializer_class = ProfilePictureUploadSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
-            error_response = {
-                "success": False,
-                "message": "Profile update failed",
-                "errors": self._format_validation_errors(serializer.errors),
-            }
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        profile = selectors.get_profile_for_user(user=request.user)
+        image_file = request.FILES.get("picture")
+        if image_file is None:
+            return Response({"picture": "No image file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        except Http404:
-            error_response = {
-                "success": False,
-                "message": "Profile not found",
-                "errors": {"detail": "The requested profile does not exist"},
-            }
-            return Response(error_response, status=status.HTTP_404_NOT_FOUND)
-        except PermissionDenied:
-            raise
-        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
-            logger.error(f"Profile update error for user {request.user.id}: {str(e)}")
-            error_response = {
-                "success": False,
-                "message": "Profile update failed 2",
-                "errors": {"detail": "An unexpected error occurred"},
-            }
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        error = services.validate_profile_image(image_file=image_file)
+        if error:
+            return Response({"picture": error}, status=status.HTTP_400_BAD_REQUEST)
 
-    def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Partial update of profile"""
-        kwargs["partial"] = True
-        return self.update(request, *args, **kwargs)
+        upload_result = services.upload_profile_picture(profile=profile, image_file=image_file)
+        return Response({"picture": str(profile.picture), "cloudinary": upload_result})
 
-    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """List profiles with optional filtering"""
-        try:
-            queryset = self.filter_queryset(self.get_queryset())
-            page = self.paginate_queryset(queryset)
 
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                paginated_response = self.get_paginated_response(serializer.data)
+class CurrentPreferenceAPIView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserPreferenceSerializer
+    permission_classes = [IsAuthenticated]
 
-                # Wrap in standard response format
-                response_data = {
-                    "success": True,
-                    "message": "Profiles retrieved successfully",
-                    "data": {
-                        "profiles": paginated_response.data["results"],
-                        "pagination": {
-                            "count": paginated_response.data["count"],
-                            "next": paginated_response.data["next"],
-                            "previous": paginated_response.data["previous"],
-                        },
-                    },
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+    def get_object(self):
+        return selectors.preference_for_user(user=self.request.user)
 
-            serializer = self.get_serializer(queryset, many=True)
-            response_data = {
-                "success": True,
-                "message": "Profiles retrieved successfully",
-                "data": {"profiles": serializer.data},
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
 
-        except (DatabaseError, TypeError, ValueError) as e:
-            logger.error(f"Profile list error: {str(e)}")
-            error_response = {
-                "success": False,
-                "message": "Failed to retrieve profiles",
-                "errors": {"detail": "An unexpected error occurred"},
-            }
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class UserPreferenceCollectionAPIView(generics.ListAPIView):
+    queryset = UserPreference.objects.select_related("user")
+    serializer_class = UserPreferenceSerializer
+    permission_classes = [IsAdminUser]
 
-    def get_queryset(self) -> Any:
-        """Filter queryset based on query parameters"""
-        return profile_list(
-            username=self.request.query_params.get("username"),
-            profile_type=self.request.query_params.get("profile_type"),
+
+class UserPreferenceResourceAPIView(generics.RetrieveUpdateAPIView):
+    queryset = UserPreference.objects.select_related("user")
+    serializer_class = UserPreferenceSerializer
+    permission_classes = [IsAdminUser]
+
+
+class ProfileInterestCollectionAPIView(generics.ListCreateAPIView):
+    serializer_class = ProfileInterestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        return ProfileInterest.objects.select_related("profile", "genre").filter(profile=profile)
+
+    def perform_create(self, serializer):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        serializer.instance, _created = ProfileInterest.objects.update_or_create(
+            profile=profile,
+            genre=serializer.validated_data["genre"],
+            defaults={"weight": serializer.validated_data.get("weight", 1)},
         )
 
-    @action(detail=False, methods=["get", "patch"])
-    def me(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Endpoint to get or update the current user's profile"""
-        try:
-            profile = profile_for_user(user=request.user)
-            if profile is None:
-                error_response = {
-                    "success": False,
-                    "message": "Profile not found",
-                    "errors": {"detail": "You need to create a profile first"},
-                    "meta": {"action_required": "create_profile"},
-                }
-                return Response(error_response, status=status.HTTP_404_NOT_FOUND)
 
-            if request.method == "GET":
-                serializer = self.get_serializer(profile)
-                response_data = {
-                    "success": True,
-                    "message": "Profile retrieved successfully",
-                    "data": {"profile": serializer.data},
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+class ProfileInterestResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProfileInterestSerializer
+    permission_classes = [IsAuthenticated]
 
-            if request.method == "PATCH":
-                serializer = self.get_serializer(profile, data=request.data, partial=True)
-                if serializer.is_valid():
-                    update_profile(profile=profile, serializer=serializer)
-                    response_data = {
-                        "success": True,
-                        "message": "Profile updated successfully",
-                        "data": {"profile": serializer.data},
-                    }
-                    return Response(response_data, status=status.HTTP_200_OK)
-
-                error_response = {
-                    "success": False,
-                    "message": "Profile update failed",
-                    "errors": self._format_validation_errors(serializer.errors),
-                }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response(
-                {
-                    "success": False,
-                    "message": "Unsupported method",
-                    "errors": {"detail": "Method not allowed"},
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        except (AttributeError, DatabaseError, DjangoValidationError, IntegrityError, TypeError, ValueError) as e:
-            logger.error(f"Profile me endpoint error for user {request.user.id}: {str(e)}")
-            error_response = {
-                "success": False,
-                "message": "An unexpected error occurred",
-                "errors": {"detail": str(e)},
-            }
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=["post"])
-    def upload_picture(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Upload profile picture to Cloudinary"""
-        try:
-            # Check if user has a profile
-            profile = profile_for_user(user=request.user)
-            if profile is None:
-                error_response = {
-                    "success": False,
-                    "message": "Profile not found",
-                    "errors": {"detail": "You need to create a profile first"},
-                    "meta": {"action_required": "create_profile"},
-                }
-                return Response(error_response, status=status.HTTP_404_NOT_FOUND)
-
-            # Check if image is provided
-            if "profile_pic" not in request.FILES:
-                error_response = {
-                    "success": False,
-                    "message": "Upload failed",
-                    "errors": {"profile_pic": "No image file provided"},
-                }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-            image_file = request.FILES["profile_pic"]
-
-            validation_error = validate_profile_image(image_file=image_file)
-            if validation_error:
-                error_response = {
-                    "success": False,
-                    "message": "Upload failed",
-                    "errors": {"profile_pic": validation_error},
-                }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-            upload_result = upload_profile_picture(profile=profile, image_file=image_file)
-            response_data = {
-                "success": True,
-                "message": "Profile picture uploaded successfully",
-                "data": {
-                    "profile_pic_url": upload_result["secure_url"],
-                    "cloudinary_public_id": upload_result["public_id"],
-                },
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        except (AttributeError, CloudinaryError, DatabaseError, DjangoValidationError, TypeError, ValueError) as e:
-            logger.error(f"Profile picture upload error for user {request.user.id}: {str(e)}")
-            error_response = {
-                "success": False,
-                "message": "Upload failed",
-                "errors": {"detail": f"Upload failed: {str(e)}"},
-            }
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def _format_validation_errors(self, errors: dict[str, Any]) -> dict[str, Any]:
-        """Format validation errors for consistent response"""
-        formatted_errors = {}
-        for field, error_list in errors.items():
-            if isinstance(error_list, list):
-                formatted_errors[field] = error_list[0] if error_list else None
-            elif isinstance(error_list, dict):
-                # Handle nested errors (e.g., from related fields)
-                formatted_errors[field] = error_list
-            else:
-                formatted_errors[field] = str(error_list)
-        return formatted_errors
+    def get_queryset(self):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        return ProfileInterest.objects.select_related("profile", "genre").filter(profile=profile)
 
 
-class CustomPasswordResetView(PasswordResetView):
-    """Custom password reset view with standardized response"""
+class UserSocialLinkCollectionAPIView(generics.ListCreateAPIView):
+    serializer_class = UserSocialLinkSerializer
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [AllowAny]
+    def get_queryset(self):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        return UserSocialLink.objects.select_related("profile").filter(profile=profile)
 
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        response = super().post(request, *args, **kwargs)
-
-        if response.status_code == status.HTTP_200_OK:
-            response_data = {
-                "success": True,
-                "message": "Password reset email sent successfully",
-                "data": {"detail": "If an account with this email exists, you will receive a password reset link."},
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        return response
+    def perform_create(self, serializer):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        serializer.instance, _created = UserSocialLink.objects.update_or_create(
+            profile=profile,
+            platform=serializer.validated_data["platform"],
+            defaults={
+                "url": serializer.validated_data["url"],
+                "label": serializer.validated_data.get("label", ""),
+            },
+        )
 
 
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    """Custom password reset confirmation view"""
+class UserSocialLinkResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = UserSocialLinkSerializer
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [AllowAny]
+    def get_queryset(self):
+        profile = selectors.get_profile_for_user(user=self.request.user)
+        return UserSocialLink.objects.select_related("profile").filter(profile=profile)
 
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        response = super().post(request, *args, **kwargs)
 
-        if response.status_code == status.HTTP_200_OK:
-            response_data = {
-                "success": True,
-                "message": "Password reset successful",
-                "data": {
-                    "detail": "Your password has been reset successfully. You can now login with your new password."
-                },
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
-        # Handle validation errors
-        error_response = {
-            "success": False,
-            "message": "Password reset failed",
-            "errors": (
-                response.data if hasattr(response, "data") else {"detail": "Invalid token or passwords don't match"}
-            ),
+class UserProfileAPIView(generics.RetrieveAPIView):
+    queryset = Profile.objects.select_related("user")
+    serializer_class = ProfileSerializer
+    lookup_field = "user_id"
+
+
+class UserProfileOverviewAPIView(generics.GenericAPIView):
+    serializer_class = ProfileOverviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, user_id: int):
+        target_user = selectors.get_user(pk=user_id)
+        selectors.ensure_can_view_profile(target_user=target_user, viewer=request.user)
+        profile = selectors.get_profile_for_user(user=target_user)
+        reviews = review_selectors.reviews_for_target_user(target_user=target_user, viewer=request.user)
+        ratings = review_selectors.visible_ratings_for_profile_overview(
+            target_user=target_user,
+            viewer=request.user,
+        )
+        collections = collection_selectors.collections_for_target_user(
+            target_user=target_user,
+            viewer=request.user,
+        )
+        overview = {
+            "user": target_user,
+            "profile": profile,
+            "viewer_context": selectors.profile_viewer_context(target_user=target_user, viewer=request.user),
+            "stats": {
+                "followers_count": target_user.follower_relationships.count(),
+                "following_count": target_user.following_relationships.count(),
+                "reviews_count": reviews.count(),
+                "ratings_count": ratings.count(),
+                "collections_count": collections.count(),
+                "books_read_count": profile.books_read_count,
+            },
+            "recent_reviews": list(reviews[:5]),
+            "recent_ratings": list(ratings[:5]),
+            "recent_collections": list(collections[:5]),
         }
-        return Response(error_response, status=response.status_code)
+        serializer = self.get_serializer(overview)
+        return Response(serializer.data)
 
 
-class UserDataDetailView(generics.RetrieveAPIView):
-    """
-    Retrieve all data associated with a specific user.
-    Includes profile, reading lists, ratings, reviews, and social connections.
-    """
+class UserReviewListAPIView(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
-    serializer_class = UserDataSerializer
-    permission_classes = [DRFIsAuthenticated]
-    lookup_field = "id"
+    def get_queryset(self):
+        target_user = selectors.get_user(pk=self.kwargs["user_id"])
+        return review_selectors.reviews_for_target_user(target_user=target_user, viewer=self.request.user)
 
-    def get_queryset(self) -> Any:
-        return user_data_queryset()
 
-    def get_object(self) -> Any:
-        return get_user_data(user_id=self.kwargs.get("id"))
+class UserRatingListAPIView(generics.ListAPIView):
+    serializer_class = RatingSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
-    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
+    def get_queryset(self):
+        target_user = selectors.get_user(pk=self.kwargs["user_id"])
+        return review_selectors.ratings_for_target_user(target_user=target_user, viewer=self.request.user)
 
-            return Response(
-                {"success": True, "message": "User data retrieved successfully", "data": serializer.data},
-                status=status.HTTP_200_OK,
-            )
 
-        except Http404:
-            return Response(
-                {"success": False, "message": "User data not found", "data": None},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except (DatabaseError, TypeError, ValueError) as e:
-            return Response(
-                {"success": False, "message": f"Error retrieving user data: {str(e)}", "data": None},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+class UserReadingCollectionListAPIView(generics.ListAPIView):
+    serializer_class = ReadingCollectionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        target_user = selectors.get_user(pk=self.kwargs["user_id"])
+        return collection_selectors.collections_for_target_user(target_user=target_user, viewer=self.request.user)

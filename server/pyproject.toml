@@ -62,5 +62,8 @@ strict = false
 ignore_missing_imports = true
 disable_error_code = ["misc", "var-annotated"]
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.testing"
+
 [tool.django-stubs]
 django_settings_module = "config.settings.testing"

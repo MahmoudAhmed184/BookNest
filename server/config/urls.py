@@ -26,13 +26,16 @@ urlpatterns = [
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="v1-schema"),
     path("api/v1/docs/", SpectacularSwaggerView.as_view(url_name="v1-schema"), name="v1-swagger-ui"),
     path("api/v1/redoc/", SpectacularRedocView.as_view(url_name="v1-schema"), name="v1-redoc"),
-    # TODO: README lists unversioned `/api/...` prefixes; keep existing `/api/v1/...` public URLs
-    # until an API versioning migration is planned.
     path("api/v1/", include("apps.users.urls")),
     path("api/v1/", include("apps.books.urls")),
-    path("api/v1/", include("apps.follows.urls")),
+    path("api/v1/", include("apps.reviews.urls")),
+    path("api/v1/", include("apps.collections.urls")),
+    path("api/v1/", include("apps.social.urls")),
     path("api/v1/", include("apps.notifications.urls")),
-    path("api/v1/", include("apps.recommendation.urls")),
+    path("api/v1/", include("apps.recommendations.urls")),
+    path("api/v1/", include("apps.search.urls")),
+    path("api/v1/", include("apps.integrations.urls")),
+    path("api/v1/", include("apps.operations.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

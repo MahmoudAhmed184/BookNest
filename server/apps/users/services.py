@@ -1,59 +1,42 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cloudinary.uploader
 from django.db import transaction
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.books.models import ReadingList
-
-if TYPE_CHECKING:
-    from apps.users.models.profile import Profile
-
-DEFAULT_READING_LISTS = (
-    {"name": "To Do", "type": "todo"},
-    {"name": "Doing", "type": "doing"},
-    {"name": "Completed", "type": "done"},
-)
+from apps.users.models import Profile, UserPreference
 
 ALLOWED_PROFILE_IMAGE_TYPES = {
+    "image/gif",
     "image/jpeg",
     "image/jpg",
     "image/png",
-    "image/gif",
     "image/webp",
 }
 
 
-def create_profile(*, user: Any, serializer: Any) -> Profile:
-    with transaction.atomic():
-        profile = serializer.save(user=user)
-        profile.full_clean(exclude=["settings"])
-        return profile
+@transaction.atomic
+def ensure_user_defaults(*, user: Any) -> None:
+    UserPreference.objects.get_or_create(user=user)
 
 
-def update_profile(*, profile: Profile, serializer: Any) -> Profile:
-    with transaction.atomic():
-        updated_profile = serializer.save()
-        updated_profile.full_clean(exclude=["settings"])
-        return updated_profile
+@transaction.atomic
+def create_profile(*, user: Any, validated_data: dict[str, Any]) -> Profile:
+    profile = Profile.objects.create(user=user, **validated_data)
+    profile.full_clean()
+    return profile
 
 
-def create_default_reading_lists(*, profile: Profile) -> list[ReadingList]:
-    reading_lists = []
-    for list_data in DEFAULT_READING_LISTS:
-        reading_list = ReadingList(
-            profile=profile,
-            name=list_data["name"],
-            type=list_data["type"],
-            privacy="private",
-        )
-        reading_list.full_clean()
-        reading_list.save()
-        reading_lists.append(reading_list)
-    return reading_lists
+@transaction.atomic
+def update_profile(*, profile: Profile, validated_data: dict[str, Any]) -> Profile:
+    for field, value in validated_data.items():
+        setattr(profile, field, value)
+    profile.full_clean()
+    profile.save()
+    return profile
 
 
 def validate_profile_image(*, image_file: Any) -> str | None:
@@ -66,22 +49,20 @@ def validate_profile_image(*, image_file: Any) -> str | None:
 
 
 def upload_profile_picture(*, profile: Profile, image_file: Any) -> dict[str, Any]:
-    with transaction.atomic():
-        upload_result = cloudinary.uploader.upload(
-            image_file,
-            folder=f"profile_pics/{profile.user.username}/",
-            public_id=f"{profile.user.username}_profile",
-            overwrite=True,
-            transformation=[
-                {"width": 400, "height": 400, "crop": "fill"},
-                {"quality": "auto"},
-                {"format": "auto"},
-            ],
-        )
-        profile.profile_pic = upload_result["secure_url"]
-        profile.full_clean(exclude=["settings"])
-        profile.save(update_fields=["profile_pic"])
-        return upload_result
+    upload_result = cloudinary.uploader.upload(
+        image_file,
+        folder=f"profile_pictures/{profile.handle}/",
+        public_id=f"{profile.handle}_profile",
+        overwrite=True,
+        transformation=[
+            {"width": 400, "height": 400, "crop": "fill"},
+            {"quality": "auto"},
+            {"format": "auto"},
+        ],
+    )
+    profile.picture = upload_result["secure_url"]
+    profile.save(update_fields=["picture", "updated_at"])
+    return upload_result
 
 
 def blacklist_logout_tokens(*, user: Any, refresh_token: str | None = None) -> None:
@@ -91,6 +72,5 @@ def blacklist_logout_tokens(*, user: Any, refresh_token: str | None = None) -> N
         return
 
     if user.is_authenticated:
-        tokens = OutstandingToken.objects.filter(user=user)
-        for outstanding_token in tokens:
+        for outstanding_token in OutstandingToken.objects.filter(user=user):
             BlacklistedToken.objects.get_or_create(token=outstanding_token)

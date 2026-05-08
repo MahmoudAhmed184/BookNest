@@ -6,4 +6,6 @@ class BooksConfig(AppConfig):
     name = "apps.books"
 
     def ready(self):
-        pass
+        from importlib import import_module
+
+        import_module("apps.books.signals")
