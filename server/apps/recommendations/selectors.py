@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from django.db.models import Q
+from django.utils import timezone
+
 from apps.recommendations.models import (
     CatalogRecommendation,
     RecommendationModel,
@@ -13,7 +16,9 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
 
 
-def active_recommendation_model() -> RecommendationModel | None:
+def active_recommendation_model(*, model_id: int | None = None) -> RecommendationModel | None:
+    if model_id:
+        return RecommendationModel.objects.filter(pk=model_id).first()
     return RecommendationModel.objects.filter(is_active=True).first()
 
 
@@ -26,10 +31,15 @@ def recommendation_runs() -> QuerySet[RecommendationRun]:
 
 
 def user_recommendations_for_user(*, user: Any) -> QuerySet[UserRecommendation]:
-    return UserRecommendation.objects.select_related("book", "model").filter(
-        user=user,
-        is_active=True,
-        is_dismissed=False,
+    return (
+        UserRecommendation.objects.select_related("book", "model")
+        .filter(
+            user=user,
+            is_active=True,
+            is_dismissed=False,
+        )
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
+        .order_by("rank", "id")
     )
 
 
@@ -37,4 +47,4 @@ def catalog_recommendations(*, source: str | None = None) -> QuerySet[CatalogRec
     queryset = CatalogRecommendation.objects.select_related("book").filter(is_active=True)
     if source:
         queryset = queryset.filter(source=source)
-    return queryset
+    return queryset.order_by("rank", "id")

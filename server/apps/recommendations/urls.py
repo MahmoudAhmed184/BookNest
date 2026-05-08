@@ -4,6 +4,7 @@ from apps.recommendations import views
 
 urlpatterns = [
     path("recommendations/", views.UserRecommendationListAPIView.as_view(), name="recommendation-list"),
+    path("recommendations/generate/", views.RecommendationGenerateAPIView.as_view(), name="recommendation-generate"),
     path("recommendations/<int:pk>/", views.UserRecommendationResourceAPIView.as_view(), name="recommendation"),
     path(
         "recommendations/<int:pk>/dismiss/",
