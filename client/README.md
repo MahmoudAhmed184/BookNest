@@ -57,6 +57,8 @@ cd ../server
 uv sync
 cp .env.example .env
 uv run python manage.py migrate
+uv run python manage.py init_integrations
+uv run python manage.py rebuild_search_index
 uv run python manage.py runserver
 ```
 
@@ -190,12 +192,41 @@ Route paths, route parameter types, and route builders live in `src/routes/paths
 Axios setup and typed request helpers live in `src/lib/axios.ts`. Domain API calls live with their feature.
 
 - `features/auth/services/authService.ts` handles login, registration, and profile creation calls.
-- `features/catalog/services/bookService.ts` handles book, search, review, rating, and recommendation calls.
-- `features/collections/services/collectionService.ts` handles reading collections.
-- `features/notifications/services/notificationService.ts` handles notifications.
-- `features/profile/services/userService.ts` handles profile and settings-backed user requests.
+- `features/catalog/services/bookService.ts` handles book, author, genre, search, review, rating, and recommendation calls.
+- `features/collections/services/collectionService.ts` handles reading collections, collection items, and reading progress.
+- `features/notifications/services/notificationService.ts` handles notifications, unread counts, read/unread actions, and soft delete.
+- `features/profile/services/userService.ts` handles current profile, public profiles, profile interests, social links, and settings-backed user requests.
 
 Shared API envelopes live under `src/types/`. Feature-specific request and response contracts live under `features/{domain}/types/`. Service files avoid `any`; unknown API errors are narrowed through helper functions in `src/lib/axios.ts`.
+
+The backend API is versioned under `/api/v1/`. Reader-facing frontend features mainly consume these route families:
+
+```text
+/api/v1/auth/
+/api/v1/users/
+/api/v1/profiles/
+/api/v1/profiles/me/interests/
+/api/v1/profiles/me/social-links/
+/api/v1/books/
+/api/v1/authors/
+/api/v1/genres/
+/api/v1/search/books/
+/api/v1/search/autocomplete/
+/api/v1/reviews/
+/api/v1/ratings/
+/api/v1/review-votes/
+/api/v1/reading-collections/
+/api/v1/collection-books/
+/api/v1/reading-progress/
+/api/v1/follows/
+/api/v1/feed-events/
+/api/v1/notifications/
+/api/v1/recommendations/
+/api/v1/catalog-recommendations/
+/api/v1/recommendation-feedback/
+```
+
+Admin-only backend route groups such as `task-logs`, external sync/source management, search logs/throttle buckets, recommendation models/runs, and write access to catalog recommendations are documented in `../server/README.md`.
 
 ### State
 
@@ -328,6 +359,8 @@ Start the backend on `http://localhost:8000` and make sure its database is migra
 ```bash
 cd ../server
 uv run python manage.py migrate
+uv run python manage.py init_integrations
+uv run python manage.py rebuild_search_index
 uv run python manage.py runserver
 ```
 

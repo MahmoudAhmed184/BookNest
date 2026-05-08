@@ -1,6 +1,6 @@
 # BookNest
 
-BookNest is a full-stack book discovery and reading community application. It combines a Django REST Framework API with a strict TypeScript React frontend so readers can discover books, maintain profiles and reading lists, publish ratings and reviews, follow other readers, and receive notifications and recommendations.
+BookNest is a full-stack book discovery and reading community application. It combines a Django REST Framework API with a strict TypeScript React frontend so readers can discover books, maintain profiles and reading collections, publish ratings and reviews, follow other readers, and receive notifications and recommendations.
 
 The repository is a two-application workspace:
 
@@ -14,7 +14,7 @@ The repository is a two-application workspace:
 | Area | Technology |
 | --- | --- |
 | Runtime | Python 3.14.4 managed by `uv` |
-| Web framework | Django 6.0.4 |
+| Web framework | Django 6.0.5 |
 | API | Django REST Framework 3.17.1, `drf-spectacular` |
 | Auth | `dj-rest-auth`, `django-allauth`, Simple JWT |
 | Database | MariaDB through `django.db.backends.mysql` and `mysqlclient` |
@@ -77,10 +77,16 @@ BookNest/
 |   |-- pyproject.toml
 |   |-- uv.lock
 |   |-- apps/
+|   |   |-- common/
+|   |   |-- operations/
 |   |   |-- books/
-|   |   |-- follows/
+|   |   |-- reviews/
+|   |   |-- collections/
+|   |   |-- social/
 |   |   |-- notifications/
-|   |   |-- recommendation/
+|   |   |-- recommendations/
+|   |   |-- search/
+|   |   |-- integrations/
 |   |   `-- users/
 |   `-- config/
 |       |-- urls.py
@@ -92,13 +98,23 @@ BookNest/
 
 ## Architecture
 
-Backend code is split into domain apps under `server/apps/`. Each app keeps HTTP handling, read access, and business operations separate:
+Backend code is split into domain apps under `server/apps/`. Each app owns its schema, query access, write orchestration, serializers, views, URL routes, and background or management entry points for its domain:
 
-- `views.py` or `views/`: parse requests, call selectors/services, and return DRF responses.
+- `views.py`: parse requests, call selectors/services, and return DRF responses.
 - `selectors.py`: read/query access paths and queryset composition.
 - `services.py`: write operations, state changes, orchestration, and side effects.
-- `managers.py`: reusable queryset and model manager behavior.
+- `models.py`: schema, model-level behavior, and local querysets/managers.
 - `tests/`: app-local model, selector, service, and view coverage.
+
+Current backend domains are `common`, `operations`, `users`, `books`, `reviews`, `collections`, `social`, `notifications`, `recommendations`, `search`, and `integrations`.
+
+The backend now uses the enhanced database model set:
+
+- `common` provides abstract `TimeStampedModel` and `SoftDeleteModel` base classes.
+- `operations` owns `TaskLog` and the denormalized-data repair command.
+- `users` owns `User`, `Profile`, `UserPreference`, `ProfileInterest`, and `UserSocialLink`.
+- `books` owns catalog entities, through tables, author likes, related books, and trend snapshots.
+- `reviews`, `collections`, `social`, `notifications`, `recommendations`, `search`, and `integrations` each expose their enhanced models through dedicated API route groups.
 
 Public API routes are versioned under `/api/v1/`. OpenAPI schema and docs are also versioned:
 
@@ -156,6 +172,8 @@ Then run:
 
 ```bash
 uv run python manage.py migrate
+uv run python manage.py init_integrations
+uv run python manage.py rebuild_search_index
 uv run python manage.py runserver
 ```
 
@@ -236,21 +254,47 @@ Primary local route groups:
 ```text
 /api/v1/auth/
 /api/v1/users/
+/api/v1/user-preferences/
 /api/v1/profiles/
+/api/v1/profiles/me/interests/
+/api/v1/profiles/me/social-links/
 /api/v1/books/
+/api/v1/book-authors/
+/api/v1/book-genres/
+/api/v1/related-books/
+/api/v1/book-trend-snapshots/
 /api/v1/authors/
+/api/v1/author-likes/
 /api/v1/genres/
-/api/v1/feed-activities/
 /api/v1/reviews/
+/api/v1/review-votes/
 /api/v1/ratings/
-/api/v1/reading-lists/
+/api/v1/reading-collections/
+/api/v1/collection-books/
+/api/v1/reading-progress/
 /api/v1/follows/
+/api/v1/followers/
+/api/v1/feed-events/
 /api/v1/notifications/
-/api/v1/notification-types/
 /api/v1/notification-counts/
 /api/v1/recommendations/
-/api/v1/recommendation-refreshes/
+/api/v1/catalog-recommendations/
+/api/v1/recommendation-feedback/
 /api/v1/recommendation-models/
+/api/v1/recommendation-runs/
+/api/v1/search/books/
+/api/v1/search/autocomplete/
+/api/v1/search/autocomplete-terms/
+/api/v1/search/index-statuses/
+/api/v1/search/query-logs/
+/api/v1/search/throttle-buckets/
+/api/v1/external-sources/
+/api/v1/external-identifiers/
+/api/v1/external-records/
+/api/v1/external-enrichment-requests/
+/api/v1/external-sync-runs/
+/api/v1/external-sync-states/
+/api/v1/task-logs/
 ```
 
 ## Maintenance Commands
@@ -259,17 +303,18 @@ Backend data maintenance:
 
 ```bash
 cd server
-uv run python manage.py fix_data_integrity --fix-all --dry-run
-uv run python manage.py fix_data_integrity --fix-all
-uv run python manage.py rebuild_book_search_index
+uv run python manage.py repair_denormalized_data
+uv run python manage.py init_integrations
+uv run python manage.py rebuild_search_index
 ```
+
+Initialization after a fresh deploy should include migrations, default external catalog sources, search index status/autocomplete data, and denormalized label/counter repair when loading existing data.
 
 Recommendation commands:
 
 ```bash
 cd server
-uv run python manage.py train_recommendation_model --model-type svd
-uv run python manage.py generate_recommendations --all
+uv run python manage.py refresh_catalog_recommendations --source trending --limit 50
 ```
 
 Create local MariaDB backups with `mariadb-dump` after running migrations and any data integrity repairs:
@@ -294,10 +339,13 @@ Backend:
 ```bash
 cd server
 uv run python -Wd manage.py check
+uv run python manage.py makemigrations --check --dry-run
+uv run python manage.py migrate --check
 uv run python manage.py test --verbosity=2
 uv run ruff check . --fix
 uv run ruff format .
 uv run mypy . --ignore-missing-imports
+uv run python manage.py spectacular --validate --file /tmp/booknest-schema.yml
 uv run python manage.py check --deploy --settings=config.settings.production
 ```
 
@@ -326,7 +374,6 @@ npm run build
 
 - Backend details: `server/README.md`
 - Frontend details: `client/README.md`
-- Books management commands: `server/apps/books/management/commands/README.md`
 
 ## External References
 

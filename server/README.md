@@ -1,11 +1,12 @@
 # BookNest Backend
 
-BookNest backend is a Django REST Framework API for book discovery, reading lists, social follows, notifications, and recommendations. The service is organized as a modular Django project with domain apps under `apps/`, split settings under `config/settings/`, MariaDB as the primary database, Redis/Celery for background work, and `uv` for Python dependency and environment management.
+BookNest backend is a Django REST Framework API for book discovery, reviews, reading collections, social feed events, notifications, search, external catalog integrations, and recommendations. The service is organized as a modular Django project with domain apps under `apps/`, split settings under `config/settings/`, MariaDB as the primary database, Redis/Celery for background work, and `uv` for Python dependency and environment management.
 
 ## Table Of Contents
 
 - [Stack](#stack)
 - [Architecture](#architecture)
+- [Enhanced Data Model](#enhanced-data-model)
 - [Repository Layout](#repository-layout)
 - [Configuration](#configuration)
 - [Local Development](#local-development)
@@ -28,7 +29,7 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 | --- | --- |
 | Runtime | Python 3.14.4 |
 | Dependency manager | `uv` with `pyproject.toml` and `uv.lock` |
-| Web framework | Django 6.0.4 |
+| Web framework | Django 6.0.5 |
 | API | Django REST Framework 3.17.1 |
 | Auth | `dj-rest-auth`, `django-allauth`, Simple JWT |
 | Database | MariaDB via `django.db.backends.mysql` and `mysqlclient` |
@@ -42,56 +43,148 @@ BookNest backend is a Django REST Framework API for book discovery, reading list
 
 ## Architecture
 
-The backend follows a domain-app layout:
+The backend follows a domain-app layout. Each app owns its schema, query access, write orchestration, serializers, views, URL routes, and background/management entry points for its own domain:
 
-- `apps/books`: catalog, authors, genres, ratings, reviews, reading lists, search helpers, Celery tasks, and integrity/search-index maintenance commands.
-- `apps/users`: custom user model, profiles, profile interests/social links, auth/profile serializers and views.
-- `apps/follows`: follow relationships between profiles.
-- `apps/notifications`: notification types, notification creation, unread counts, read/unread actions.
-- `apps/recommendation`: recommendation model metadata, generated user recommendations, training/generation services, Celery tasks, and management commands.
+- `apps/common`: shared helper app for abstract timestamp and soft-delete base models.
+- `apps/operations`: operational task logs and cross-domain repair commands.
+- `apps/users`: email-first user model, profiles, preferences, profile interests, social links, auth/profile API.
+- `apps/books`: catalog books, authors, genres, through tables, related books, author likes, and trend snapshots.
+- `apps/reviews`: ratings, reviews, review votes, and review/rating counter maintenance.
+- `apps/collections`: reading collections, collection items, reading progress, and collection/read counters.
+- `apps/social`: follow relationships and feed events.
+- `apps/notifications`: single enhanced notification model, unread/read/delete operations, and notification queries.
+- `apps/recommendations`: recommendation model metadata, runs, user/catalog recommendations, feedback, and recommendation tasks.
+- `apps/search`: search query logs, throttling buckets, autocomplete terms, search index status, and search rebuild commands.
+- `apps/integrations`: external catalog sources, identifiers, external records, enrichment requests, sync runs/state, and integration tasks.
 
 Each app follows the same internal layering:
 
-- `models.py` or `models/`: database schema and model-level behavior.
-- `managers.py`: custom managers/querysets for reusable ORM behavior.
+- `models.py`: database schema, model-level behavior, and local querysets/managers.
 - `selectors.py`: read/query access paths. Prefer these for list/detail query composition.
 - `services.py`: writes/actions/orchestration. Prefer these for business operations.
-- `views/` or `views.py`: HTTP-specific request/response handling.
-- `serializers/` or `serializers.py`: DRF serialization and validation.
+- `views.py`: HTTP-specific request/response handling.
+- `serializers.py`: DRF serialization and validation.
 - `tests/`: app-local tests split into model, view, service, selector, and search coverage.
 
 Views should stay thin: parse request input, call selectors/services, and return responses. Business logic belongs in services/selectors.
+
+## Enhanced Data Model
+
+The current schema is the enhanced model set. Legacy `follows`, singular `recommendation`, `CustomUser`, old book search index, and old review/notification models are not active apps or models.
+
+Shared model behavior:
+
+- `apps.common.models.TimeStampedModel`: `created_at` and `updated_at`.
+- `apps.common.models.SoftDeleteModel`: timestamp fields plus `is_archived`, `archived_at`, `archive_reason`, and `archive()`.
+- `apps.operations.models.TaskLog`: operational task tracking for external syncs, enrichment, recommendations, search rebuilds, CSV export, data repair, and random test data.
+
+Domain model ownership:
+
+| App | Models |
+| --- | --- |
+| `users` | `User`, `Profile`, `UserPreference`, `ProfileInterest`, `UserSocialLink` |
+| `books` | `Author`, `AuthorLike`, `Genre`, `Book`, `BookAuthor`, `BookGenre`, `RelatedBook`, `BookTrendSnapshot` |
+| `reviews` | `Rating`, `Review`, `ReviewVote` |
+| `collections` | `ReadingCollection`, `CollectionBook`, `ReadingProgress` |
+| `social` | `FollowRelationship`, `FeedEvent` |
+| `notifications` | `Notification` |
+| `recommendations` | `RecommendationModel`, `RecommendationRun`, `UserRecommendation`, `CatalogRecommendation`, `RecommendationFeedback` |
+| `search` | `SearchQueryLog`, `SearchThrottleBucket`, `SearchAutocompleteTerm`, `SearchIndexStatus` |
+| `integrations` | `ExternalCatalogSource`, `BookExternalIdentifier`, `ExternalBookRecord`, `ExternalEnrichmentRequest`, `ExternalSyncRun`, `ExternalSyncState` |
+
+Denormalized fields are intentional. `Book.average_rating`, catalog counters, `Book.author_names`, `Book.genre_labels`, profile counters, and trend snapshots keep catalog/feed/profile reads cheap. Services and signals maintain these where possible; `repair_denormalized_data` is the repair path after imports or manual restores.
+
+Search uses `books.MariaDBFullTextIndex` on `Book.title`, `subtitle`, `author_names`, `genre_labels`, `description`, `isbn_13`, and `isbn_10`. On MySQL/MariaDB it emits a full-text index; on non-MySQL backends it falls back to a normal Django index.
+
+Fresh deployments should run migrations, initialize external source rows, initialize/rebuild search data, and create default reading collections for users through the user/profile signal path or a backfill if importing users.
 
 ## Repository Layout
 
 ```text
 server/
 |-- apps/
-|   |-- books/
+|   |-- common/
+|   |   `-- models.py
+|   |-- operations/
 |   |   |-- management/commands/
-|   |   |   |-- README.md
-|   |   |   |-- fix_data_integrity.py
-|   |   |   `-- rebuild_book_search_index.py
-|   |   |-- managers.py
+|   |   |   `-- repair_denormalized_data.py
+|   |   |-- serializers.py
+|   |   |-- urls.py
+|   |   |-- views.py
+|   |   |-- models.py
+|   |   `-- tests/
+|   |-- books/
+|   |   |-- models.py
+|   |   |-- selectors.py
+|   |   |-- serializers.py
+|   |   |-- services.py
+|   |   |-- urls.py
+|   |   `-- views.py
+|   |-- reviews/
 |   |   |-- models.py
 |   |   |-- selectors.py
 |   |   |-- services.py
-|   |   |-- serializers/
-|   |   |-- tests/
-|   |   |-- utils/
-|   |   `-- views/
-|   |-- follows/
+|   |   |-- serializers.py
+|   |   |-- urls.py
+|   |   `-- views.py
+|   |-- collections/
+|   |   |-- models.py
+|   |   |-- selectors.py
+|   |   |-- serializers.py
+|   |   |-- services.py
+|   |   |-- signals.py
+|   |   |-- urls.py
+|   |   `-- views.py
+|   |-- social/
+|   |   |-- models.py
+|   |   |-- selectors.py
+|   |   |-- serializers.py
+|   |   |-- services.py
+|   |   |-- signals.py
+|   |   |-- urls.py
+|   |   `-- views.py
 |   |-- notifications/
-|   |-- recommendation/
+|   |   |-- models.py
+|   |   |-- selectors.py
+|   |   |-- serializers.py
+|   |   |-- services.py
+|   |   |-- urls.py
+|   |   `-- views.py
+|   |-- recommendations/
 |   |   |-- management/commands/
-|   |   |-- recommendation_engine.py
+|   |   |-- models.py
+|   |   |-- serializers.py
 |   |   |-- selectors.py
 |   |   |-- services.py
+|   |   |-- urls.py
+|   |   |-- views.py
+|   |   `-- tasks.py
+|   |-- search/
+|   |   |-- management/commands/
+|   |   |   `-- rebuild_search_index.py
+|   |   |-- models.py
+|   |   |-- serializers.py
+|   |   |-- selectors.py
+|   |   |-- services.py
+|   |   |-- urls.py
+|   |   |-- views.py
+|   |   `-- tasks.py
+|   |-- integrations/
+|   |   |-- management/commands/
+|   |   |   `-- init_integrations.py
+|   |   |-- models.py
+|   |   |-- serializers.py
+|   |   |-- selectors.py
+|   |   |-- services.py
+|   |   |-- urls.py
+|   |   |-- views.py
 |   |   `-- tasks.py
 |   `-- users/
-|       |-- models/
+|       |-- models.py
+|       |-- serializers.py
 |       |-- selectors.py
 |       |-- services.py
+|       |-- urls.py
 |       `-- views.py
 |-- config/
 |   |-- settings/
@@ -198,16 +291,23 @@ Run migrations:
 uv run python manage.py migrate
 ```
 
-Repair imported or restored data integrity:
+Initialize rows and derived search data after a fresh database setup:
 
 ```bash
-uv run python manage.py fix_data_integrity --fix-all
+uv run python manage.py init_integrations
+uv run python manage.py rebuild_search_index
 ```
 
-Rebuild denormalized book search documents after large book/author/genre imports:
+Repair denormalized counters and labels after imports, direct SQL changes, or restores:
 
 ```bash
-uv run python manage.py rebuild_book_search_index
+uv run python manage.py repair_denormalized_data
+```
+
+Rebuild denormalized book search labels and autocomplete terms after large book/author/genre imports:
+
+```bash
+uv run python manage.py rebuild_search_index
 ```
 
 Start the development server:
@@ -261,7 +361,7 @@ MariaDB data is persisted in the named Docker volume `mariadb_data`. Redis data 
 
 ## Database Maintenance
 
-BookNest uses MariaDB from the start.
+BookNest uses MariaDB from the start. The active migration graph is the enhanced schema only: `books` and `users` end at `0002_initial` and `0001_initial` respectively, and the legacy compatibility/copy migrations have been removed.
 
 Run migrations:
 
@@ -269,23 +369,22 @@ Run migrations:
 uv run python manage.py migrate
 ```
 
-Run data integrity repairs after large imports or restores:
+Run denormalized data repairs after large imports or restores:
 
 ```bash
-uv run python manage.py fix_data_integrity --fix-all --dry-run
-uv run python manage.py fix_data_integrity --fix-all
+uv run python manage.py repair_denormalized_data
 ```
 
-The integrity command repairs:
+The repair command refreshes:
 
 - author book counters
 - book rating counters and average ratings
-- review vote counters
-- missing book genres
-- normalized book title whitespace
-- duplicate reading-list entries
-- missing user profiles
-- MariaDB auto-increment sequences
+- book review counters
+- book author and genre display labels
+- genre book counters
+- collection item counters
+
+Runtime services/signals maintain review vote counts, book collection/read counters, and profile follow counters during normal writes.
 
 Create a local MariaDB backup after repairs:
 
@@ -303,36 +402,24 @@ Database dumps are ignored by Git and should be stored securely because they may
 
 ## Search Index
 
-Book search uses denormalized search documents. Rebuild them after large catalog imports, repaired relationships, or direct data restores:
+Book search uses denormalized book labels plus stored autocomplete terms. Rebuild them after large catalog imports, repaired relationships, or direct data restores:
 
 ```bash
-uv run python manage.py rebuild_book_search_index
-uv run python manage.py rebuild_book_search_index --batch-size 1000
+uv run python manage.py rebuild_search_index
 ```
 
 ## Recommendation Jobs
 
-Recommendation management commands live under `apps/recommendation/management/commands/`.
+Recommendation management commands live under `apps/recommendations/management/commands/`.
 
-Train a model:
-
-```bash
-uv run python manage.py train_recommendation_model --model-type svd
-uv run python manage.py train_recommendation_model --model-type knn --min-ratings 5 --knn-k 40
-```
-
-Generate recommendations:
+Refresh catalog recommendations from current popularity signals:
 
 ```bash
-uv run python manage.py generate_recommendations --user-id 1 --count 10
-uv run python manage.py generate_recommendations --all --min-ratings 3
+uv run python manage.py refresh_catalog_recommendations --source trending --limit 50
 ```
 
-Create random local recommendation test data:
+Celery recommendation generation tasks live in `apps/recommendations/tasks.py`. Persist long-running job status in `operations.TaskLog` and `recommendations.RecommendationRun`.
 
-```bash
-uv run python manage.py script --users 10 --ratings-per-user 10 --rating-range 1-5
-```
 
 ## API Documentation
 
@@ -347,22 +434,69 @@ Primary API route groups:
 ```text
 /api/v1/auth/
 /api/v1/users/
+/api/v1/user-preferences/
 /api/v1/profiles/
+/api/v1/profiles/me/interests/
+/api/v1/profiles/me/social-links/
 /api/v1/books/
+/api/v1/book-authors/
+/api/v1/book-genres/
+/api/v1/related-books/
+/api/v1/book-trend-snapshots/
 /api/v1/authors/
+/api/v1/author-likes/
 /api/v1/genres/
-/api/v1/feed-activities/
 /api/v1/reviews/
+/api/v1/review-votes/
 /api/v1/ratings/
-/api/v1/reading-lists/
+/api/v1/reading-collections/
+/api/v1/collection-books/
+/api/v1/reading-progress/
 /api/v1/follows/
+/api/v1/followers/
+/api/v1/feed-events/
 /api/v1/notifications/
-/api/v1/notification-types/
 /api/v1/notification-counts/
 /api/v1/recommendations/
-/api/v1/recommendation-refreshes/
+/api/v1/catalog-recommendations/
+/api/v1/recommendation-feedback/
 /api/v1/recommendation-models/
+/api/v1/recommendation-runs/
+/api/v1/search/books/
+/api/v1/search/autocomplete/
+/api/v1/search/autocomplete-terms/
+/api/v1/search/index-statuses/
+/api/v1/search/query-logs/
+/api/v1/search/throttle-buckets/
+/api/v1/external-sources/
+/api/v1/external-identifiers/
+/api/v1/external-records/
+/api/v1/external-enrichment-requests/
+/api/v1/external-sync-runs/
+/api/v1/external-sync-states/
+/api/v1/task-logs/
 ```
+
+Common detail/action routes:
+
+```text
+/api/v1/books/<id>/
+/api/v1/books/<book_id>/ratings/
+/api/v1/books/<book_id>/reviews/
+/api/v1/books/<book_id>/related-books/
+/api/v1/authors/<author_id>/books/
+/api/v1/genres/<genre_id>/books/
+/api/v1/reviews/<review_id>/votes/
+/api/v1/recommendations/<id>/dismiss/
+/api/v1/recommendations/<id>/click/
+/api/v1/notifications/<notification_id>/read/
+/api/v1/notifications/<notification_id>/unread/
+/api/v1/notifications/mark-all-read/
+```
+
+Admin-only operational route groups include `task-logs`, search logs/throttle/index status, external sync/source records, recommendation models/runs, and catalog recommendation writes. User-owned route groups include current profile interests/social links, ratings/reviews, review votes, reading collections/progress, follows, notifications, user recommendations, and recommendation feedback.
+
+The current URL resolver exposes 112 `/api/v1/` routes, including `dj-rest-auth` and schema/docs routes.
 
 ## Frontend Integration
 
@@ -381,7 +515,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
 
-The current frontend UI uses retryable loading/error states for API-backed books, search results, recommendations, reviews, reading lists, profiles, and notifications.
+The current frontend UI uses retryable loading/error states for API-backed books, search results, recommendations, reviews, reading collections, profiles, and notifications.
 
 ## Testing And Verification
 
@@ -391,10 +525,23 @@ Run Django system checks with warnings enabled:
 uv run python -Wd manage.py check
 ```
 
+Verify migration state:
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+uv run python manage.py migrate --check
+```
+
 Run all tests:
 
 ```bash
 uv run python manage.py test --verbosity=2
+```
+
+Validate OpenAPI generation:
+
+```bash
+uv run python manage.py spectacular --validate --file /tmp/booknest-schema.yml
 ```
 
 Run linting, formatting, and type checks:
@@ -430,7 +577,7 @@ server/logs/
 Current log files include:
 
 - `logs/django_debug.log`
-- `logs/recommendation.log`
+- `logs/recommendations.log`
 - `logs/booknest_YYYYMMDD.log`
 - `logs/booknest_errors_YYYYMMDD.log`
 
@@ -444,6 +591,8 @@ Default periodic task names:
 
 - `sync-external-books`
 - `update-book-metadata`
+
+These route to `apps.integrations.tasks`. Recommendation generation uses `apps.recommendations.tasks.generate_recommendations`, search rebuilds use `apps.search.tasks.rebuild_search_index`, and long-running job status should be linked to `operations.TaskLog` where possible.
 
 Run a worker locally when Redis is available:
 
