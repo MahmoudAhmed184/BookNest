@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
@@ -17,6 +19,9 @@ from apps.integrations.serializers import (
     ExternalSyncRunSerializer,
     ExternalSyncStateSerializer,
 )
+from apps.integrations.tasks import enqueue_external_enrichment_request
+
+logger = logging.getLogger(__name__)
 
 
 class ExternalCatalogSourceListAPIView(generics.ListCreateAPIView):
@@ -65,7 +70,11 @@ class ExternalEnrichmentRequestCollectionAPIView(generics.ListCreateAPIView):
         return selectors.enrichment_requests().filter(requested_by=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(requested_by=self.request.user)
+        request = serializer.save(requested_by=self.request.user)
+        try:
+            enqueue_external_enrichment_request(request=request)
+        except Exception as exc:
+            logger.warning("Could not enqueue external enrichment request %s: %s", request.pk, exc)
 
 
 class ExternalEnrichmentRequestResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
