@@ -20,6 +20,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "t", "yes", "y", "on"}
+
+
+def env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None or value.strip() == "":
+        return default
+    return int(value)
+
+
+def env_list(name: str, default=()) -> list[str]:
+    value = os.environ.get(name)
+    items = value.split(",") if value is not None else default
+    return [item.strip() for item in items if item and item.strip()]
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -28,8 +48,8 @@ MEDIA_URL = "/media/"  # This is the URL path where your media will be served fr
 MEDIA_ROOT = BASE_DIR / "media"  # This is where files will be stored on your server
 
 # Ensure Django handles large file uploads properly
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB in bytes
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB in bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = env_int("DATA_UPLOAD_MAX_MEMORY_SIZE", 5 * 1024 * 1024)
+FILE_UPLOAD_MAX_MEMORY_SIZE = env_int("FILE_UPLOAD_MAX_MEMORY_SIZE", 5 * 1024 * 1024)
 
 # Cloudinary Configuration
 cloudinary.config(
@@ -55,9 +75,9 @@ STORAGES = {
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-this-in-production")
 
 # SECURITY WARNING: don't run with debug turned on in production.
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+DEBUG = env_bool("DEBUG", False)
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ("localhost", "127.0.0.1"))
 
 
 # Application definition
@@ -96,31 +116,41 @@ INSTALLED_APPS = [
 ]
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=90),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
-    "UPDATE_LAST_LOGIN": True,
-    "SIGNING_KEY": os.environ.get(
-        "JWT_SIGNING_KEY",
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    ),  # generate a key and replace me
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env_int("JWT_ACCESS_TOKEN_MINUTES", 15)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=env_int("JWT_REFRESH_TOKEN_DAYS", 7)),
+    "ROTATE_REFRESH_TOKENS": env_bool("JWT_ROTATE_REFRESH_TOKENS", True),
+    "BLACKLIST_AFTER_ROTATION": env_bool("JWT_BLACKLIST_AFTER_ROTATION", True),
+    "UPDATE_LAST_LOGIN": env_bool("JWT_UPDATE_LAST_LOGIN", False),
+    "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY", SECRET_KEY),
     "ALGORITHM": "HS512",
 }
+
+DRF_PAGE_SIZE = env_int("DRF_PAGE_SIZE", 20)
+DRF_MAX_PAGE_SIZE = env_int("DRF_MAX_PAGE_SIZE", 100)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": os.environ.get("DRF_ANON_RATE", "100/hour"),
+        "user": os.environ.get("DRF_USER_RATE", "1000/hour"),
+    },
+    "DEFAULT_PAGINATION_CLASS": "apps.common.pagination.StandardResultsSetPagination",
+    "PAGE_SIZE": DRF_PAGE_SIZE,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 REST_AUTH = {
     "USE_JWT": True,
-    "JWT_AUTH_HTTPONLY": False,
+    "JWT_AUTH_HTTPONLY": env_bool("JWT_AUTH_HTTPONLY", False),
     "REGISTER_SERIALIZER": "apps.users.serializers.EmailRegisterSerializer",
     "USER_DETAILS_SERIALIZER": "apps.users.serializers.UserSerializer",
 }
@@ -129,6 +159,7 @@ REST_AUTH = {
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -172,6 +203,8 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", "booknest"),
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "3306"),
+        "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
+        "CONN_HEALTH_CHECKS": env_bool("DB_CONN_HEALTH_CHECKS", True),
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -220,14 +253,12 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 AUTH_USER_MODEL = "users.User"
-
-ACCOUNT_EMAIL_VERIFICATION = "none"
 
 SITE_ID = 1
 
@@ -235,8 +266,8 @@ SITE_ID = 1
 # Email configuration
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_PORT = env_int("EMAIL_PORT", 587)
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
@@ -255,7 +286,7 @@ PASSWORD_RESET_TIMEOUT = 3600
 EMAIL_SUBJECT_PREFIX = f"[{SITE_NAME}] "
 
 # Timeout settings
-EMAIL_TIMEOUT = 60
+EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 60)
 
 ACCOUNT_ADAPTER = "apps.users.adapter.CustomAccountAdapter"
 # END EMAIL SERVER CONFIGURATION
@@ -297,6 +328,9 @@ def _log_file_path(env_name, filename):
     return str(LOG_DIR / filename)
 
 
+LOG_MAX_BYTES = env_int("DJANGO_LOG_MAX_BYTES", 10 * 1024 * 1024)
+LOG_BACKUP_COUNT = env_int("DJANGO_LOG_BACKUP_COUNT", 5)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -318,14 +352,18 @@ LOGGING = {
         },
         "file": {
             "level": "DEBUG",
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": _log_file_path("DJANGO_LOG_FILE", "django_debug.log"),
+            "maxBytes": LOG_MAX_BYTES,
+            "backupCount": LOG_BACKUP_COUNT,
             "formatter": "verbose",
         },
         "recommendation_file": {
             "level": "DEBUG",
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": _log_file_path("RECOMMENDATION_LOG_FILE", "recommendations.log"),
+            "maxBytes": LOG_MAX_BYTES,
+            "backupCount": LOG_BACKUP_COUNT,
             "formatter": "verbose",
         },
     },
@@ -357,7 +395,7 @@ LOGGING = {
     },
 }
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", True)
 
 SECURE_CSP_REPORT_ONLY = {
     "default-src": [CSP.SELF],
@@ -378,9 +416,15 @@ SPECTACULAR_SETTINGS = {
         "persistAuthorization": True,
     },
     "COMPONENT_SPLIT_REQUEST": True,
-    "SERVE_PUBLIC": True,
+    "SERVE_PUBLIC": env_bool("API_SCHEMA_PUBLIC", DEBUG),
     "SCHEMA_PATH_PREFIX": r"/api/v1",
     "ENABLE_DJANGO_DEPLOY_CHECK": False,
+    "ENUM_NAME_OVERRIDES": {
+        "ReadingListTypeEnum": "apps.collections.models.ReadingListType",
+        "PrivacyEnum": "apps.collections.models.CollectionPrivacy",
+        "ExternalEnrichmentStatusEnum": "apps.integrations.models.ExternalEnrichmentRequest.Status",
+        "TaskRunStatusEnum": "apps.operations.models.TaskLog.Status",
+    },
 }
 
 # Cache settings
@@ -400,10 +444,10 @@ CACHES = {
 }
 
 # Cache time to live is 15 minutes
-CACHE_TTL = 60 * 15
+CACHE_TTL = env_int("CACHE_TTL", 60 * 15)
 
 # Cache key prefix
-CACHE_KEY_PREFIX = "booknest"
+CACHE_KEY_PREFIX = os.environ.get("CACHE_KEY_PREFIX", "booknest")
 
 # Celery settings
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -412,3 +456,8 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = os.environ.get("CELERY_TIMEZONE", TIME_ZONE)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_SOFT_TIME_LIMIT = env_int("CELERY_TASK_SOFT_TIME_LIMIT", 60 * 10)
+CELERY_TASK_TIME_LIMIT = env_int("CELERY_TASK_TIME_LIMIT", 60 * 15)
+CELERY_RESULT_EXPIRES = env_int("CELERY_RESULT_EXPIRES", 60 * 60 * 24)

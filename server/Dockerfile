@@ -30,6 +30,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 RUN SECRET_KEY=build-only-placeholder \
+    JWT_SIGNING_KEY=build-only-placeholder-jwt-signing-key-for-collectstatic-only \
+    ALLOWED_HOSTS=localhost \
+    CORS_ALLOWED_ORIGINS=http://localhost:3000 \
+    CSRF_TRUSTED_ORIGINS=http://localhost:8000 \
     DJANGO_SETTINGS_MODULE=config.settings.production \
     python manage.py collectstatic --noinput
 
