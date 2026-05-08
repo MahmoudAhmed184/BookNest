@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from django.db import transaction
+from django.utils.text import slugify
 
 from apps.books.models import Author, Book, BookAuthor, BookGenre, Genre
 
@@ -14,13 +15,36 @@ def normalize_label(value: str) -> str:
     return " ".join(value.casefold().strip().split())
 
 
+def unique_slug(*, model, value: str, max_length: int, instance_id: int | None = None) -> str:
+    base = slugify(value)[:max_length] or "item"
+    slug = base
+    suffix = 2
+    queryset = model.objects.all()
+    if instance_id is not None:
+        queryset = queryset.exclude(pk=instance_id)
+    while queryset.filter(slug=slug).exists():
+        suffix_text = f"-{suffix}"
+        slug = f"{base[: max_length - len(suffix_text)]}{suffix_text}"
+        suffix += 1
+    return slug
+
+
 def sync_author_book_count(*, author: Author) -> None:
-    author.books_count = author.book_authors.values("book_id").distinct().count()
+    author.books_count = (
+        author.book_authors.filter(book__is_archived=False, book__is_public=True).values("book_id").distinct().count()
+    )
     author.save(update_fields=["books_count", "updated_at"])
 
 
+def sync_author_like_count(*, author: Author) -> None:
+    author.like_count = author.likes.count()
+    author.save(update_fields=["like_count", "updated_at"])
+
+
 def sync_genre_book_count(*, genre: Genre) -> None:
-    genre.books_count = genre.book_genres.values("book_id").distinct().count()
+    genre.books_count = (
+        genre.book_genres.filter(book__is_archived=False, book__is_public=True).values("book_id").distinct().count()
+    )
     genre.save(update_fields=["books_count", "updated_at"])
 
 

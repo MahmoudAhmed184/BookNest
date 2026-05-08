@@ -4,6 +4,8 @@ from apps.search import views
 
 urlpatterns = [
     path("search/books/", views.BookSearchAPIView.as_view(), name="book-search"),
+    path("search/suggestions/", views.BookSuggestionAPIView.as_view(), name="book-suggestions"),
+    path("search/related-books/", views.RelatedBookSuggestionAPIView.as_view(), name="related-book-suggestions"),
     path("search/autocomplete/", views.SearchAutocompleteAPIView.as_view(), name="search-autocomplete"),
     path(
         "search/autocomplete-terms/",

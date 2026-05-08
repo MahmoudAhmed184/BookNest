@@ -27,10 +27,14 @@ class AuthorSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ("books_count", "like_count", "created_at", "updated_at")
+        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
 
     def validate(self, attrs):
-        if "name" in attrs and "normalized_name" not in attrs:
-            attrs["normalized_name"] = services.normalize_label(attrs["name"])
+        name = attrs.get("name")
+        if name and "normalized_name" not in attrs:
+            attrs["normalized_name"] = services.normalize_label(name)
+        if self.instance is None and name and not attrs.get("slug"):
+            attrs["slug"] = services.unique_slug(model=Author, value=name, max_length=255)
         return attrs
 
 
@@ -51,14 +55,20 @@ class GenreSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ("books_count", "created_at", "updated_at")
+        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
 
     def validate(self, attrs):
-        if "name" in attrs and "normalized_name" not in attrs:
-            attrs["normalized_name"] = services.normalize_label(attrs["name"])
+        name = attrs.get("name")
+        if name and "normalized_name" not in attrs:
+            attrs["normalized_name"] = services.normalize_label(name)
+        if self.instance is None and name and not attrs.get("slug"):
+            attrs["slug"] = services.unique_slug(model=Genre, value=name, max_length=140)
         return attrs
 
 
 class AuthorLikeSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=Author.objects.filter(is_active=True))
+
     class Meta:
         model = AuthorLike
         fields = ["id", "user", "author", "created_at", "updated_at"]
@@ -141,8 +151,13 @@ class BookSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
 
     def create(self, validated_data):
+        if not validated_data.get("slug"):
+            validated_data["slug"] = services.unique_slug(model=Book, value=validated_data["title"], max_length=520)
+        if validated_data.get("publication_date") and not validated_data.get("publication_year"):
+            validated_data["publication_year"] = validated_data["publication_date"].year
         authors = validated_data.pop("author_ids", [])
         genres = validated_data.pop("genre_ids", [])
         book = Book.objects.create(**validated_data)
@@ -154,6 +169,8 @@ class BookSerializer(serializers.ModelSerializer):
         return book
 
     def update(self, instance, validated_data):
+        if validated_data.get("publication_date") and not validated_data.get("publication_year"):
+            validated_data["publication_year"] = validated_data["publication_date"].year
         authors = validated_data.pop("author_ids", None)
         genres = validated_data.pop("genre_ids", None)
         book = super().update(instance, validated_data)
@@ -219,6 +236,13 @@ class RelatedBookSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ("id", "to_book", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        from_book = attrs.get("from_book") or getattr(self.instance, "from_book", None)
+        to_book = attrs.get("to_book") or getattr(self.instance, "to_book", None)
+        if from_book is not None and to_book is not None and from_book.pk == to_book.pk:
+            raise serializers.ValidationError({"to_book_id": "A book cannot be related to itself."})
+        return attrs
 
 
 class BookTrendSnapshotSerializer(serializers.ModelSerializer):
