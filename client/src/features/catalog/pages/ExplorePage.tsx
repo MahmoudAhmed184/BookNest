@@ -155,6 +155,9 @@ export default function Explore(): ReactElement {
     refetchBooks,
     refetchRecommendations,
     refreshRecommendations,
+    dismissRecommendation,
+    clickRecommendation,
+    submitRecommendationFeedback,
   } = useExploreCatalog(token, page, serverFilters);
 
   const scrollToResults = useCallback((): void => {
@@ -353,6 +356,9 @@ export default function Explore(): ReactElement {
         canRefresh={Boolean(token)}
         onRetry={refetchRecommendations}
         onRefresh={() => refreshRecommendations()}
+        onRecommendationClick={clickRecommendation}
+        onDismiss={dismissRecommendation}
+        onFeedback={submitRecommendationFeedback}
       />
       {popularBooks.length > 0 ? <PopularBooksGrid books={popularBooks} /> : null}
     </div>

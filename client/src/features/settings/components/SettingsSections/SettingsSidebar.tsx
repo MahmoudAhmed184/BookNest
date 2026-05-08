@@ -1,6 +1,11 @@
 import type { FormEvent, ReactElement } from "react";
 
-import type { UserProfile } from "../../../profile/types/user";
+import type { CatalogGenre } from "../../../catalog/types/book";
+import type {
+  ProfileInterestSelection,
+  UserPreference,
+  UserProfile,
+} from "../../../profile/types/user";
 import { AccountSettings } from "./AccountSettings";
 import { ProfileSettingsForm } from "./ProfileSettingsForm";
 import { SecuritySettingsForm } from "./SecuritySettingsForm";
@@ -8,11 +13,15 @@ import type { SettingsTab } from "./SettingsTabs";
 
 export interface SettingsSidebarProps {
   user: UserProfile;
+  preferences?: UserPreference | undefined;
   activeTab: SettingsTab;
   username: string;
   bio: string;
   profileType: string;
-  interestsText: string;
+  interests: ProfileInterestSelection[];
+  genreQuery: string;
+  genreOptions: CatalogGenre[];
+  isLoadingGenreOptions: boolean;
   socialLinksText: string;
   newPassword: string;
   confirmPassword: string;
@@ -20,10 +29,14 @@ export interface SettingsSidebarProps {
   showNewPassword: boolean;
   showConfirmPassword: boolean;
   isSavingProfile: boolean;
+  isSavingPreferences: boolean;
   onUsernameChange: (value: string) => void;
   onBioChange: (value: string) => void;
   onProfileTypeChange: (value: string) => void;
-  onInterestsTextChange: (value: string) => void;
+  onGenreQueryChange: (value: string) => void;
+  onAddInterest: (genre: CatalogGenre) => void;
+  onRemoveInterest: (genreId: number) => void;
+  onInterestWeightChange: (genreId: number, weight: number) => void;
   onSocialLinksTextChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
@@ -31,15 +44,20 @@ export interface SettingsSidebarProps {
   onToggleConfirmPassword: () => void;
   onUpdateInfo: (event: FormEvent<HTMLFormElement>) => void;
   onUpdatePassword: (event: FormEvent<HTMLFormElement>) => void;
+  onUpdatePreferences: (payload: Partial<UserPreference>) => void;
 }
 
 export function SettingsSidebar({
   user,
+  preferences,
   activeTab,
   username,
   bio,
   profileType,
-  interestsText,
+  interests,
+  genreQuery,
+  genreOptions,
+  isLoadingGenreOptions,
   socialLinksText,
   newPassword,
   confirmPassword,
@@ -47,10 +65,14 @@ export function SettingsSidebar({
   showNewPassword,
   showConfirmPassword,
   isSavingProfile,
+  isSavingPreferences,
   onUsernameChange,
   onBioChange,
   onProfileTypeChange,
-  onInterestsTextChange,
+  onGenreQueryChange,
+  onAddInterest,
+  onRemoveInterest,
+  onInterestWeightChange,
   onSocialLinksTextChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
@@ -58,22 +80,36 @@ export function SettingsSidebar({
   onToggleConfirmPassword,
   onUpdateInfo,
   onUpdatePassword,
+  onUpdatePreferences,
 }: SettingsSidebarProps): ReactElement {
   return (
     <section className="settings-panel p-5 sm:p-6">
-      {activeTab === "account" ? <AccountSettings user={user} /> : null}
+      {activeTab === "account" ? (
+        <AccountSettings
+          user={user}
+          preferences={preferences}
+          isSavingPreferences={isSavingPreferences}
+          onUpdatePreferences={onUpdatePreferences}
+        />
+      ) : null}
       {activeTab === "profile" ? (
         <ProfileSettingsForm
           username={username}
           bio={bio}
           profileType={profileType}
-          interestsText={interestsText}
+          interests={interests}
+          genreQuery={genreQuery}
+          genreOptions={genreOptions}
+          isLoadingGenreOptions={isLoadingGenreOptions}
           socialLinksText={socialLinksText}
           isSavingProfile={isSavingProfile}
           onUsernameChange={onUsernameChange}
           onBioChange={onBioChange}
           onProfileTypeChange={onProfileTypeChange}
-          onInterestsTextChange={onInterestsTextChange}
+          onGenreQueryChange={onGenreQueryChange}
+          onAddInterest={onAddInterest}
+          onRemoveInterest={onRemoveInterest}
+          onInterestWeightChange={onInterestWeightChange}
           onSocialLinksTextChange={onSocialLinksTextChange}
           onUpdateInfo={onUpdateInfo}
         />

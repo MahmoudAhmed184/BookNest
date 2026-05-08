@@ -2,25 +2,27 @@ import type { ReactElement } from "react";
 
 import { EmptyState } from "../../../../components/ui";
 import { routePaths } from "../../../../routes/paths";
-import type { ReadingList } from "../../../collections/types/collection";
-import type { Book } from "../../../catalog/types/book";
+import type {
+  CollectionBook,
+  ReadingCollection,
+} from "../../../collections/types/collection";
 import { BookShelfCarousel } from "./BookShelfCarousel";
 
 export interface ProfileBooksSectionProps {
   title: string;
-  books: Book[];
-  primaryCollection?: ReadingList | undefined;
+  items: CollectionBook[];
+  primaryCollection?: ReadingCollection | undefined;
   isFetching: boolean;
   emptyTitle: string;
   emptyDescription: string;
   canDelete?: boolean | undefined;
   isDeleting?: boolean | undefined;
-  onDeleteBook?: ((book: Book, listId: number | null) => void) | undefined;
+  onDeleteBook?: ((item: CollectionBook) => void) | undefined;
 }
 
 export function ProfileBooksSection({
   title,
-  books,
+  items,
   primaryCollection,
   isFetching,
   emptyTitle,
@@ -35,11 +37,11 @@ export function ProfileBooksSection({
         <h2 id="profile-books-title" className="text-xl font-bold text-primary-white sm:text-2xl">
           {title}
         </h2>
-        {isFetching && books.length > 0 ? (
+        {isFetching && items.length > 0 ? (
           <p className="text-xs text-primary-gray" role="status">Updating shelf...</p>
         ) : null}
       </div>
-      {books.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
           title={emptyTitle}
           description={emptyDescription}
@@ -48,7 +50,7 @@ export function ProfileBooksSection({
         />
       ) : (
         <BookShelfCarousel
-          books={books}
+          items={items}
           primaryCollection={primaryCollection}
           canDelete={canDelete}
           isDeleting={isDeleting}

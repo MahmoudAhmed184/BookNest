@@ -2,13 +2,16 @@ import type { ReactElement } from "react";
 
 import { BookCard, EmptyState, ErrorState } from "../../../../components/ui";
 import { routeBuilders, routePaths } from "../../../../routes/paths";
-import type { RecommendedBook } from "../../types/book";
+import type {
+  RecommendationFeedbackType,
+  UserRecommendation,
+} from "../../types/book";
 import { BookCarousel } from "./BookCarousel";
 import { SectionTitle } from "./SectionTitle";
 import { SkeletonRow } from "./SkeletonRow";
 
 export interface RecommendationsSectionProps {
-  recommendations: RecommendedBook[];
+  recommendations: UserRecommendation[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
@@ -16,6 +19,12 @@ export interface RecommendationsSectionProps {
   canRefresh: boolean;
   onRetry: () => void;
   onRefresh: () => void;
+  onRecommendationClick: (id: number) => void;
+  onDismiss: (id: number) => void;
+  onFeedback: (
+    recommendation: UserRecommendation,
+    feedbackType: RecommendationFeedbackType
+  ) => void;
 }
 
 export function RecommendationsSection({
@@ -27,6 +36,9 @@ export function RecommendationsSection({
   canRefresh,
   onRetry,
   onRefresh,
+  onRecommendationClick,
+  onDismiss,
+  onFeedback,
 }: RecommendationsSectionProps): ReactElement {
   return (
     <section className="flex flex-col gap-5" aria-labelledby="recommended-books">
@@ -61,14 +73,36 @@ export function RecommendationsSection({
       {!isLoading && !isError && recommendations.length > 0 ? (
         <BookCarousel
           items={recommendations}
-          keyExtractor={(book) => book.book}
-          renderBook={(book) => (
-            <BookCard
-              to={routeBuilders.book(book.book)}
-              title={book.book_title}
-              coverSrc={book.book_cover}
-              showAuthor={false}
-            />
+          keyExtractor={(recommendation) => String(recommendation.book)}
+          renderBook={(recommendation) => (
+            <div className="flex h-full flex-col gap-2">
+              <BookCard
+                to={routeBuilders.book(recommendation.book)}
+                title={recommendation.book_detail?.title ?? "Recommended book"}
+                coverSrc={
+                  recommendation.book_detail?.cover ||
+                  recommendation.book_detail?.cover_fallback_url
+                }
+                showAuthor={false}
+                onClick={() => onRecommendationClick(recommendation.id)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="min-h-[36px] rounded-lg border border-secondary-gray px-3 text-xs font-semibold text-primary-gray hover:border-accent hover:text-primary-white"
+                  onClick={() => onFeedback(recommendation, "read")}
+                >
+                  Already read
+                </button>
+                <button
+                  type="button"
+                  className="min-h-[36px] rounded-lg px-3 text-xs font-semibold text-primary-gray hover:bg-primary-black hover:text-primary-white"
+                  onClick={() => onDismiss(recommendation.id)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           )}
         />
       ) : null}

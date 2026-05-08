@@ -5,8 +5,8 @@ export {
 export {
   deleteNotification,
   getNotifications,
-  getNotificationTypes,
   getUnreadNotificationCount,
+  markAllNotificationsRead,
   markOneRead,
   markOneUnread,
 } from "./services/notificationService";

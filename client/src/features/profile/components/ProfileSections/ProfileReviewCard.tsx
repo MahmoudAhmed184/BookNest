@@ -21,7 +21,13 @@ export function ProfileReviewCard({
   isDeleting,
   onDeleteReview,
 }: ProfileReviewCardProps): ReactElement {
-  const cover = <ReviewCover src={review.book_cover} title={review.book_title} />;
+  const book = review.book_detail;
+  const cover = (
+    <ReviewCover
+      src={book?.cover || book?.cover_fallback_url}
+      title={book?.title}
+    />
+  );
 
   return (
     <article className="glass-card card-lift p-4 text-primary-white">
@@ -35,12 +41,12 @@ export function ProfileReviewCard({
         )}
         <div className="flex grow flex-col gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <strong className="line-clamp-2 text-lg" title={review.book_title || undefined}>
-              {review.book_title || "Untitled book"}
+            <strong className="line-clamp-2 text-lg" title={book?.title}>
+              {book?.title || "Untitled book"}
             </strong>
             <StarRating value={rating} size="sm" label={`Reader rating ${rating} out of 5`} />
           </div>
-          <p className="text-sm leading-relaxed">{review.review_text}</p>
+          <p className="text-sm leading-relaxed">{review.body}</p>
           <div className="mt-auto flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
             <span>{review.created_at}</span>
             {canDelete && onDeleteReview ? (
@@ -48,7 +54,7 @@ export function ProfileReviewCard({
                 type="button"
                 onClick={() => onDeleteReview(review)}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-2 font-medium text-primary-white hover:bg-primary-black"
-                aria-label={`Delete review for ${review.book_title || "book"}`}
+                aria-label={`Delete review for ${book?.title || "book"}`}
                 disabled={isDeleting}
               >
                 {isDeleting ? <InlineSpinner /> : "Delete"}

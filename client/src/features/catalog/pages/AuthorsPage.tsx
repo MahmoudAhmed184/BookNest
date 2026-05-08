@@ -21,11 +21,9 @@ import type { Author } from "../types/book";
 const skeletonKeys = ["author-1", "author-2", "author-3", "author-4"];
 
 function AuthorCard({ author }: { author: Author }): ReactElement {
-  const authorId = author.author_id ?? author.name;
-
   return (
     <Link
-      to={routeBuilders.author(authorId)}
+      to={routeBuilders.author(author.id)}
       className="glass-card card-lift flex items-center gap-4 p-4"
     >
       <div
@@ -39,11 +37,11 @@ function AuthorCard({ author }: { author: Author }): ReactElement {
           {author.name}
         </h2>
         <p className="text-sm text-primary-gray">
-          {author.number_of_books ?? 0} books
+          {author.books_count ?? 0} books
         </p>
-        {author.description ? (
+        {author.bio ? (
           <p className="mt-1 line-clamp-2 text-sm text-primary-gray">
-            {author.description}
+            {author.bio}
           </p>
         ) : null}
       </div>
@@ -166,7 +164,7 @@ export default function AuthorsPage(): ReactElement {
         {!isLoading && !isError && authors.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {authors.map((author) => (
-              <AuthorCard key={author.author_id ?? author.name} author={author} />
+              <AuthorCard key={author.id} author={author} />
             ))}
           </div>
         ) : null}

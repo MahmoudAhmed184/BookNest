@@ -1,4 +1,8 @@
-import type { LimitOffsetApiResponse } from "../types/api";
+import type {
+  LimitOffsetApiResponse,
+  OffsetPageParams,
+  OffsetPaginatedResponse,
+} from "../types/api";
 
 export interface AuthEnvelopeMeta {
   profile_required?: boolean;
@@ -88,6 +92,27 @@ export function normalizeLimitOffsetList<TItem>(
     next: response.next ?? null,
     previous: response.previous ?? null,
     results: response.results,
+  };
+}
+
+export function normalizePaginatedList<TItem>(
+  response: LimitOffsetApiResponse<TItem> | TItem[],
+  params: OffsetPageParams
+): OffsetPaginatedResponse<TItem> {
+  const results = Array.isArray(response) ? response : response.results;
+  const count = Array.isArray(response) ? results.length : response.count ?? results.length;
+  const totalPages = count > 0 ? Math.ceil(count / params.pageSize) : 0;
+
+  return {
+    count,
+    next: Array.isArray(response) ? null : response.next ?? null,
+    previous: Array.isArray(response) ? null : response.previous ?? null,
+    results,
+    page: params.page,
+    pageSize: params.pageSize,
+    totalPages,
+    hasNext: params.page < totalPages,
+    hasPrevious: params.page > 1,
   };
 }
 

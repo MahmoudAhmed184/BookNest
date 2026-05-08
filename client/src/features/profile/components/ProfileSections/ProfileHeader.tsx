@@ -18,7 +18,8 @@ export function ProfileHeader({
   action,
   center = false,
 }: ProfileHeaderProps): ReactElement {
-  const profileImage = resolveProfileImage(user.profile_pic);
+  const profileImage = resolveProfileImage(user.picture || user.picture_fallback_url);
+  const displayName = user.user.display_name || user.handle;
 
   return (
     <section className={`flex flex-col gap-5 sm:flex-row sm:items-center ${center ? "items-center" : "items-start"}`}>
@@ -26,7 +27,7 @@ export function ProfileHeader({
         {profileImage ? (
           <img
             src={profileImage}
-            alt={`${user.username}'s profile image`}
+            alt={`${displayName}'s profile image`}
             className="h-full w-full object-cover transition-transform duration-200 ease-out hover:scale-[1.03]"
             width="176"
             height="176"
@@ -36,14 +37,14 @@ export function ProfileHeader({
         ) : (
           <div
             className="fallback-gradient flex h-full w-full items-center justify-center text-5xl font-bold text-primary-white"
-            style={getFallbackHueStyle(user.username)}
+            style={getFallbackHueStyle(displayName)}
           >
-            {getInitials(user.username)}
+            {getInitials(displayName)}
           </div>
         )}
       </div>
       <div className={`flex min-w-0 flex-col gap-3 ${center ? "items-center sm:items-start" : "items-start"}`}>
-        <h1 className="display-heading break-words text-3xl sm:text-4xl md:text-5xl">{user.username}</h1>
+        <h1 className="display-heading break-words text-3xl sm:text-4xl md:text-5xl">{displayName}</h1>
         {action}
       </div>
     </section>

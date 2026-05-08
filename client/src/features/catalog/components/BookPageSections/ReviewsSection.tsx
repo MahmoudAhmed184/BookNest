@@ -6,6 +6,8 @@ import type {
   BookReview,
   ReviewSortBy,
   ReviewSortOrder,
+  ReviewVote,
+  ReviewVoteType,
 } from "../../types/book";
 import { ReviewCard } from "./ReviewCard";
 
@@ -25,10 +27,14 @@ export interface ReviewsSectionProps {
   isRatingsError: boolean;
   sortBy: ReviewSortBy;
   order: ReviewSortOrder;
-  currentUsername?: string | null | undefined;
+  currentUserId?: number | null | undefined;
   isUpdatingReview: boolean;
+  isVotingReview: boolean;
+  reviewVotes?: ReviewVote[] | undefined;
   onSortChange: (sortBy: ReviewSortBy, order: ReviewSortOrder) => void;
   onUpdateReview: (reviewId: string | number, reviewText: string) => void;
+  onVoteReview: (reviewId: string | number, voteType: ReviewVoteType) => void;
+  onDeleteReviewVote: (reviewId: string | number) => void;
   onRetry: () => void;
 }
 
@@ -38,7 +44,10 @@ function pairReviewsWithRatings(
 ): GroupedReview[] {
   return reviews.map((review, index) => ({
     review,
-    rating: ratings?.[index]?.rate ?? 0,
+    rating:
+      ratings?.find((rating) => rating.id === review.rating)?.value ??
+      ratings?.[index]?.value ??
+      0,
   }));
 }
 
@@ -51,10 +60,14 @@ export function ReviewsSection({
   isRatingsError,
   sortBy,
   order,
-  currentUsername,
+  currentUserId,
   isUpdatingReview,
+  isVotingReview,
+  reviewVotes,
   onSortChange,
   onUpdateReview,
+  onVoteReview,
+  onDeleteReviewVote,
   onRetry,
 }: ReviewsSectionProps): ReactElement {
   const reviewItems = pairReviewsWithRatings(reviews ?? [], ratings);
@@ -73,8 +86,8 @@ export function ReviewsSection({
                 onSortChange(event.target.value as ReviewSortBy, order)
               }
             >
-              <option value="created_at">Date</option>
-              <option value="upvotes">Upvotes</option>
+              <option value="reviewed_at">Date</option>
+              <option value="upvote_count">Upvotes</option>
             </select>
           </label>
           <label className="flex items-center gap-2 text-xs font-semibold text-primary-gray">
@@ -106,14 +119,23 @@ export function ReviewsSection({
         <div className="flex flex-col gap-4">
           {reviewItems.map((item) => (
             <ReviewCard
-              key={item.review.review_id}
+              key={item.review.id}
               review={item.review}
               rating={item.rating}
               canEdit={Boolean(
-                currentUsername && item.review.username === currentUsername
+                currentUserId !== null &&
+                  currentUserId !== undefined &&
+                  item.review.user === currentUserId
               )}
               isUpdating={isUpdatingReview}
+              isVoting={isVotingReview}
+              currentVote={
+                reviewVotes?.find((vote) => vote.review === item.review.id)
+                  ?.vote_type ?? null
+              }
               onUpdate={onUpdateReview}
+              onVote={onVoteReview}
+              onDeleteVote={onDeleteReviewVote}
             />
           ))}
         </div>

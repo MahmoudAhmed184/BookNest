@@ -38,7 +38,8 @@ export function BookHero({
   const authors = getAuthorNames(book);
   const description = book.description || "No description available yet.";
   const shouldCollapseDescription = description.length > 320;
-  const canShowCover = Boolean(book.cover_img) && !coverFailed;
+  const cover = book.cover || book.cover_fallback_url;
+  const canShowCover = Boolean(cover) && !coverFailed;
 
   return (
     <section
@@ -47,7 +48,7 @@ export function BookHero({
     >
       {canShowCover ? (
         <img
-          src={book.cover_img ?? undefined}
+          src={cover ?? undefined}
           alt=""
           className="absolute inset-0 h-full w-full object-cover opacity-15 blur-2xl"
           aria-hidden="true"
@@ -58,7 +59,7 @@ export function BookHero({
           <div className="overflow-hidden rounded-xl bg-secondary-black shadow-xl">
             {canShowCover ? (
               <img
-                src={book.cover_img ?? undefined}
+                src={cover ?? undefined}
                 alt={`Cover of ${book.title}`}
                 className="aspect-[2/3] w-full object-cover"
                 width="320"

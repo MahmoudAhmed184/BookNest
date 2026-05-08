@@ -1,7 +1,13 @@
 import { useMemo, useState, type ReactElement } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
-import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
+import {
+  EmptyState,
+  ErrorState,
+  InlineSpinner,
+  Pagination,
+} from "../../../components/ui";
+import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
 import { routeBuilders, type UserProfileRouteParams } from "../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
 import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
@@ -9,52 +15,43 @@ import {
   useProfileFollowers,
   useProfileFollowing,
 } from "../hooks/followHooks";
-import type { FollowProfileRow } from "../types/follow";
-import type { UserProfile } from "../../profile/types/user";
+import type { FollowRelationship } from "../types/follow";
+import type { User } from "../../profile/types/user";
 
-function getProfileName(profile: UserProfile): string {
-  return profile.full_name || profile.username;
+function getUserName(user: User): string {
+  return user.display_name || user.email;
 }
 
-function ConnectionCard({ row }: { row: FollowProfileRow }): ReactElement {
-  const { profile } = row;
-  const displayName = getProfileName(profile);
+function ConnectionCard({
+  row,
+  isFollowersPage,
+}: {
+  row: FollowRelationship;
+  isFollowersPage: boolean;
+}): ReactElement | null {
+  const user = isFollowersPage ? row.follower_detail : row.following_detail;
+  if (!user) return null;
+
+  const displayName = getUserName(user);
 
   return (
     <Link
-      to={routeBuilders.userProfile(profile.id)}
+      to={routeBuilders.userProfile(user.id)}
       className="glass-card card-lift flex items-center gap-4 p-4"
     >
       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-secondary-black">
-        {profile.profile_pic ? (
-          <img
-            src={profile.profile_pic}
-            alt={`${profile.username}'s profile image`}
-            className="h-full w-full object-cover"
-            width="56"
-            height="56"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div
-            className="fallback-gradient flex h-full w-full items-center justify-center text-lg font-bold text-primary-white"
-            style={getFallbackHueStyle(profile.username)}
-          >
-            {getInitials(profile.username)}
-          </div>
-        )}
+        <div
+          className="fallback-gradient flex h-full w-full items-center justify-center text-lg font-bold text-primary-white"
+          style={getFallbackHueStyle(displayName)}
+        >
+          {getInitials(displayName)}
+        </div>
       </div>
       <div className="min-w-0">
         <h2 className="truncate text-base font-semibold text-primary-white">
           {displayName}
         </h2>
-        <p className="truncate text-sm text-primary-gray">@{profile.username}</p>
-        {profile.bio ? (
-          <p className="mt-1 line-clamp-2 text-sm text-primary-gray">
-            {profile.bio}
-          </p>
-        ) : null}
+        <p className="truncate text-sm text-primary-gray">{user.email}</p>
       </div>
     </Link>
   );
@@ -64,25 +61,28 @@ export default function ProfileConnectionsPage(): ReactElement {
   const { id } = useParams<UserProfileRouteParams>();
   const location = useLocation();
   const { token } = useOptionalAuth();
+  const { page, setPage } = usePageSearchParam();
   const [filter, setFilter] = useState("");
   const isFollowersPage = location.pathname.endsWith("/followers");
   const title = isFollowersPage ? "Followers" : "Following";
   const description = isFollowersPage
     ? "Readers following this profile."
     : "Profiles this reader follows.";
-  const followersQuery = useProfileFollowers(id, token, isFollowersPage);
-  const followingQuery = useProfileFollowing(id, token, !isFollowersPage);
+  const followersQuery = useProfileFollowers(id, page, token, isFollowersPage);
+  const followingQuery = useProfileFollowing(id, page, token, !isFollowersPage);
   const activeQuery = isFollowersPage ? followersQuery : followingQuery;
+  const activePage = activeQuery.data;
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredRows = useMemo(
     () => {
-      const rows = activeQuery.data ?? [];
+      const rows = activePage?.results ?? [];
 
       return rows.filter((row) => {
         const haystack = [
-          row.profile.username,
-          row.profile.full_name ?? "",
-          row.profile.bio ?? "",
+          row.follower_detail?.email ?? "",
+          row.follower_detail?.display_name ?? "",
+          row.following_detail?.email ?? "",
+          row.following_detail?.display_name ?? "",
         ]
           .join(" ")
           .toLowerCase();
@@ -90,7 +90,7 @@ export default function ProfileConnectionsPage(): ReactElement {
         return haystack.includes(normalizedFilter);
       });
     },
-    [activeQuery.data, normalizedFilter]
+    [activePage?.results, normalizedFilter]
   );
 
   if (activeQuery.isLoading) {
@@ -148,7 +148,11 @@ export default function ProfileConnectionsPage(): ReactElement {
       {filteredRows.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filteredRows.map((row) => (
-            <ConnectionCard key={row.id} row={row} />
+            <ConnectionCard
+              key={row.id}
+              row={row}
+              isFollowersPage={isFollowersPage}
+            />
           ))}
         </div>
       ) : (
@@ -161,6 +165,17 @@ export default function ProfileConnectionsPage(): ReactElement {
           }
         />
       )}
+      {activePage ? (
+        <Pagination
+          currentPage={activePage.page}
+          totalPages={activePage.totalPages}
+          hasNextPage={activePage.hasNext}
+          hasPreviousPage={activePage.hasPrevious}
+          onPageChange={setPage}
+          isDisabled={activeQuery.isFetching}
+          ariaLabel={`${title} pages`}
+        />
+      ) : null}
     </div>
   );
 }

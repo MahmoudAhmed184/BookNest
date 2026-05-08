@@ -5,11 +5,16 @@ import {
   type FormEvent,
   type ReactElement,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ErrorState } from "../../../components/ui";
 import { useAuth } from "../../auth/hooks/useAuth";
+import { catalogKeys } from "../../catalog/hooks/catalog.keys";
+import { getGenreOptions } from "../../catalog/services/bookService";
+import type { CatalogGenre } from "../../catalog/types/book";
+import type { ProfileInterestSelection } from "../../profile/types/user";
 import { routePaths } from "../../../routes/paths";
 import {
   SettingsProfileOverview,
@@ -19,7 +24,10 @@ import {
   type SettingsTab,
 } from "../components/SettingsSections";
 import { settingsTabs } from "../constants/settingsTabs";
-import { useSettingsProfile } from "../hooks/useSettingsProfile";
+import {
+  toProfileInterestSelection,
+  useSettingsProfile,
+} from "../hooks/useSettingsProfile";
 import { getPasswordUpdateError } from "../utils/settingsValidation";
 
 export default function Settings(): ReactElement {
@@ -27,13 +35,16 @@ export default function Settings(): ReactElement {
   const { token, logout } = useAuth();
   const {
     user,
+    preferences,
     isLoading,
     isFetching,
     isError,
     isSavingProfile,
+    isSavingPreferences,
     isUploadingPicture,
     refetch,
     updateProfile,
+    updatePreferences,
     uploadProfilePicture,
   } = useSettingsProfile(token);
 
@@ -41,7 +52,10 @@ export default function Settings(): ReactElement {
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [profileType, setProfileType] = useState("reader");
-  const [interestsText, setInterestsText] = useState("");
+  const [selectedInterests, setSelectedInterests] = useState<
+    ProfileInterestSelection[]
+  >([]);
+  const [genreQuery, setGenreQuery] = useState("");
   const [socialLinksText, setSocialLinksText] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,16 +63,25 @@ export default function Settings(): ReactElement {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const trimmedGenreQuery = genreQuery.trim();
+  const genreOptionsQuery = useQuery({
+    queryKey: catalogKeys.genreOptions(trimmedGenreQuery, 20),
+    queryFn: () => getGenreOptions(trimmedGenreQuery, 20),
+    enabled: activeTab === "profile" && trimmedGenreQuery.length > 0,
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (user) {
-      setUsername(user.username || "");
+      setUsername(user.handle || "");
       setBio(user.bio || "");
       setProfileType(user.profile_type || "reader");
-      setInterestsText((user.interests ?? []).map((item) => item.interest).join(", "));
+      setSelectedInterests(
+        (user.interest_links ?? []).map(toProfileInterestSelection)
+      );
       setSocialLinksText(
         (user.social_links ?? [])
-          .map((item) => `${item.platform},${item.url}`)
+          .map((item) => `${item.platform},${item.url}${item.label ? `,${item.label}` : ""}`)
           .join("\n")
       );
     }
@@ -70,10 +93,10 @@ export default function Settings(): ReactElement {
 
     try {
       await updateProfile({
-        username,
+        handle: username,
         bio,
-        profile_type: profileType,
-        interests: parseInterests(interestsText),
+        profile_type: profileType as "reader" | "creator" | "librarian" | "staff",
+        interests: selectedInterests,
         social_links: parseSocialLinks(socialLinksText),
       });
     } catch {
@@ -107,6 +130,43 @@ export default function Settings(): ReactElement {
   const handleLogout = (): void => {
     logout();
     navigate(routePaths.login);
+  };
+
+  const handleAddInterest = (genre: CatalogGenre): void => {
+    setSelectedInterests((current) => {
+      if (current.some((interest) => interest.genre === genre.id)) {
+        return current;
+      }
+
+      return [
+        ...current,
+        {
+          genre: genre.id,
+          genre_name: genre.name,
+          weight: 1,
+        },
+      ];
+    });
+    setGenreQuery("");
+  };
+
+  const handleRemoveInterest = (genreId: number): void => {
+    setSelectedInterests((current) =>
+      current.filter((interest) => interest.genre !== genreId)
+    );
+  };
+
+  const handleInterestWeightChange = (
+    genreId: number,
+    weight: number
+  ): void => {
+    setSelectedInterests((current) =>
+      current.map((interest) =>
+        interest.genre === genreId
+          ? { ...interest, weight: Math.min(Math.max(weight, 1), 100) }
+          : interest
+      )
+    );
   };
 
   if (isLoading) return <SettingsSkeleton />;
@@ -156,11 +216,15 @@ export default function Settings(): ReactElement {
           <div className="order-1 lg:order-2">
             <SettingsSidebar
               user={user}
+              preferences={preferences}
               activeTab={activeTab}
               username={username}
               bio={bio}
               profileType={profileType}
-              interestsText={interestsText}
+              interests={selectedInterests}
+              genreQuery={genreQuery}
+              genreOptions={genreOptionsQuery.data ?? []}
+              isLoadingGenreOptions={genreOptionsQuery.isFetching}
               socialLinksText={socialLinksText}
               newPassword={newPassword}
               confirmPassword={confirmPassword}
@@ -168,10 +232,14 @@ export default function Settings(): ReactElement {
               showNewPassword={showNewPassword}
               showConfirmPassword={showConfirmPassword}
               isSavingProfile={isSavingProfile}
+              isSavingPreferences={isSavingPreferences}
               onUsernameChange={setUsername}
               onBioChange={setBio}
               onProfileTypeChange={setProfileType}
-              onInterestsTextChange={setInterestsText}
+              onGenreQueryChange={setGenreQuery}
+              onAddInterest={handleAddInterest}
+              onRemoveInterest={handleRemoveInterest}
+              onInterestWeightChange={handleInterestWeightChange}
               onSocialLinksTextChange={setSocialLinksText}
               onNewPasswordChange={setNewPassword}
               onConfirmPasswordChange={setConfirmPassword}
@@ -179,6 +247,7 @@ export default function Settings(): ReactElement {
               onToggleConfirmPassword={() => setShowConfirmPassword((current) => !current)}
               onUpdateInfo={handleUpdateInfo}
               onUpdatePassword={handleUpdatePassword}
+              onUpdatePreferences={(payload) => void updatePreferences(payload)}
             />
           </div>
         </div>
@@ -187,24 +256,18 @@ export default function Settings(): ReactElement {
   );
 }
 
-function parseInterests(value: string): { interest: string }[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((interest) => ({ interest }));
-}
-
-function parseSocialLinks(value: string): { platform: string; url: string }[] {
+function parseSocialLinks(value: string): { platform: string; url: string; label?: string }[] {
   return value
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [platform = "", ...urlParts] = line.split(",");
+      const [platform = "", url = "", ...labelParts] = line.split(",");
+      const label = labelParts.join(",").trim();
       return {
         platform: platform.trim(),
-        url: urlParts.join(",").trim(),
+        url: url.trim(),
+        ...(label ? { label } : {}),
       };
     })
     .filter((item) => item.platform && item.url);

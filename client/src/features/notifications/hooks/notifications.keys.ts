@@ -5,5 +5,4 @@ export const notificationKeys = {
   list: (filters: NotificationFilters = {}) =>
     [...notificationKeys.all, "list", filters] as const,
   unreadCount: () => [...notificationKeys.all, "unread-count"] as const,
-  types: () => [...notificationKeys.all, "types"] as const,
 };

@@ -15,7 +15,7 @@ import type { RegisterPayload } from "../types/auth";
 import { registerSchema } from "./RegisterPage.schema";
 
 const registerInitialValues: RegisterPayload = {
-  username: "",
+  handle: "",
   email: "",
   password1: "",
   password2: "",
@@ -46,13 +46,13 @@ const Register = (): ReactElement => {
     <AuthShell title="Sign Up" description="Create your account and start building your shelf.">
       <form onSubmit={formik.handleSubmit} className="flex flex-col gap-4">
             <AuthTextField
-              id="username"
-              name="username"
-              label="Username"
+              id="handle"
+              name="handle"
+              label="Handle"
               autoComplete="username"
-              value={formik.values.username}
-              touched={formik.touched.username}
-              error={formik.errors.username}
+              value={formik.values.handle}
+              touched={formik.touched.handle}
+              error={formik.errors.handle}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />

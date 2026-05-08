@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
 import { useAuth } from "../../auth/hooks/useAuth";
-import type { Book, BookReview } from "../../catalog/types/book";
+import type { BookReview } from "../../catalog/types/book";
+import type { CollectionBook } from "../../collections/types/collection";
 import { routePaths } from "../../../routes/paths";
 import {
   CollectionsShelf,
@@ -20,8 +21,7 @@ import { useProfileActions } from "../hooks/useProfileActions";
 import { useProfilePageData } from "../hooks/useProfilePageData";
 
 interface PendingBookDelete {
-  book: Book;
-  listId: number | null;
+  item: CollectionBook;
 }
 
 export default function Profile(): ReactElement {
@@ -33,6 +33,7 @@ export default function Profile(): ReactElement {
     reviews,
     ratings,
     collections,
+    stats,
     isUserLoading,
     isUserFetching,
     isUserError,
@@ -69,9 +70,9 @@ export default function Profile(): ReactElement {
   }
 
   const primaryCollection = collections?.[0];
-  const books = primaryCollection?.books || [];
-  const bookCount = books.length || primaryCollection?.book_count || 0;
-  const favoriteGenre = books[0]?.genres?.[0] ?? "Eclectic";
+  const items = primaryCollection?.items || [];
+  const bookCount = items.length || primaryCollection?.item_count || 0;
+  const favoriteGenre = items[0]?.book_detail?.genres?.[0]?.name ?? "Eclectic";
 
   return (
     <>
@@ -82,31 +83,31 @@ export default function Profile(): ReactElement {
             <Link
               to={routePaths.settings}
               className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
-              aria-label={`Edit ${user.username}'s profile`}
+              aria-label={`Edit ${user.handle}'s profile`}
             >
               Edit Profile
             </Link>
           }
         />
         <ReadingStats
-          bookCount={bookCount}
-          reviewCount={reviews?.length ?? 0}
-          ratingCount={ratings?.length ?? 0}
+          bookCount={stats?.books_read_count ?? bookCount}
+          reviewCount={stats?.reviews_count ?? reviews?.length ?? 0}
+          ratingCount={stats?.ratings_count ?? ratings?.length ?? 0}
           favoriteGenre={favoriteGenre}
         />
         <ProfileBio bio={user.bio} />
         <CollectionsShelf collections={collections} />
         <ProfileBooksSection
           title="My Books"
-          books={books}
+          items={items}
           primaryCollection={primaryCollection}
           isFetching={isCollectionsFetching}
           emptyTitle="No books added yet"
           emptyDescription="Start building your shelf with books you want to read, love, or recommend."
           canDelete
           isDeleting={profileActions.isDeletingBook}
-          onDeleteBook={(book, listId) => {
-            setPendingBookDelete({ book, listId });
+          onDeleteBook={(item) => {
+            setPendingBookDelete({ item });
           }}
         />
         <ProfileReviewsSection
@@ -133,15 +134,14 @@ export default function Profile(): ReactElement {
         />
       </div>
       <DeleteBookDialog
-        book={pendingBookDelete?.book ?? null}
+        book={pendingBookDelete?.item.book_detail ?? null}
         isDeleting={profileActions.isDeletingBook}
         onCancel={() => setPendingBookDelete(null)}
         onConfirm={() => {
           if (!pendingBookDelete) return;
 
           profileActions.deleteBookFromShelf({
-            book_id: pendingBookDelete.book.isbn13,
-            list_id: pendingBookDelete.listId,
+            collection_book_id: pendingBookDelete.item.id,
           });
           setPendingBookDelete(null);
         }}
@@ -153,7 +153,7 @@ export default function Profile(): ReactElement {
         onConfirm={() => {
           if (!pendingReviewDelete) return;
 
-          profileActions.deleteProfileReview(pendingReviewDelete.review_id);
+          profileActions.deleteProfileReview(pendingReviewDelete.id);
           setPendingReviewDelete(null);
         }}
       />

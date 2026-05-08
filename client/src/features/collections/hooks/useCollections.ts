@@ -10,16 +10,16 @@ import {
   updateCollection,
 } from "../services/collectionService";
 import type {
-  AddToCollectionPayload,
+  CollectionBook,
   CreateCollectionPayload,
-  ReadingList,
+  ReadingCollection,
   UpdateCollectionPayload,
 } from "../types/collection";
 import { collectionKeys } from "./collection.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 
 interface UseCollectionsResult {
-  collections: ReadingList[];
+  collections: ReadingCollection[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
@@ -27,22 +27,22 @@ interface UseCollectionsResult {
   isUpdating: boolean;
   isDeleting: boolean;
   refetch: () => void;
-  createCollection: (payload: CreateCollectionPayload) => Promise<ReadingList>;
+  createCollection: (payload: CreateCollectionPayload) => Promise<ReadingCollection>;
   updateCollection: (
-    listId: number,
+    collectionId: number,
     payload: UpdateCollectionPayload
-  ) => Promise<ReadingList>;
-  deleteCollection: (listId: number) => Promise<void>;
+  ) => Promise<ReadingCollection>;
+  deleteCollection: (collectionId: number) => Promise<void>;
 }
 
 interface UseCollectionDetailResult {
-  collection?: ReadingList | undefined;
+  collection?: ReadingCollection | undefined;
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
   isRemovingBook: boolean;
   refetch: () => void;
-  removeBook: (bookId: string | undefined) => Promise<void>;
+  removeBook: (item: CollectionBook) => Promise<void>;
 }
 
 export function useCollections(token?: string | null): UseCollectionsResult {
@@ -68,17 +68,17 @@ export function useCollections(token?: string | null): UseCollectionsResult {
 
   const updateMutation = useMutation({
     mutationFn: ({
-      listId,
+      collectionId,
       payload,
     }: {
-      listId: number;
+      collectionId: number;
       payload: UpdateCollectionPayload;
-    }) => updateCollection(listId, payload, token),
+    }) => updateCollection(collectionId, payload, token),
     onSuccess: (_collection, variables) => {
       toast.success("Collection updated.");
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
       queryClient.invalidateQueries({
-        queryKey: collectionKeys.detail(String(variables.listId)),
+        queryKey: collectionKeys.detail(String(variables.collectionId)),
       });
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
@@ -88,12 +88,12 @@ export function useCollections(token?: string | null): UseCollectionsResult {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (listId: number) => deleteCollection(listId, token),
-    onSuccess: (_result, listId) => {
+    mutationFn: (collectionId: number) => deleteCollection(collectionId, token),
+    onSuccess: (_result, collectionId) => {
       toast.success("Collection deleted.");
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
       queryClient.removeQueries({
-        queryKey: collectionKeys.detail(String(listId)),
+        queryKey: collectionKeys.detail(String(collectionId)),
       });
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
@@ -112,29 +112,28 @@ export function useCollections(token?: string | null): UseCollectionsResult {
     isDeleting: deleteMutation.isPending,
     refetch: () => void collectionsQuery.refetch(),
     createCollection: (payload) => createMutation.mutateAsync(payload),
-    updateCollection: (listId, payload) =>
-      updateMutation.mutateAsync({ listId, payload }),
-    deleteCollection: (listId) => deleteMutation.mutateAsync(listId),
+    updateCollection: (collectionId, payload) =>
+      updateMutation.mutateAsync({ collectionId, payload }),
+    deleteCollection: (collectionId) => deleteMutation.mutateAsync(collectionId),
   };
 }
 
 export function useCollectionDetail(
-  listId: string | undefined,
+  collectionId: string | undefined,
   token?: string | null
 ): UseCollectionDetailResult {
   const queryClient = useQueryClient();
   const collectionQuery = useQuery({
-    queryKey: collectionKeys.detail(listId),
-    queryFn: () => getCollection(listId, token),
-    enabled: Boolean(listId),
+    queryKey: collectionKeys.detail(collectionId),
+    queryFn: () => getCollection(collectionId, token),
+    enabled: Boolean(collectionId),
   });
 
   const removeBookMutation = useMutation({
-    mutationFn: (payload: AddToCollectionPayload) =>
-      removeFromCollection(payload, token),
+    mutationFn: (item: CollectionBook) => removeFromCollection(item.id, token),
     onSuccess: () => {
       toast.success("Book removed from collection.");
-      queryClient.invalidateQueries({ queryKey: collectionKeys.detail(listId) });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.detail(collectionId) });
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
@@ -150,10 +149,6 @@ export function useCollectionDetail(
     isError: collectionQuery.isError,
     isRemovingBook: removeBookMutation.isPending,
     refetch: () => void collectionQuery.refetch(),
-    removeBook: (bookId) =>
-      removeBookMutation.mutateAsync({
-        list_id: listId ? Number(listId) : null,
-        book_id: bookId,
-      }),
+    removeBook: (item) => removeBookMutation.mutateAsync(item),
   };
 }

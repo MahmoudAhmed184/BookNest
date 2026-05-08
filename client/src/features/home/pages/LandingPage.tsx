@@ -10,7 +10,7 @@ import { getAuthorNames } from "../../catalog/utils/bookFacets";
 
 const valueCards = [
   { id: "genres", title: "Guided discovery", copy: "Browse by genre, author, and community signals without losing the full catalog context." },
-  { id: "shelf", title: "Living collections", copy: "Shape reading lists that feel like shelves, projects, and recommendations in one place." },
+  { id: "shelf", title: "Living collections", copy: "Shape reading collections that feel like shelves, projects, and recommendations in one place." },
   { id: "social", title: "Reader signals", copy: "Use ratings and thoughtful reviews to find books with real community texture." },
 ] as const;
 
@@ -89,20 +89,20 @@ export default function Landing(): ReactElement | null {
             {!isLoading && !isError && featuredBook ? (
               <>
                 <BookCard
-                  to={routeBuilders.book(featuredBook.isbn13)}
+                  to={routeBuilders.book(featuredBook.id)}
                   title={featuredBook.title}
                   author={getAuthorNames(featuredBook)}
-                  coverSrc={featuredBook.cover_img}
+                  coverSrc={featuredBook.cover || featuredBook.cover_fallback_url}
                   variant="featured"
                   className="md:col-span-2 md:row-span-2"
                 />
                 {heroBooks.map((book, index) => (
                   <BookCard
-                    key={book.isbn13}
-                    to={routeBuilders.book(book.isbn13)}
+                    key={book.id}
+                    to={routeBuilders.book(book.id)}
                     title={book.title}
                     author={getAuthorNames(book)}
-                    coverSrc={book.cover_img}
+                    coverSrc={book.cover || book.cover_fallback_url}
                     variant="trending"
                     className={
                       shouldStretchLastHeroBook && index === heroBooks.length - 1
@@ -141,12 +141,12 @@ export default function Landing(): ReactElement | null {
           className="landing-trending-swiper w-full"
         >
           {carouselBooks.map((book) => (
-            <SwiperSlide key={book.isbn13}>
+            <SwiperSlide key={book.id}>
               <BookCard
-                to={routeBuilders.book(book.isbn13)}
+                to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}
-                coverSrc={book.cover_img}
+                coverSrc={book.cover || book.cover_fallback_url}
                 variant="trending"
               />
             </SwiperSlide>

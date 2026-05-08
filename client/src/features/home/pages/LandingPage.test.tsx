@@ -5,8 +5,8 @@ import Landing from "./LandingPage";
 
 vi.mock("../../catalog/hooks/useLandingCatalog", () => ({
   useLandingCatalog: () => ({
-    books: [{ isbn13: "1", title: "Featured Book" }],
-    featuredBook: { isbn13: "1", title: "Featured Book" },
+    books: [{ id: 1, isbn_13: "1", title: "Featured Book" }],
+    featuredBook: { id: 1, isbn_13: "1", title: "Featured Book" },
     isLoading: false,
     isFetching: false,
     isError: false,

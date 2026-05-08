@@ -13,8 +13,9 @@ export interface DeleteReviewDialogProps {
 
 function ReviewDialogCover({ review }: { review: BookReview }): ReactElement {
   const [hasImageError, setHasImageError] = useState(false);
-  const title = review.book_title || "Book";
-  const canShowCover = Boolean(review.book_cover) && !hasImageError;
+  const title = review.book_detail?.title || "Book";
+  const cover = review.book_detail?.cover || review.book_detail?.cover_fallback_url;
+  const canShowCover = Boolean(cover) && !hasImageError;
 
   return (
     <div
@@ -23,7 +24,7 @@ function ReviewDialogCover({ review }: { review: BookReview }): ReactElement {
     >
       {canShowCover ? (
         <img
-          src={review.book_cover ?? undefined}
+          src={cover ?? undefined}
           alt={`Cover of ${title}`}
           className="h-full w-full object-cover"
           onError={() => setHasImageError(true)}
@@ -69,7 +70,7 @@ export function DeleteReviewDialog({
 
   if (!review) return null;
 
-  const bookTitle = review.book_title || "Untitled book";
+  const bookTitle = review.book_detail?.title || "Untitled book";
 
   return (
     <div
@@ -115,7 +116,7 @@ export function DeleteReviewDialog({
                 {bookTitle}
               </strong>
               <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-primary-gray">
-                {review.review_text}
+                {review.body}
               </p>
             </div>
           </div>

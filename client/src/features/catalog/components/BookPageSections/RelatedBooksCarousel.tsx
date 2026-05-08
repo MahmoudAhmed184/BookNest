@@ -8,13 +8,18 @@ import { useRelatedBooks } from "../../hooks/useRelatedBooks";
 import { getAuthorNames } from "../../utils/bookFacets";
 
 export interface RelatedBooksCarouselProps {
-  currentBookId?: string | undefined;
+  currentBookId?: string | number | undefined;
 }
 
 export function RelatedBooksCarousel({
   currentBookId,
 }: RelatedBooksCarouselProps): ReactElement {
-  const { books, isLoading, isFetching, isError, refetch } = useRelatedBooks(currentBookId);
+  const { relatedBooks, isLoading, isFetching, isError, refetch } = useRelatedBooks(
+    currentBookId === undefined ? undefined : String(currentBookId)
+  );
+  const books = relatedBooks
+    .map((relatedBook) => relatedBook.to_book)
+    .filter(Boolean);
 
   return (
     <section className="flex flex-col gap-5" aria-labelledby="related-books-title">
@@ -47,12 +52,12 @@ export function RelatedBooksCarousel({
           className="w-full"
         >
           {books.map((book) => (
-            <SwiperSlide key={book.isbn13}>
+            <SwiperSlide key={book.id}>
               <BookCard
-                to={routeBuilders.book(book.isbn13)}
+                to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}
-                coverSrc={book.cover_img}
+                coverSrc={book.cover || book.cover_fallback_url}
                 variant="trending"
               />
             </SwiperSlide>

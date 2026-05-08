@@ -7,45 +7,46 @@ import {
   throwApiError,
 } from "../../../lib/axios";
 import {
-  normalizeArrayResponse,
   normalizeEmptyResponse,
+  normalizePaginatedList,
 } from "../../../lib/normalizers";
 import type {
+  LimitOffsetApiResponse,
+  OffsetPageParams,
+} from "../../../types/api";
+import type {
   AddToCollectionPayload,
-  AddToCollectionResponse,
+  CollectionBook,
   CreateCollectionPayload,
-  ReadingList,
+  ReadingCollection,
+  ReadingProgress,
+  UpdateCollectionBookPayload,
   UpdateCollectionPayload,
+  UpdateReadingProgressPayload,
 } from "../types/collection";
 
 export async function getCollections(
   tokenOverride?: string | null
-): Promise<ReadingList[]> {
+): Promise<ReadingCollection[]> {
   try {
-    const response = await getData<ReadingList[]>(
-      "/api/v1/reading-lists/",
-      {
-        headers: authHeaders(tokenOverride),
-      }
+    return await getData<ReadingCollection[]>(
+      "/api/v1/reading-collections/?mine=true",
+      { headers: authHeaders(tokenOverride) }
     );
-    return normalizeArrayResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function getCollection(
-  listId: number | string | undefined,
+  collectionId: number | string | undefined,
   token?: string | null
-): Promise<ReadingList> {
+): Promise<ReadingCollection> {
   try {
-    const response = await getData<ReadingList>(
-      `/api/v1/reading-lists/${listId}/`,
-      {
-        headers: authHeaders(token),
-      }
+    return await getData<ReadingCollection>(
+      `/api/v1/reading-collections/${collectionId}/`,
+      { headers: authHeaders(token) }
     );
-    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -54,46 +55,40 @@ export async function getCollection(
 export async function createCollection(
   data: CreateCollectionPayload,
   token?: string | null
-): Promise<ReadingList> {
+): Promise<ReadingCollection> {
   try {
-    const response = await postData<ReadingList, CreateCollectionPayload>(
-      "/api/v1/reading-lists/",
+    return await postData<ReadingCollection, CreateCollectionPayload>(
+      "/api/v1/reading-collections/",
       data,
-      {
-        headers: authHeaders(token),
-      }
+      { headers: authHeaders(token) }
     );
-    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function updateCollection(
-  listId: number | string,
+  collectionId: number | string,
   data: UpdateCollectionPayload,
   token?: string | null
-): Promise<ReadingList> {
+): Promise<ReadingCollection> {
   try {
-    const response = await patchData<ReadingList, UpdateCollectionPayload>(
-      `/api/v1/reading-lists/${listId}/`,
+    return await patchData<ReadingCollection, UpdateCollectionPayload>(
+      `/api/v1/reading-collections/${collectionId}/`,
       data,
-      {
-        headers: authHeaders(token),
-      }
+      { headers: authHeaders(token) }
     );
-    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function deleteCollection(
-  listId: number | string,
+  collectionId: number | string,
   token?: string | null
 ): Promise<void> {
   try {
-    await deleteData<void>(`/api/v1/reading-lists/${listId}/`, {
+    await deleteData<void>(`/api/v1/reading-collections/${collectionId}/`, {
       headers: authHeaders(token),
     });
     return normalizeEmptyResponse();
@@ -105,34 +100,86 @@ export async function deleteCollection(
 export async function addToCollection(
   data: AddToCollectionPayload,
   token?: string | null
-): Promise<AddToCollectionResponse> {
+): Promise<CollectionBook> {
   try {
-    const response = await postData<AddToCollectionResponse, Record<string, never>>(
-      `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
-      {},
-      {
-        headers: authHeaders(token),
-      }
+    return await postData<CollectionBook, AddToCollectionPayload>(
+      "/api/v1/collection-books/",
+      data,
+      { headers: authHeaders(token) }
     );
-    return response;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateCollectionBook(
+  id: number,
+  data: UpdateCollectionBookPayload,
+  token?: string | null
+): Promise<CollectionBook> {
+  try {
+    return await patchData<CollectionBook, UpdateCollectionBookPayload>(
+      `/api/v1/collection-books/${id}/`,
+      data,
+      { headers: authHeaders(token) }
+    );
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function removeFromCollection(
-  data: AddToCollectionPayload,
+  collectionBookId: number,
   token?: string | null
 ): Promise<void> {
   try {
-    await deleteData<void, AddToCollectionPayload>(
-      `/api/v1/reading-lists/${data.list_id}/books/${data.book_id}/`,
-      {
-        headers: authHeaders(token),
-        data,
-      }
-    );
+    await deleteData<void>(`/api/v1/collection-books/${collectionBookId}/`, {
+      headers: authHeaders(token),
+    });
     return normalizeEmptyResponse();
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getReadingProgress(
+  token?: string | null
+): Promise<ReadingProgress[]> {
+  try {
+    return await getData<ReadingProgress[]>("/api/v1/reading-progress/", {
+      headers: authHeaders(token),
+    });
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function saveReadingProgress(
+  data: UpdateReadingProgressPayload,
+  token?: string | null
+): Promise<ReadingProgress> {
+  try {
+    return await postData<ReadingProgress, UpdateReadingProgressPayload>(
+      "/api/v1/reading-progress/",
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateReadingProgress(
+  id: number,
+  data: Partial<UpdateReadingProgressPayload>,
+  token?: string | null
+): Promise<ReadingProgress> {
+  try {
+    return await patchData<ReadingProgress, Partial<UpdateReadingProgressPayload>>(
+      `/api/v1/reading-progress/${id}/`,
+      data,
+      { headers: authHeaders(token) }
+    );
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -141,15 +188,20 @@ export async function removeFromCollection(
 export async function getUserCollections(
   id: number | string | undefined,
   token?: string | null
-): Promise<ReadingList[]> {
+): Promise<ReadingCollection[]> {
+  const params: OffsetPageParams = {
+    page: 1,
+    pageSize: 20,
+  };
+
   try {
-    const response = await getData<ReadingList[]>(
-      `/api/v1/users/${id}/reading-lists/`,
-      {
-        headers: authHeaders(token),
-      }
+    const collections = await getData<
+      LimitOffsetApiResponse<ReadingCollection> | ReadingCollection[]
+    >(
+      `/api/v1/users/${id}/reading-collections/?page=1&page_size=20`,
+      { headers: authHeaders(token) }
     );
-    return normalizeArrayResponse(response);
+    return normalizePaginatedList(collections, params).results;
   } catch (error: unknown) {
     throwApiError(error);
   }

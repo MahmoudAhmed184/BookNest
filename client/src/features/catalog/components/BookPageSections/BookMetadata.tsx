@@ -8,10 +8,10 @@ export interface BookMetadataProps {
 
 export function BookMetadata({ book }: BookMetadataProps): ReactElement {
   const metadata = [
-    { id: "release", label: "Release Date", value: book.publication_date || book.date || "Unknown" },
-    { id: "pages", label: "Pages", value: book.number_of_pages || "Unknown" },
+    { id: "release", label: "Release Date", value: book.publication_date || "Unknown" },
+    { id: "pages", label: "Pages", value: book.page_count || "Unknown" },
     { id: "language", label: "Language", value: book.language || "Unknown" },
-    { id: "isbn", label: "ISBN", value: book.isbn13 },
+    { id: "isbn", label: "ISBN", value: book.isbn_13 || book.isbn_10 || book.id },
   ];
 
   return (

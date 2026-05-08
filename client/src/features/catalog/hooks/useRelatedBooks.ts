@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getRelatedBooks } from "../services/bookService";
-import type { Book } from "../types/book";
+import type { RelatedBook } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 
 interface UseRelatedBooksResult {
-  books: Book[];
+  relatedBooks: RelatedBook[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
@@ -20,7 +20,7 @@ export function useRelatedBooks(id: string | undefined): UseRelatedBooksResult {
   });
 
   return {
-    books: query.data || [],
+    relatedBooks: query.data || [],
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     isError: query.isError,

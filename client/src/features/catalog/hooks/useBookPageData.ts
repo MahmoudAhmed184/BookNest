@@ -5,18 +5,26 @@ import {
   getBookRatings,
   getRatingForBook,
   getReviews,
+  listReviewVotes,
 } from "../services/bookService";
 import { getCollections } from "../../collections/services/collectionService";
-import type { ReadingList } from "../../collections/types/collection";
-import type { Book, BookRating, BookReview, ReviewSortParams } from "../types/book";
+import type { ReadingCollection } from "../../collections/types/collection";
+import type {
+  Book,
+  BookRating,
+  BookReview,
+  ReviewSortParams,
+  ReviewVote,
+} from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 
 interface UseBookPageDataResult {
-  collections?: ReadingList[] | undefined;
+  collections?: ReadingCollection[] | undefined;
   book?: Book | undefined;
   reviews?: BookReview[] | undefined;
   ratings?: BookRating[] | undefined;
+  reviewVotes?: ReviewVote[] | undefined;
   userRating?: BookRating | null | undefined;
   isBookLoading: boolean;
   isBookFetching: boolean;
@@ -25,6 +33,7 @@ interface UseBookPageDataResult {
   isReviewsFetching: boolean;
   isReviewsError: boolean;
   isRatingsError: boolean;
+  isReviewVotesError: boolean;
   refetchBook: () => void;
   refetchReviews: () => void;
   refetchRatings: () => void;
@@ -33,7 +42,7 @@ interface UseBookPageDataResult {
 export function useBookPageData(
   id: string | undefined,
   token?: string | null,
-  reviewSort: ReviewSortParams = { sortBy: "created_at", order: "desc" }
+  reviewSort: ReviewSortParams = { sortBy: "reviewed_at", order: "desc" }
 ): UseBookPageDataResult {
   const collectionsQuery = useQuery({
     queryKey: profileKeys.collections(),
@@ -59,12 +68,18 @@ export function useBookPageData(
     enabled: Boolean(id && token),
     retry: false,
   });
+  const reviewVotesQuery = useQuery({
+    queryKey: catalogKeys.reviewVotes(),
+    queryFn: () => listReviewVotes(token),
+    enabled: Boolean(token),
+  });
 
   return {
     collections: collectionsQuery.data,
     book: bookQuery.data,
     reviews: reviewsQuery.data,
     ratings: ratingsQuery.data,
+    reviewVotes: reviewVotesQuery.data,
     userRating: userRatingQuery.data,
     isBookLoading: bookQuery.isLoading,
     isBookFetching: bookQuery.isFetching,
@@ -73,6 +88,7 @@ export function useBookPageData(
     isReviewsFetching: reviewsQuery.isFetching,
     isReviewsError: reviewsQuery.isError,
     isRatingsError: ratingsQuery.isError,
+    isReviewVotesError: reviewVotesQuery.isError,
     refetchBook: () => void bookQuery.refetch(),
     refetchReviews: () => void reviewsQuery.refetch(),
     refetchRatings: () => void ratingsQuery.refetch(),

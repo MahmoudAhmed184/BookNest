@@ -1,23 +1,37 @@
+export type NotificationType =
+  | "social"
+  | "review"
+  | "rating"
+  | "collection"
+  | "recommendation"
+  | "system";
+
 export interface Notification {
   id: number;
   recipient: number;
-  actor_name?: string | null;
-  verb: string;
-  target_name?: string | null;
-  action_object_name?: string | null;
-  notification_type_name?: string | null;
-  data?: Record<string, unknown>;
-  read: boolean;
-  timestamp: string;
-}
-
-export interface NotificationType {
-  id: number;
-  name: string;
-  description?: string | null;
+  actor_label?: string | null;
+  target_label?: string | null;
+  action_object_label?: string | null;
+  notification_type: NotificationType;
+  action: string;
+  payload?: Record<string, unknown>;
+  is_read: boolean;
+  read_at?: string | null;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface NotificationFilters {
-  read?: boolean | undefined;
-  type?: string | undefined;
+  is_read?: boolean | undefined;
+  type?: NotificationType | "" | undefined;
+}
+
+export interface UnreadNotificationCountResponse {
+  unread_count: number;
+}
+
+export interface MarkNotificationsReadResponse {
+  updated: number;
 }

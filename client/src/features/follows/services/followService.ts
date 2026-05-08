@@ -6,35 +6,76 @@ import {
   throwApiError,
 } from "../../../lib/axios";
 import {
-  normalizeArrayResponse,
   normalizeEmptyResponse,
+  normalizePaginatedList,
 } from "../../../lib/normalizers";
-import type { Follow, FollowProfileRow } from "../types/follow";
+import type {
+  LimitOffsetApiResponse,
+  OffsetPageParams,
+} from "../../../types/api";
+import type {
+  FollowRelationship,
+  FollowRelationshipPage,
+} from "../types/follow";
 
-export async function listFollows(token?: string | null): Promise<Follow[]> {
+const defaultFollowPage: OffsetPageParams = {
+  page: 1,
+  pageSize: 20,
+};
+
+function buildQuery(params: Record<string, string | undefined>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.set(key, value);
+  });
+
+  return searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+}
+
+async function getFollowPage(
+  url: string,
+  params: OffsetPageParams,
+  token?: string | null
+): Promise<FollowRelationshipPage> {
+  const rows = await getData<
+    LimitOffsetApiResponse<FollowRelationship> | FollowRelationship[]
+  >(url, {
+    headers: authHeaders(token),
+  });
+  return normalizePaginatedList(rows, params);
+}
+
+export async function listFollows(
+  token?: string | null,
+  following?: string | number
+): Promise<FollowRelationship[]> {
   try {
-    const response = await getData<Follow[]>("/api/v1/follows/", {
-      headers: authHeaders(token),
+    const query = buildQuery({
+      page: "1",
+      page_size: "100",
+      following: following === undefined ? undefined : String(following),
     });
-    return normalizeArrayResponse(response);
+    const page = await getFollowPage(
+      `/api/v1/follows/${query}`,
+      { page: 1, pageSize: 100 },
+      token
+    );
+    return page.results;
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
-export async function followProfile(
-  profileId: number,
+export async function followUser(
+  userId: number,
   token?: string | null
-): Promise<Follow> {
+): Promise<FollowRelationship> {
   try {
-    const response = await postData<Follow, { followed: number }>(
+    return await postData<FollowRelationship, { following: number }>(
       "/api/v1/follows/",
-      { followed: profileId },
-      {
-        headers: authHeaders(token),
-      }
+      { following: userId },
+      { headers: authHeaders(token) }
     );
-    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -56,40 +97,73 @@ export async function unfollowById(
 
 export async function getMyFollowers(
   token?: string | null
-): Promise<FollowProfileRow[]> {
-  return getFollowRows("/api/v1/profiles/me/followers/", token);
+): Promise<FollowRelationship[]> {
+  try {
+    const page = await getFollowPage(
+      "/api/v1/followers/?page=1&page_size=100",
+      { page: 1, pageSize: 100 },
+      token
+    );
+    return page.results;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
 }
 
 export async function getMyFollowing(
   token?: string | null
-): Promise<FollowProfileRow[]> {
-  return getFollowRows("/api/v1/profiles/me/following/", token);
+): Promise<FollowRelationship[]> {
+  return listFollows(token);
 }
 
 export async function getProfileFollowers(
-  profileId: number | string | undefined,
+  userId: string | number | undefined,
+  params: OffsetPageParams = defaultFollowPage,
   token?: string | null
-): Promise<FollowProfileRow[]> {
-  return getFollowRows(`/api/v1/profiles/${profileId}/followers/`, token);
-}
+): Promise<FollowRelationshipPage> {
+  const query = buildQuery({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
 
-export async function getProfileFollowing(
-  profileId: number | string | undefined,
-  token?: string | null
-): Promise<FollowProfileRow[]> {
-  return getFollowRows(`/api/v1/profiles/${profileId}/following/`, token);
-}
-
-async function getFollowRows(
-  url: string,
-  token?: string | null
-): Promise<FollowProfileRow[]> {
   try {
-    const response = await getData<FollowProfileRow[]>(url, {
-      headers: authHeaders(token),
-    });
-    return normalizeArrayResponse(response);
+    return await getFollowPage(
+      `/api/v1/users/${userId}/followers/${query}`,
+      params,
+      token
+    );
   } catch (error: unknown) {
     throwApiError(error);
   }
+}
+
+export async function getProfileFollowing(
+  userId: string | number | undefined,
+  params: OffsetPageParams = defaultFollowPage,
+  token?: string | null
+): Promise<FollowRelationshipPage> {
+  const query = buildQuery({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
+
+  try {
+    return await getFollowPage(
+      `/api/v1/users/${userId}/following/${query}`,
+      params,
+      token
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getFollowStatus(
+  userId: string | number | undefined,
+  token?: string | null
+): Promise<FollowRelationship | null> {
+  if (!userId || !token) return null;
+
+  const follows = await listFollows(token, userId);
+  return follows[0] ?? null;
 }

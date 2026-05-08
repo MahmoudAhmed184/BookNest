@@ -27,7 +27,7 @@ export function RequireAdmin(): ReactElement {
     );
   }
 
-  if (!authUser.is_staff && !authUser.is_superuser) {
+  if (!authUser.is_staff) {
     return (
       <div className="py-12">
         <ErrorState

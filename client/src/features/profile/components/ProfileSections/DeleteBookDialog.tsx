@@ -14,7 +14,8 @@ export interface DeleteBookDialogProps {
 
 function DialogCover({ book }: { book: Book }): ReactElement {
   const [hasImageError, setHasImageError] = useState(false);
-  const canShowCover = Boolean(book.cover_img) && !hasImageError;
+  const cover = book.cover || book.cover_fallback_url;
+  const canShowCover = Boolean(cover) && !hasImageError;
 
   return (
     <div
@@ -23,7 +24,7 @@ function DialogCover({ book }: { book: Book }): ReactElement {
     >
       {canShowCover ? (
         <img
-          src={book.cover_img ?? undefined}
+          src={cover ?? undefined}
           alt={`Cover of ${book.title}`}
           className="h-full w-full object-cover"
           onError={() => setHasImageError(true)}

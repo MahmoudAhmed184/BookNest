@@ -6,35 +6,55 @@ import {
   postData,
   throwApiError,
 } from "../../../lib/axios";
-import { normalizeProfileEnvelope, type ProfileEnvelope } from "../../../lib/normalizers";
-import type { ApiDetailResponse, ApiEnvelope } from "../../../types/api";
+import { normalizePaginatedList } from "../../../lib/normalizers";
 import type {
+  ApiDetailResponse,
+  LimitOffsetApiResponse,
+  OffsetPageParams,
+} from "../../../types/api";
+import type { BookRating, BookReview } from "../../catalog/types/book";
+import type { ReadingCollection } from "../../collections/types/collection";
+import type {
+  CreateProfileInterestPayload,
+  CreateUserSocialLinkPayload,
   Profile,
-  ProfileResponseEnvelope,
-  UpdateBioPayload,
+  ProfileOverview,
+  ProfileInterest,
+  UpdateProfileInterestPayload,
+  UpdateProfilePayload,
   UpdateUserPayload,
+  UpdateUserSocialLinkPayload,
   UploadProfilePictureResponse,
   User,
+  UserCollectionsPage,
   UserDataAggregate,
-  UserDataAggregateEnvelope,
-  UserProfile,
+  UserPreference,
+  UserRatingsPage,
   UserRatingsResponse,
+  UserReviewsPage,
   UserReviewsResponse,
+  UserSocialLink,
 } from "../types/user";
 
-// intentionally deferred: GET /api/v1/profiles/?username=&profile_type= is a people-discovery surface,
-// and the current product uses profile/follow pages instead of a global profile search page.
+const defaultUserActivityPage: OffsetPageParams = {
+  page: 1,
+  pageSize: 20,
+};
 
-export async function getMyProfile(token?: string | null): Promise<UserProfile> {
+function buildQuery(params: Record<string, string | undefined>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.set(key, value);
+  });
+
+  return searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+}
+
+export async function getMyProfile(token?: string | null): Promise<Profile> {
   try {
-    const response = await getData<ProfileResponseEnvelope>(
-      "/api/v1/profiles/me/",
-      {
-        headers: authHeaders(token),
-      }
-    );
-
-    return response.data.profile;
+    return await getData<Profile>("/api/v1/profiles/me/", {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -43,16 +63,11 @@ export async function getMyProfile(token?: string | null): Promise<UserProfile> 
 export async function getProfile(
   id: string | undefined,
   token?: string | null
-): Promise<UserProfile> {
+): Promise<Profile> {
   try {
-    const response = await getData<ProfileResponseEnvelope>(
-      `/api/v1/profiles/${id}/`,
-      {
-        headers: authHeaders(token),
-      }
-    );
-
-    return response.data.profile;
+    return await getData<Profile>(`/api/v1/profiles/${id}/`, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -61,15 +76,11 @@ export async function getProfile(
 export async function getUserProfile(
   id: number | string | undefined,
   token?: string | null
-): Promise<ProfileResponseEnvelope> {
+): Promise<Profile> {
   try {
-    const response = await getData<ProfileResponseEnvelope>(
-      `/api/v1/profiles/${id}/`,
-      {
-        headers: authHeaders(token),
-      }
-    );
-    return response;
+    return await getData<Profile>(`/api/v1/users/${id}/profile/`, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -80,13 +91,30 @@ export async function getUserDataAggregate(
   token?: string | null
 ): Promise<UserDataAggregate> {
   try {
-    const response = await getData<UserDataAggregateEnvelope>(
-      `/api/v1/users/${id}/data/`,
-      {
-        headers: authHeaders(token),
-      }
+    const overview = await getUserProfileOverview(id, token);
+
+    return {
+      profile: overview.profile,
+      viewer_context: overview.viewer_context,
+      stats: overview.stats,
+      reviews: overview.recent_reviews,
+      ratings: overview.recent_ratings,
+      reading_collections: overview.recent_collections,
+    };
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getUserProfileOverview(
+  id: number | string | undefined,
+  token?: string | null
+): Promise<ProfileOverview> {
+  try {
+    return await getData<ProfileOverview>(
+      `/api/v1/users/${id}/profile-overview/`,
+      { headers: authHeaders(token) }
     );
-    return response.data;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -97,33 +125,24 @@ export async function updateUser(
   data: UpdateUserPayload
 ): Promise<User> {
   try {
-    const response = await patchData<User, UpdateUserPayload>(
-      "/api/v1/users/me/",
-      data,
-      {
-        headers: authHeaders(token),
-      }
-    );
-    return response;
+    return await patchData<User, UpdateUserPayload>("/api/v1/users/me/", data, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
 export async function updateBio(
-  data: UpdateBioPayload,
+  data: UpdateProfilePayload,
   token?: string | null
 ): Promise<Profile> {
   try {
-    const response = await patchData<ProfileEnvelope<Profile>, UpdateBioPayload>(
+    return await patchData<Profile, UpdateProfilePayload>(
       "/api/v1/profiles/me/",
       data,
-      {
-        headers: authHeaders(token),
-      }
+      { headers: authHeaders(token) }
     );
-
-    return normalizeProfileEnvelope(response).profile;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -134,17 +153,129 @@ export async function uploadProfilePicture(
   tokenOverride?: string | null
 ): Promise<UploadProfilePictureResponse> {
   const formData = new FormData();
-  formData.append("profile_pic", file);
+  formData.append("picture", file);
 
   try {
-    const response = await postData<ApiEnvelope<UploadProfilePictureResponse>, FormData>(
+    return await postData<UploadProfilePictureResponse, FormData>(
       "/api/v1/profiles/me/picture/",
       formData,
-      {
-        headers: authHeaders(tokenOverride),
-      }
+      { headers: authHeaders(tokenOverride) }
     );
-    return response.data;
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getPreferences(
+  token?: string | null
+): Promise<UserPreference> {
+  try {
+    return await getData<UserPreference>("/api/v1/preferences/me/", {
+      headers: authHeaders(token),
+    });
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updatePreferences(
+  data: Partial<UserPreference>,
+  token?: string | null
+): Promise<UserPreference> {
+  try {
+    return await patchData<UserPreference, Partial<UserPreference>>(
+      "/api/v1/preferences/me/",
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function createProfileInterest(
+  data: CreateProfileInterestPayload,
+  token?: string | null
+): Promise<ProfileInterest> {
+  try {
+    return await postData<ProfileInterest, CreateProfileInterestPayload>(
+      "/api/v1/profiles/me/interests/",
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateProfileInterest(
+  id: number,
+  data: UpdateProfileInterestPayload,
+  token?: string | null
+): Promise<ProfileInterest> {
+  try {
+    return await patchData<ProfileInterest, UpdateProfileInterestPayload>(
+      `/api/v1/profiles/me/interests/${id}/`,
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function deleteProfileInterest(
+  id: number,
+  token?: string | null
+): Promise<void> {
+  try {
+    await deleteData<void>(`/api/v1/profiles/me/interests/${id}/`, {
+      headers: authHeaders(token),
+    });
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function createUserSocialLink(
+  data: CreateUserSocialLinkPayload,
+  token?: string | null
+): Promise<UserSocialLink> {
+  try {
+    return await postData<UserSocialLink, CreateUserSocialLinkPayload>(
+      "/api/v1/profiles/me/social-links/",
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function updateUserSocialLink(
+  id: number,
+  data: UpdateUserSocialLinkPayload,
+  token?: string | null
+): Promise<UserSocialLink> {
+  try {
+    return await patchData<UserSocialLink, UpdateUserSocialLinkPayload>(
+      `/api/v1/profiles/me/social-links/${id}/`,
+      data,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function deleteUserSocialLink(
+  id: number,
+  token?: string | null
+): Promise<void> {
+  try {
+    await deleteData<void>(`/api/v1/profiles/me/social-links/${id}/`, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -154,14 +285,28 @@ export async function getUserReviews(
   id: number | string | undefined,
   token?: string | null
 ): Promise<UserReviewsResponse> {
+  const response = await getUserReviewsPage(id, defaultUserActivityPage, token);
+  return response.results;
+}
+
+export async function getUserReviewsPage(
+  id: number | string | undefined,
+  params: OffsetPageParams = defaultUserActivityPage,
+  token?: string | null
+): Promise<UserReviewsPage> {
+  const query = buildQuery({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
+
   try {
-    const response = await getData<UserReviewsResponse>(
-      `/api/v1/users/${id}/reviews/`,
-      {
-        headers: authHeaders(token),
-      }
+    const reviews = await getData<
+      LimitOffsetApiResponse<BookReview> | BookReview[]
+    >(
+      `/api/v1/users/${id}/reviews/${query}`,
+      { headers: authHeaders(token) }
     );
-    return response;
+    return normalizePaginatedList(reviews, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -171,14 +316,51 @@ export async function getUserRatings(
   id: number | string | undefined,
   token?: string | null
 ): Promise<UserRatingsResponse> {
+  const response = await getUserRatingsPage(id, defaultUserActivityPage, token);
+  return response.results;
+}
+
+export async function getUserRatingsPage(
+  id: number | string | undefined,
+  params: OffsetPageParams = defaultUserActivityPage,
+  token?: string | null
+): Promise<UserRatingsPage> {
+  const query = buildQuery({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
+
   try {
-    const response = await getData<UserRatingsResponse>(
-      `/api/v1/users/${id}/ratings/`,
-      {
-        headers: authHeaders(token),
-      }
+    const ratings = await getData<
+      LimitOffsetApiResponse<BookRating> | BookRating[]
+    >(
+      `/api/v1/users/${id}/ratings/${query}`,
+      { headers: authHeaders(token) }
     );
-    return response;
+    return normalizePaginatedList(ratings, params);
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getUserCollectionsPage(
+  id: number | string | undefined,
+  params: OffsetPageParams = defaultUserActivityPage,
+  token?: string | null
+): Promise<UserCollectionsPage> {
+  const query = buildQuery({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
+
+  try {
+    const collections = await getData<
+      LimitOffsetApiResponse<ReadingCollection> | ReadingCollection[]
+    >(
+      `/api/v1/users/${id}/reading-collections/${query}`,
+      { headers: authHeaders(token) }
+    );
+    return normalizePaginatedList(collections, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -189,13 +371,9 @@ export async function deleteReview(
   token?: string | null
 ): Promise<ApiDetailResponse> {
   try {
-    const response = await deleteData<ApiDetailResponse>(
-      `/api/v1/reviews/${id}/`,
-      {
-        headers: authHeaders(token),
-      }
-    );
-    return response;
+    return await deleteData<ApiDetailResponse>(`/api/v1/reviews/${id}/`, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }

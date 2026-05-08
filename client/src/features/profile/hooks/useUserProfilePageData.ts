@@ -2,15 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getUserDataAggregate } from "../services/userService";
 import type { BookRating, BookReview } from "../../catalog/types/book";
-import type { ReadingList } from "../../collections/types/collection";
-import type { UserProfile } from "../types/user";
+import type { ReadingCollection } from "../../collections/types/collection";
+import type {
+  ProfileOverviewStats,
+  ProfileViewerContext,
+  UserProfile,
+} from "../types/user";
 import { profileKeys } from "./profile.keys";
 
 interface UseUserProfilePageDataResult {
   user?: UserProfile | undefined;
   reviews?: BookReview[] | undefined;
   ratings?: BookRating[] | undefined;
-  collections?: ReadingList[] | undefined;
+  collections?: ReadingCollection[] | undefined;
+  stats?: ProfileOverviewStats | undefined;
+  viewerContext?: ProfileViewerContext | undefined;
   isUserLoading: boolean;
   isUserFetching: boolean;
   isUserError: boolean;
@@ -32,7 +38,7 @@ export function useUserProfilePageData(
   token?: string | null
 ): UseUserProfilePageDataResult {
   const userQuery = useQuery({
-    queryKey: profileKeys.profile(id),
+    queryKey: profileKeys.overview(id),
     queryFn: () => getUserDataAggregate(id, token),
     enabled: !!id,
   });
@@ -42,7 +48,9 @@ export function useUserProfilePageData(
     user: aggregate?.profile,
     reviews: aggregate?.reviews,
     ratings: aggregate?.ratings,
-    collections: aggregate?.reading_lists,
+    collections: aggregate?.reading_collections,
+    stats: aggregate?.stats,
+    viewerContext: aggregate?.viewer_context,
     isUserLoading: userQuery.isLoading,
     isUserFetching: userQuery.isFetching,
     isUserError: userQuery.isError,

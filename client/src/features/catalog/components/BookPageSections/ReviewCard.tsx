@@ -4,14 +4,18 @@ import { Link } from "react-router-dom";
 import { StarRating } from "../../../../components/ui";
 import { routeBuilders } from "../../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../../utils/colorFromString";
-import type { BookReview } from "../../types/book";
+import type { BookReview, ReviewVoteType } from "../../types/book";
 
 export interface ReviewCardProps {
   review: BookReview;
   rating: number;
   canEdit?: boolean;
   isUpdating?: boolean;
+  isVoting?: boolean;
+  currentVote?: ReviewVoteType | null | undefined;
   onUpdate?: (reviewId: string | number, reviewText: string) => void;
+  onVote?: (reviewId: string | number, voteType: ReviewVoteType) => void;
+  onDeleteVote?: (reviewId: string | number) => void;
 }
 
 function resolveProfileImage(src?: string | null): string | undefined {
@@ -24,16 +28,25 @@ export function ReviewCard({
   rating,
   canEdit = false,
   isUpdating = false,
+  isVoting = false,
+  currentVote = null,
   onUpdate,
+  onVote,
+  onDeleteVote,
 }: ReviewCardProps): ReactElement {
-  const [isHelpful, setIsHelpful] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(review.review_text);
-  const username = review.username || "Reader";
-  const profileImage = resolveProfileImage(review.profile_pic);
-  const profilePath = review.profile_id === null || review.profile_id === undefined
-    ? null
-    : routeBuilders.userProfile(review.profile_id);
+  const [draft, setDraft] = useState(review.body);
+  const username = review.book_detail ? `Reader ${review.user}` : `Reader ${review.user}`;
+  const profileImage = resolveProfileImage(undefined);
+  const profilePath = routeBuilders.userProfile(review.user);
+  const handleVote = (voteType: ReviewVoteType): void => {
+    if (currentVote === voteType) {
+      onDeleteVote?.(review.id);
+      return;
+    }
+
+    onVote?.(review.id, voteType);
+  };
   const avatar = profileImage ? (
     <img
       src={profileImage}
@@ -94,7 +107,7 @@ export function ReviewCard({
               className="btn btn-accent-v min-h-[44px] px-4 py-2 text-sm text-primary-white"
               disabled={isUpdating || !draft.trim()}
               onClick={() => {
-                onUpdate?.(review.review_id, draft.trim());
+                onUpdate?.(review.id, draft.trim());
                 setIsEditing(false);
               }}
             >
@@ -104,7 +117,7 @@ export function ReviewCard({
               type="button"
               className="min-h-[44px] rounded-full px-4 py-2 text-sm font-semibold text-primary-gray hover:bg-primary-black hover:text-primary-white"
               onClick={() => {
-                setDraft(review.review_text);
+                setDraft(review.body);
                 setIsEditing(false);
               }}
             >
@@ -113,10 +126,10 @@ export function ReviewCard({
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm leading-relaxed text-primary-white">{review.review_text}</p>
+        <p className="mt-4 text-sm leading-relaxed text-primary-white">{review.body}</p>
       )}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
-        <span>{review.created_at}</span>
+        <span>{review.reviewed_at ?? review.created_at}</span>
         <div className="flex flex-wrap gap-2">
           {canEdit ? (
             <button
@@ -130,10 +143,20 @@ export function ReviewCard({
           <button
             type="button"
             className="min-h-[44px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-black"
-            aria-pressed={isHelpful}
-            onClick={() => setIsHelpful((current) => !current)}
+            aria-pressed={currentVote === "up"}
+            disabled={isVoting}
+            onClick={() => handleVote("up")}
           >
-            {isHelpful ? "Helpful" : "Mark helpful"}
+            Helpful {review.upvote_count ? `(${review.upvote_count})` : ""}
+          </button>
+          <button
+            type="button"
+            className="min-h-[44px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-black"
+            aria-pressed={currentVote === "down"}
+            disabled={isVoting}
+            onClick={() => handleVote("down")}
+          >
+            Not helpful {review.downvote_count ? `(${review.downvote_count})` : ""}
           </button>
         </div>
       </div>

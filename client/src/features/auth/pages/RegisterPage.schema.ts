@@ -2,9 +2,10 @@ import * as Yup from "yup";
 import type { RegisterPayload } from "../types/auth";
 
 export const registerSchema: Yup.ObjectSchema<RegisterPayload> = Yup.object({
-  username: Yup.string()
-    .required("Username is required")
-    .min(2, "Username must be at least 2 characters"),
+  handle: Yup.string()
+    .required("Handle is required")
+    .min(2, "Handle must be at least 2 characters")
+    .matches(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or hyphens"),
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),

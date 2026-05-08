@@ -78,9 +78,9 @@ export function AppRouter(): ReactElement {
             path={routePaths.categories}
             element={withSuspense(<Categories />)}
           />
-          <Route path={routePaths.feed} element={withSuspense(<Feed />)} />
           <Route path={routePaths.book} element={withSuspense(<Book />)} />
           <Route element={<RequireAuth />}>
+            <Route path={routePaths.feed} element={withSuspense(<Feed />)} />
             <Route
               path={routePaths.myProfile}
               element={withSuspense(<Profile />)}

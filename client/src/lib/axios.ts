@@ -12,8 +12,8 @@ import type { ApiErrorResponse } from "../types/api";
 export const ACCESS_TOKEN_STORAGE_KEY = "token";
 export const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";
 
-const tokenRefreshPath = "/api/v1/auth/tokens/refresh/";
-const tokenVerifyPath = "/api/v1/auth/tokens/verify/";
+const tokenRefreshPath = "/api/v1/auth/token/refresh/";
+const tokenVerifyPath = "/api/v1/auth/token/verify/";
 const profileRequiredDetail =
   "You must create a profile before accessing this feature";
 const profileRequiredRedirectStorageKey = "profileRequiredRedirect";

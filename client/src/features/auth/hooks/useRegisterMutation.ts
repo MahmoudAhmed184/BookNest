@@ -20,11 +20,11 @@ export function useRegisterMutation(): UseRegisterMutationResult {
   const mutation = useMutation({
     mutationKey: authKeys.register(),
     mutationFn: register,
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       if (data.access) {
         toast.success("Account created. Welcome to BookNest.");
         userLogin(data.user, data.access, data.refresh);
-        await createProfile(data.access);
+        await createProfile({ handle: variables.handle }, data.access);
         navigate(routePaths.explore);
       } else {
         toast.error("Couldn't create your account. Try again.");

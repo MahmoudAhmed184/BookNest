@@ -14,7 +14,7 @@ export type {
   BookReview,
   BookSearchResponse,
   CatalogGenre,
-  FeedActivity,
+  FeedEvent,
   GenreSearchResponse,
-  RecommendedBook,
+  UserRecommendation,
 } from "./types/book";

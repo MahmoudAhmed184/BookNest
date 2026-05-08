@@ -3,23 +3,21 @@ import toast from "react-hot-toast";
 
 import {
   deleteNotification,
-  getNotificationTypes,
   getNotifications,
   getUnreadNotificationCount,
+  markAllNotificationsRead,
   markOneRead,
   markOneUnread,
-  markAllNotificationsRead,
 } from "../services/notificationService";
 import type {
   Notification,
   NotificationFilters,
-  NotificationType,
 } from "../types/notification";
 import { notificationKeys } from "./notifications.keys";
 
 interface UseNotificationsResult {
   notifications: Notification[];
-  notificationTypes: NotificationType[];
+  notificationTypes: string[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
@@ -78,12 +76,6 @@ export function useNotifications(
     queryFn: () => getNotifications(token, filters),
     enabled,
   });
-  const notificationTypesQuery = useQuery({
-    queryKey: notificationKeys.types(),
-    queryFn: () => getNotificationTypes(token),
-    enabled,
-    staleTime: 5 * 60_000,
-  });
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllNotificationsRead(token),
     onSuccess: () => {
@@ -116,14 +108,19 @@ export function useNotifications(
     },
   });
 
+  const notifications = notificationsQuery.data || [];
+  const notificationTypes = Array.from(
+    new Set(notifications.map((notification) => notification.notification_type))
+  );
+
   return {
-    notifications: notificationsQuery.data || [],
-    notificationTypes: notificationTypesQuery.data || [],
+    notifications,
+    notificationTypes,
     isLoading: notificationsQuery.isLoading,
     isFetching: notificationsQuery.isFetching,
     isError: notificationsQuery.isError,
-    isTypesLoading: notificationTypesQuery.isLoading,
-    isTypesError: notificationTypesQuery.isError,
+    isTypesLoading: false,
+    isTypesError: false,
     isMarkingAllAsRead: markAllAsReadMutation.isPending,
     isUpdatingNotification:
       markReadMutation.isPending || markUnreadMutation.isPending,

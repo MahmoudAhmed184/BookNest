@@ -10,8 +10,10 @@ import { routeBuilders } from "../../../routes/paths";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useCollections } from "../hooks/useCollections";
 import type {
+  CollectionPrivacy,
   CreateCollectionPayload,
-  ReadingList,
+  ReadingCollection,
+  ReadingCollectionStatus,
   UpdateCollectionPayload,
 } from "../types/collection";
 
@@ -20,8 +22,8 @@ const privacyOptions = ["private", "public"] as const;
 
 interface CollectionDraft {
   name: string;
-  type: string;
-  privacy: string;
+  type: ReadingCollectionStatus;
+  privacy: CollectionPrivacy;
 }
 
 const defaultDraft: CollectionDraft = {
@@ -30,10 +32,10 @@ const defaultDraft: CollectionDraft = {
   privacy: "private",
 };
 
-function collectionDraft(collection: ReadingList): CollectionDraft {
+function collectionDraft(collection: ReadingCollection): CollectionDraft {
   return {
     name: collection.name,
-    type: collection.type ?? "custom",
+    type: collection.list_type ?? "custom",
     privacy: collection.privacy ?? "private",
   };
 }
@@ -64,7 +66,7 @@ export default function CollectionsPage(): ReactElement {
 
     const payload: CreateCollectionPayload = {
       name,
-      type: draft.type,
+      list_type: draft.type,
       privacy: draft.privacy,
     };
     await createCollection(payload);
@@ -80,7 +82,7 @@ export default function CollectionsPage(): ReactElement {
       <div className="py-12">
         <ErrorState
           title="Collections could not be loaded"
-          message="We could not load your reading lists right now."
+          message="We could not load your reading collections right now."
           onRetry={refetch}
           isRetrying={isFetching}
         />
@@ -95,7 +97,7 @@ export default function CollectionsPage(): ReactElement {
           Collections
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-primary-gray md:text-base">
-          Manage your reading lists, shelf privacy, and list type.
+          Manage your reading collections, shelf privacy, and collection type.
         </p>
       </header>
 
@@ -137,13 +139,13 @@ export default function CollectionsPage(): ReactElement {
       {collections.length === 0 ? (
         <EmptyState
           title="No collections yet"
-          description="Create a reading list to start organizing books."
+          description="Create a reading collection to start organizing books."
         />
       ) : (
         <div className="grid gap-4">
           {collections.map((collection) => (
             <CollectionRow
-              key={collection.list_id}
+              key={collection.id}
               collection={collection}
               isSaving={isUpdating}
               isDeleting={isDeleting}
@@ -158,10 +160,10 @@ export default function CollectionsPage(): ReactElement {
 }
 
 interface CollectionRowProps {
-  collection: ReadingList;
+  collection: ReadingCollection;
   isSaving: boolean;
   isDeleting: boolean;
-  onUpdate: (listId: number, payload: UpdateCollectionPayload) => Promise<ReadingList>;
+  onUpdate: (listId: number, payload: UpdateCollectionPayload) => Promise<ReadingCollection>;
   onDelete: (listId: number) => Promise<void>;
 }
 
@@ -178,7 +180,7 @@ function CollectionRow({
   const [isEditing, setIsEditing] = useState(false);
   const hasChanges =
     draft.name !== collection.name ||
-    draft.type !== (collection.type ?? "custom") ||
+    draft.type !== (collection.list_type ?? "custom") ||
     draft.privacy !== (collection.privacy ?? "private");
 
   const handleSubmit = async (
@@ -188,9 +190,9 @@ function CollectionRow({
     const name = draft.name.trim();
     if (!name || !hasChanges) return;
 
-    await onUpdate(collection.list_id, {
+    await onUpdate(collection.id, {
       name,
-      type: draft.type,
+      list_type: draft.type,
       privacy: draft.privacy,
     });
     setIsEditing(false);
@@ -202,7 +204,7 @@ function CollectionRow({
         <div className="min-w-0">
           {isEditing ? (
             <TextField
-              id={`collection-name-${collection.list_id}`}
+              id={`collection-name-${collection.id}`}
               label="Name"
               value={draft.name}
               onChange={(name) => setDraft((current) => ({ ...current, name }))}
@@ -211,19 +213,19 @@ function CollectionRow({
           ) : (
             <div className="flex min-h-[44px] flex-col justify-center gap-1">
               <Link
-                to={routeBuilders.collection(collection.list_id)}
+                to={routeBuilders.collection(collection.id)}
                 className="line-clamp-1 text-lg font-bold text-primary-white hover:text-accent"
               >
                 {collection.name}
               </Link>
               <p className="text-sm text-primary-gray">
-                {collection.book_count ?? collection.books?.length ?? 0} books
+                {collection.item_count ?? collection.items?.length ?? 0} books
               </p>
             </div>
           )}
         </div>
         <SelectField
-          id={`collection-type-${collection.list_id}`}
+          id={`collection-type-${collection.id}`}
           label="Type"
           value={draft.type}
           options={typeOptions}
@@ -231,7 +233,7 @@ function CollectionRow({
           onChange={(type) => setDraft((current) => ({ ...current, type }))}
         />
         <SelectField
-          id={`collection-privacy-${collection.list_id}`}
+          id={`collection-privacy-${collection.id}`}
           label="Privacy"
           value={draft.privacy}
           options={privacyOptions}
@@ -271,7 +273,7 @@ function CollectionRow({
             type="button"
             className="min-h-[44px] rounded-full px-4 py-2 text-sm font-semibold text-accent hover:bg-primary-black"
             disabled={isDeleting}
-            onClick={() => void onDelete(collection.list_id)}
+            onClick={() => void onDelete(collection.id)}
           >
             Delete
           </button>
@@ -310,23 +312,23 @@ function TextField({
   );
 }
 
-interface SelectFieldProps {
+interface SelectFieldProps<TValue extends string> {
   id: string;
   label: string;
-  value: string;
-  options: readonly string[];
+  value: TValue;
+  options: readonly TValue[];
   disabled?: boolean;
-  onChange: (value: string) => void;
+  onChange: (value: TValue) => void;
 }
 
-function SelectField({
+function SelectField<TValue extends string>({
   id,
   label,
   value,
   options,
   disabled = false,
   onChange,
-}: SelectFieldProps): ReactElement {
+}: SelectFieldProps<TValue>): ReactElement {
   return (
     <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-primary-gray">
       {label}
@@ -335,7 +337,7 @@ function SelectField({
         className="field text-primary-white"
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value as TValue)}
       >
         {options.map((option) => (
           <option key={option} value={option}>

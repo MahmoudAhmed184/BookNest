@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -34,11 +35,26 @@ import { useUserProfilePageData } from "../features/profile/hooks/useUserProfile
 import {
   useFollowMutations,
   useFollows,
+  useFollowStatus,
   useProfileFollowers,
   useProfileFollowing,
 } from "../features/follows/hooks/followHooks";
 import { AuthContext } from "../features/auth/store/authContext";
 import type { OffsetPaginatedResponse } from "../types/api";
+import type {
+  Author,
+  Book,
+} from "../features/catalog/types/book";
+import type {
+  CollectionBook,
+  ReadingCollection,
+} from "../features/collections/types/collection";
+import type { FollowRelationship } from "../features/follows/types/follow";
+import type { Notification } from "../features/notifications/types/notification";
+import type {
+  Profile as UserProfileType,
+  UserPreference,
+} from "../features/profile/types/user";
 
 vi.mock("../features/catalog/hooks/useExploreCatalog", () => ({
   useExploreCatalog: vi.fn(),
@@ -75,6 +91,12 @@ vi.mock("../features/profile/hooks/useProfileActions", () => ({
   useProfileActions: vi.fn(),
 }));
 vi.mock("../features/settings/hooks/useSettingsProfile", () => ({
+  toProfileInterestSelection: vi.fn((interest) => ({
+    id: interest.id,
+    genre: interest.genre,
+    genre_name: interest.genre_name ?? String(interest.genre),
+    weight: interest.weight,
+  })),
   useSettingsProfile: vi.fn(),
 }));
 vi.mock("../features/notifications/hooks/useNotifications", () => ({
@@ -83,28 +105,116 @@ vi.mock("../features/notifications/hooks/useNotifications", () => ({
 vi.mock("../features/follows/hooks/followHooks", () => ({
   useFollowMutations: vi.fn(),
   useFollows: vi.fn(),
+  useFollowStatus: vi.fn(),
   useProfileFollowers: vi.fn(),
   useProfileFollowing: vi.fn(),
 }));
 
 function renderPage(page: ReactElement): void {
   cleanup();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
   render(
-    <AuthContext.Provider
-      value={{
-        user: true,
-        token: "token",
-        userLogin: vi.fn(),
-        logout: vi.fn(),
-      }}
-    >
-      <MemoryRouter>{page}</MemoryRouter>
-    </AuthContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <AuthContext.Provider
+        value={{
+          user: true,
+          token: "token",
+          userLogin: vi.fn(),
+          logout: vi.fn(),
+        }}
+      >
+        <MemoryRouter>{page}</MemoryRouter>
+      </AuthContext.Provider>
+    </QueryClientProvider>
   );
 }
 
 const refetch = vi.fn();
-const user = { id: 1, user_id: 31, username: "reader", bio: "Bio" };
+const user: UserProfileType = {
+  id: 1,
+  user: {
+    id: 31,
+    email: "reader@example.com",
+    display_name: "reader",
+  },
+  handle: "reader",
+  bio: "Bio",
+};
+const preferences: UserPreference = {
+  id: 1,
+  user: 31,
+  email_notifications_enabled: true,
+  in_app_notifications_enabled: true,
+  notify_on_follow: true,
+  notify_on_review_vote: true,
+  profile_public: true,
+  show_ratings_publicly: true,
+  personalized_recommendations_enabled: true,
+  external_enrichment_enabled: true,
+  search_history_enabled: true,
+  mature_content_enabled: false,
+  default_collection_privacy: "private",
+  timezone: "UTC",
+};
+
+function book(id: number, title: string): Book {
+  return { id, title };
+}
+
+function author(id: number, name: string): Author {
+  return { id, name, books_count: 4 };
+}
+
+function collection(id: number, name: string): ReadingCollection {
+  return {
+    id,
+    owner: 31,
+    name,
+    list_type: "custom",
+    privacy: "private",
+    item_count: 2,
+  };
+}
+
+function collectionItem(id: number, itemBook: Book): CollectionBook {
+  return {
+    id,
+    collection: 1,
+    book: itemBook.id,
+    book_detail: itemBook,
+    status: "todo",
+    position: id,
+  };
+}
+
+function follow(id: number, displayName: string): FollowRelationship {
+  return {
+    id,
+    follower: 32,
+    following: 31,
+    follower_detail: {
+      id: 32,
+      email: "follower@example.com",
+      display_name: displayName,
+    },
+  };
+}
+
+function notification(id: number, action: string): Notification {
+  return {
+    id,
+    recipient: 31,
+    notification_type: "social",
+    action,
+    is_read: false,
+    created_at: "now",
+  };
+}
 
 function offsetPagination<T>(
   results: T[],
@@ -153,6 +263,9 @@ function exploreState(
     refetchPopularBooks: refetch,
     refetchRecommendations: refetch,
     refreshRecommendations: vi.fn(),
+    dismissRecommendation: vi.fn(),
+    clickRecommendation: vi.fn(),
+    submitRecommendationFeedback: vi.fn(),
   };
 
   return { ...state, ...overrides };
@@ -251,7 +364,7 @@ function followRowsState(
   overrides: Partial<ReturnType<typeof useProfileFollowers>> = {}
 ): ReturnType<typeof useProfileFollowers> {
   const state = {
-    data: [],
+    data: offsetPagination<FollowRelationship>([]),
     isLoading: false,
     isFetching: false,
     isError: false,
@@ -278,10 +391,13 @@ describe("query-backed pages", () => {
       isSubmittingReview: false,
       isDeletingRating: false,
       isUpdatingReview: false,
+      isVotingReview: false,
       addBookToList: vi.fn(),
       markAsRead: vi.fn(),
       deleteRating: vi.fn(),
       editReview: vi.fn(),
+      voteReview: vi.fn(),
+      deleteReviewVote: vi.fn(),
       submitRating: vi.fn(),
       submitReview: vi.fn(),
     });
@@ -290,7 +406,7 @@ describe("query-backed pages", () => {
     vi.mocked(useAuthors).mockReturnValue(authorsState());
     vi.mocked(useGenreBooks).mockReturnValue(genreBooksState());
     vi.mocked(useRelatedBooks).mockReturnValue({
-      books: [],
+      relatedBooks: [],
       isLoading: false,
       isFetching: false,
       isError: false,
@@ -314,11 +430,18 @@ describe("query-backed pages", () => {
     vi.mocked(useProfileFollowers).mockReturnValue(followRowsState());
     vi.mocked(useProfileFollowing).mockReturnValue(followRowsState());
     vi.mocked(useFollowMutations).mockReturnValue({
-      followProfile: vi.fn(),
+      followUser: vi.fn(),
       unfollowById: vi.fn(),
       isFollowing: false,
       isUnfollowing: false,
     });
+    vi.mocked(useFollowStatus).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      refetch,
+    } as unknown as ReturnType<typeof useFollowStatus>);
   });
 
   it("renders Explore loading, error, and success states", () => {
@@ -340,7 +463,7 @@ describe("query-backed pages", () => {
 
     vi.mocked(useExploreCatalog).mockReturnValue(
       exploreState({
-        books: [{ isbn13: "1", title: "Catalog Book" }],
+        books: [book(1, "Catalog Book")],
       })
     );
     renderPage(<Explore />);
@@ -367,7 +490,7 @@ describe("query-backed pages", () => {
 
     vi.mocked(useSearchBooks).mockReturnValue({
       ...searchState({
-        books: [{ isbn13: "2", title: "Search Book" }],
+        books: [book(2, "Search Book")],
         hasData: true,
       }),
     });
@@ -384,6 +507,7 @@ describe("query-backed pages", () => {
       isReviewsFetching: false,
       isReviewsError: false,
       isRatingsError: false,
+      isReviewVotesError: false,
       refetchBook: refetch,
       refetchReviews: refetch,
       refetchRatings: refetch,
@@ -399,6 +523,7 @@ describe("query-backed pages", () => {
       isReviewsFetching: false,
       isReviewsError: false,
       isRatingsError: false,
+      isReviewVotesError: false,
       refetchBook: refetch,
       refetchReviews: refetch,
       refetchRatings: refetch,
@@ -407,10 +532,10 @@ describe("query-backed pages", () => {
     expect(screen.getByText("Book details are unavailable")).toBeTruthy();
 
     vi.mocked(useBookPageData).mockReturnValue({
-      book: { isbn13: "1", title: "Book Detail" },
+      book: book(1, "Book Detail"),
       collections: [
-        { list_id: 3, name: "Completed", type: "done" },
-        { list_id: 1, name: "To Do", type: "todo" },
+        { ...collection(3, "Completed"), list_type: "done" },
+        { ...collection(1, "To Do"), list_type: "todo" },
       ],
       reviews: [],
       ratings: [],
@@ -421,6 +546,7 @@ describe("query-backed pages", () => {
       isReviewsFetching: false,
       isReviewsError: false,
       isRatingsError: false,
+      isReviewVotesError: false,
       refetchBook: refetch,
       refetchReviews: refetch,
       refetchRatings: refetch,
@@ -445,7 +571,7 @@ describe("query-backed pages", () => {
 
     vi.mocked(useCollections).mockReturnValue(
       collectionsState({
-        collections: [{ list_id: 1, name: "Weekend reads", book_count: 2 }],
+        collections: [collection(1, "Weekend reads")],
       })
     );
     renderPage(<CollectionsPage />);
@@ -454,9 +580,12 @@ describe("query-backed pages", () => {
     vi.mocked(useCollectionDetail).mockReturnValue(
       collectionDetailState({
         collection: {
-          list_id: 1,
+          id: 1,
+          owner: 31,
           name: "Weekend reads",
-          books: [{ isbn13: "1", title: "Collection Book" }],
+          list_type: "custom",
+          privacy: "private",
+          items: [collectionItem(1, book(1, "Collection Book"))],
         },
       })
     );
@@ -467,7 +596,7 @@ describe("query-backed pages", () => {
   it("renders author browse and genre books pages", () => {
     vi.mocked(useAuthors).mockReturnValue(
       authorsState({
-        authors: [{ author_id: 7, name: "Octavia Butler", number_of_books: 4 }],
+        authors: [author(7, "Octavia Butler")],
       })
     );
     renderPage(<AuthorsPage />);
@@ -475,7 +604,7 @@ describe("query-backed pages", () => {
 
     vi.mocked(useGenreBooks).mockReturnValue(
       genreBooksState({
-        books: [{ isbn13: "42", title: "Genre Book" }],
+        books: [book(42, "Genre Book")],
       })
     );
     cleanup();
@@ -528,34 +657,32 @@ describe("query-backed pages", () => {
   it("renders profile connection lists", () => {
     vi.mocked(useProfileFollowers).mockReturnValue(
       followRowsState({
-        data: [
-          {
-            id: 1,
-            profile: {
-              id: 2,
-              user_id: 32,
-              username: "follower",
-              bio: "Reads mysteries",
-            },
-          },
-        ],
+        data: offsetPagination([follow(1, "follower")]),
       })
     );
 
     cleanup();
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     render(
-      <AuthContext.Provider
-        value={{
-          user: true,
-          token: "token",
-          userLogin: vi.fn(),
-          logout: vi.fn(),
-        }}
-      >
-        <MemoryRouter initialEntries={["/profile/1/followers"]}>
-          <ProfileConnections />
-        </MemoryRouter>
-      </AuthContext.Provider>
+      <QueryClientProvider client={queryClient}>
+        <AuthContext.Provider
+          value={{
+            user: true,
+            token: "token",
+            userLogin: vi.fn(),
+            logout: vi.fn(),
+          }}
+        >
+          <MemoryRouter initialEntries={["/profile/1/followers"]}>
+            <ProfileConnections />
+          </MemoryRouter>
+        </AuthContext.Provider>
+      </QueryClientProvider>
     );
 
     expect(screen.getByText("Followers")).toBeTruthy();
@@ -619,9 +746,9 @@ describe("query-backed pages", () => {
 
     vi.mocked(useNotifications).mockReturnValue({
       notifications: [
-        { id: 1, recipient: 1, verb: "New follower", read: false, timestamp: "now" },
+        notification(1, "New follower"),
       ],
-      notificationTypes: [{ id: 1, name: "follow" }],
+      notificationTypes: ["social"],
       isLoading: false,
       isFetching: false,
       isError: false,
@@ -668,13 +795,16 @@ function profileState(overrides = {}) {
 function settingsState(overrides = {}) {
   return {
     user: undefined,
+    preferences,
     isLoading: false,
     isFetching: false,
     isError: false,
     isSavingProfile: false,
+    isSavingPreferences: false,
     isUploadingPicture: false,
     refetch,
     updateProfile: vi.fn(),
+    updatePreferences: vi.fn(),
     uploadProfilePicture: vi.fn(),
     ...overrides,
   };

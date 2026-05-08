@@ -8,19 +8,20 @@ import {
 import toast from "react-hot-toast";
 
 import {
+  clickRecommendation,
+  createRecommendationFeedback,
+  dismissRecommendation,
   type CatalogBookFilters,
   getCatalogBooks,
   getGenres,
   getPopularBooks,
   getRecommendedBooks,
-  refreshRecommendations as refreshRecommendationsRequest,
 } from "../services/bookService";
 import type {
   Book,
   CatalogGenre,
-  RecommendationRefreshOptions,
-  RecommendationRefreshResponse,
-  RecommendedBook,
+  UserRecommendation,
+  RecommendationFeedbackType,
 } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
 import { catalogKeys } from "./catalog.keys";
@@ -32,7 +33,7 @@ interface UseExploreCatalogResult {
   booksPagination: OffsetPaginatedResponse<Book>;
   categories: CatalogGenre[];
   popularBooks: Book[];
-  recommendations: RecommendedBook[];
+  recommendations: UserRecommendation[];
   isBooksLoading: boolean;
   isBooksFetching: boolean;
   isBooksError: boolean;
@@ -51,7 +52,13 @@ interface UseExploreCatalogResult {
   refetchCategories: () => void;
   refetchPopularBooks: () => void;
   refetchRecommendations: () => void;
-  refreshRecommendations: (options?: RecommendationRefreshOptions) => void;
+  refreshRecommendations: () => void;
+  dismissRecommendation: (id: number) => void;
+  clickRecommendation: (id: number) => void;
+  submitRecommendationFeedback: (
+    recommendation: UserRecommendation,
+    feedbackType: RecommendationFeedbackType
+  ) => void;
 }
 
 function createEmptyPagination<T>(
@@ -77,11 +84,6 @@ export function useExploreCatalog(
   filters: CatalogBookFilters = {}
 ): UseExploreCatalogResult {
   const queryClient = useQueryClient();
-  const invalidateRecommendations = (): void => {
-    void queryClient.invalidateQueries({
-      queryKey: catalogKeys.recommendations(),
-    });
-  };
   const booksQuery = useQuery({
     queryKey: catalogKeys.catalogBooks(page, explorePageSize, filters),
     queryFn: () => getCatalogBooks({ page, pageSize: explorePageSize, ...filters }),
@@ -103,24 +105,44 @@ export function useExploreCatalog(
     queryFn: () => getRecommendedBooks(token),
     enabled: Boolean(token),
   });
-  const refreshRecommendationsMutation = useMutation({
-    mutationFn: (options?: RecommendationRefreshOptions) =>
-      refreshRecommendationsRequest(
-        { n_recommendations: 12, async: true, ...options },
-        token
-      ),
-    onSuccess: (response: RecommendationRefreshResponse) => {
-      if (Array.isArray(response) || response.recommendations) {
-        toast.success("Recommendations refreshed.");
-        invalidateRecommendations();
-        return;
-      }
-
-      toast.success("Recommendations are being generated.");
-      window.setTimeout(invalidateRecommendations, 5_000);
+  const dismissMutation = useMutation({
+    mutationFn: (id: number) => dismissRecommendation(id, token),
+    onSuccess: () => {
+      toast.success("Recommendation dismissed.");
+      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
     },
     onError: () => {
-      toast.error("Couldn't refresh recommendations. Try again.");
+      toast.error("Couldn't dismiss that recommendation.");
+    },
+  });
+  const clickMutation = useMutation({
+    mutationFn: (id: number) => clickRecommendation(id, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
+    },
+  });
+  const feedbackMutation = useMutation({
+    mutationFn: ({
+      recommendation,
+      feedbackType,
+    }: {
+      recommendation: UserRecommendation;
+      feedbackType: RecommendationFeedbackType;
+    }) =>
+      createRecommendationFeedback(
+        {
+          book: recommendation.book,
+          recommendation: recommendation.id,
+          feedback_type: feedbackType,
+        },
+        token
+      ),
+    onSuccess: () => {
+      toast.success("Recommendation feedback saved.");
+      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
+    },
+    onError: () => {
+      toast.error("Couldn't save that feedback.");
     },
   });
 
@@ -144,13 +166,9 @@ export function useExploreCatalog(
 
   const booksPagination =
     booksQuery.data ?? createEmptyPagination<Book>(page, explorePageSize);
-  const books = booksPagination.results;
-  const uniqueBooks = books.filter(
-    (_book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
-  );
 
   return {
-    books: uniqueBooks,
+    books: booksPagination.results,
     booksPagination,
     categories: categoriesQuery.data || [],
     popularBooks: popularBooksQuery.data || [],
@@ -168,12 +186,20 @@ export function useExploreCatalog(
     isRecommendationsLoading: recommendationsQuery.isLoading,
     isRecommendationsFetching: recommendationsQuery.isFetching,
     isRecommendationsError: recommendationsQuery.isError,
-    isRefreshingRecommendations: refreshRecommendationsMutation.isPending,
+    isRefreshingRecommendations:
+      dismissMutation.isPending ||
+      clickMutation.isPending ||
+      feedbackMutation.isPending,
     refetchBooks: () => void booksQuery.refetch(),
     refetchCategories: () => void categoriesQuery.refetch(),
     refetchPopularBooks: () => void popularBooksQuery.refetch(),
     refetchRecommendations: () => void recommendationsQuery.refetch(),
-    refreshRecommendations: (options?: RecommendationRefreshOptions) =>
-      refreshRecommendationsMutation.mutate(options),
+    refreshRecommendations: () => {
+      void recommendationsQuery.refetch();
+    },
+    dismissRecommendation: (id) => dismissMutation.mutate(id),
+    clickRecommendation: (id) => clickMutation.mutate(id),
+    submitRecommendationFeedback: (recommendation, feedbackType) =>
+      feedbackMutation.mutate({ recommendation, feedbackType }),
   };
 }

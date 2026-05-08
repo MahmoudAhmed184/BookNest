@@ -4,21 +4,23 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 import { BookCard } from "../../../../components/ui";
 import { routeBuilders } from "../../../../routes/paths";
-import type { ReadingList } from "../../../collections/types/collection";
-import type { Book } from "../../../catalog/types/book";
+import type {
+  CollectionBook,
+  ReadingCollection,
+} from "../../../collections/types/collection";
 import { getAuthorNames } from "../../../catalog/utils/bookFacets";
 import { DeleteBookButton } from "./DeleteBookButton";
 
 export interface BookShelfCarouselProps {
-  books: Book[];
-  primaryCollection?: ReadingList | undefined;
+  items: CollectionBook[];
+  primaryCollection?: ReadingCollection | undefined;
   canDelete: boolean;
   isDeleting: boolean;
-  onDeleteBook?: ((book: Book, listId: number | null) => void) | undefined;
+  onDeleteBook?: ((item: CollectionBook) => void) | undefined;
 }
 
 export function BookShelfCarousel({
-  books,
+  items,
   primaryCollection,
   canDelete,
   isDeleting,
@@ -34,26 +36,30 @@ export function BookShelfCarousel({
       breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
       className="book-carousel-swiper w-full"
     >
-      {books.map((book) => (
-        <SwiperSlide key={book.isbn13}>
+      {items.map((item) => {
+        const book = item.book_detail;
+        if (!book) return null;
+
+        return (
+        <SwiperSlide key={item.id}>
           <div className="relative pr-2 pt-2">
             <BookCard
-              to={routeBuilders.book(book.isbn13)}
+              to={routeBuilders.book(book.id)}
               title={book.title}
               author={getAuthorNames(book)}
-              coverSrc={book.cover_img}
+              coverSrc={book.cover || book.cover_fallback_url}
             />
             {canDelete && onDeleteBook ? (
               <DeleteBookButton
-                book={book}
-                listId={primaryCollection?.list_id ?? null}
+                item={item}
+                collectionName={primaryCollection?.name}
                 isDeleting={isDeleting}
                 onDeleteBook={onDeleteBook}
               />
             ) : null}
           </div>
         </SwiperSlide>
-      ))}
+      )})}
     </Swiper>
   );
 }

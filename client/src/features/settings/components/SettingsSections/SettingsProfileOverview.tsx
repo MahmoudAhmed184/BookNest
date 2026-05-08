@@ -22,8 +22,9 @@ export function SettingsProfileOverview({
   onFileChange,
   onEditProfile,
 }: SettingsProfileOverviewProps): ReactElement {
-  const profileImage = resolveProfileImage(user.profile_pic);
+  const profileImage = resolveProfileImage(user.picture || user.picture_fallback_url);
   const memberSince = formatMemberSince(user.created_at);
+  const displayName = user.user.display_name || user.handle;
 
   return (
     <section className="settings-panel p-4 sm:p-6" aria-labelledby="settings-profile-title">
@@ -36,7 +37,7 @@ export function SettingsProfileOverview({
             {profileImage ? (
               <img
                 src={profileImage}
-                alt={`${user.username}'s profile`}
+                alt={`${displayName}'s profile`}
                 className="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
                 width="80"
                 height="80"
@@ -46,9 +47,9 @@ export function SettingsProfileOverview({
             ) : (
               <div
                 className="fallback-gradient flex h-full w-full items-center justify-center text-2xl font-bold text-primary-white"
-                style={getFallbackHueStyle(user.username)}
+                style={getFallbackHueStyle(displayName)}
               >
-                {getInitials(user.username)}
+                {getInitials(displayName)}
               </div>
             )}
             <span className="absolute inset-0 flex items-center justify-center bg-primary-black/75 px-3 text-center text-xs font-semibold text-primary-white opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
@@ -68,9 +69,9 @@ export function SettingsProfileOverview({
               id="settings-profile-title"
               className="truncate text-2xl font-bold text-primary-white"
             >
-              {user.username}
+              {displayName}
             </h2>
-            <p className="truncate text-sm text-primary-gray">@{user.username}</p>
+            <p className="truncate text-sm text-primary-gray">@{user.handle}</p>
             <p className="text-sm text-primary-gray">{memberSince}</p>
             {selectedFile ? (
               <p className="mt-2 max-w-full truncate text-xs text-primary-gray">

@@ -9,21 +9,12 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { useBookSuggestions } from "../../../features/catalog/hooks/useBookSuggestions";
-import type { Book } from "../../../features/catalog/types/book";
+import type { SearchAutocompleteTerm } from "../../../features/catalog/types/book";
 import { routeBuilders } from "../../../routes/paths";
 
 interface NavbarSearchProps {
   className?: string | undefined;
   onNavigate?: () => void;
-}
-
-function getAuthorLabel(book: Book): string {
-  if (!book.authors || book.authors.length === 0) return "";
-
-  return book.authors
-    .map((author) => (typeof author === "string" ? author : author.name))
-    .filter(Boolean)
-    .join(", ");
 }
 
 export function NavbarSearch({
@@ -72,14 +63,14 @@ export function NavbarSearch({
     onNavigate?.();
   };
 
-  const navigateToBook = (book: Book): void => {
-    if (book.isbn13) {
-      navigate(routeBuilders.book(book.isbn13));
+  const navigateToSuggestion = (suggestion: SearchAutocompleteTerm): void => {
+    if (suggestion.target_object_id) {
+      navigate(routeBuilders.book(suggestion.target_object_id));
     } else {
-      navigate(routeBuilders.searchQuery(book.title));
+      navigate(routeBuilders.searchQuery(suggestion.term));
     }
 
-    setQuery(book.title);
+    setQuery(suggestion.term);
     close();
     onNavigate?.();
   };
@@ -110,7 +101,7 @@ export function NavbarSearch({
       event.preventDefault();
       const activeSuggestion = visibleSuggestions[activeIndex];
       if (expanded && activeSuggestion) {
-        navigateToBook(activeSuggestion);
+        navigateToSuggestion(activeSuggestion);
         return;
       }
 
@@ -160,13 +151,12 @@ export function NavbarSearch({
           className="glass-card absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-80 overflow-y-auto p-2 shadow-xl"
         >
           {visibleSuggestions.map((book, index) => {
-            const authorLabel = getAuthorLabel(book);
             const isActive = activeIndex === index;
 
             return (
               <li
                 id={`${id}-option-${index}`}
-                key={book.isbn13 || `${book.title}-${index}`}
+                key={book.id}
                 role="option"
                 aria-selected={isActive}
                 className={`cursor-pointer rounded-xl px-3 py-2 transition ${
@@ -177,15 +167,13 @@ export function NavbarSearch({
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseDown={(event) => {
                   event.preventDefault();
-                  navigateToBook(book);
+                  navigateToSuggestion(book);
                 }}
               >
                 <span className="block truncate text-sm font-semibold">
-                  {book.title}
+                  {book.term}
                 </span>
-                {authorLabel ? (
-                  <span className="block truncate text-xs">{authorLabel}</span>
-                ) : null}
+                <span className="block truncate text-xs">{book.term_type}</span>
               </li>
             );
           })}

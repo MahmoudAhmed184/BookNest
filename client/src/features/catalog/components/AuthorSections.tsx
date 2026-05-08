@@ -11,12 +11,14 @@ import { getAuthorNames } from "../utils/bookFacets";
 interface AuthorHeaderProps {
   author: Author;
   isLiked: boolean;
+  isLikePending: boolean;
   onToggleLike: () => void;
 }
 
 export function AuthorHeader({
   author,
   isLiked,
+  isLikePending,
   onToggleLike,
 }: AuthorHeaderProps): ReactElement {
   return (
@@ -32,21 +34,22 @@ export function AuthorHeader({
         <h1 className="display-heading text-4xl md:text-5xl">
           {author.name}
         </h1>
-        {typeof author.number_of_books === "number" ? (
+        {typeof author.books_count === "number" ? (
           <p className="text-sm text-primary-gray">
-            {author.number_of_books} books in BookNest
+            {author.books_count} books in BookNest
           </p>
         ) : null}
         <button
           type="button"
           onClick={onToggleLike}
+          disabled={isLikePending}
           className={`btn inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg ${
             isLiked ? "btn-primary-v" : "btn-accent-v"
           }`}
           aria-pressed={isLiked}
           aria-label={`Like ${author.name}'s profile`}
         >
-          {isLiked ? "Liked" : "Like"}
+          {isLikePending ? "Saving..." : isLiked ? "Liked" : "Like"}
         </button>
       </div>
     </section>
@@ -64,7 +67,7 @@ export function AuthorBio({ author }: AuthorBioProps): ReactElement {
         Bio
       </h2>
       <p className="max-w-2xl text-base leading-relaxed text-primary-white">
-        {author.description || "No biography is available for this author yet."}
+        {author.bio || "No biography is available for this author yet."}
       </p>
     </section>
   );
@@ -102,13 +105,13 @@ export function AuthorBooks({ books }: AuthorBooksProps): ReactElement {
           className="w-full relative"
         >
           {books.map((book) => (
-            <SwiperSlide key={book.isbn13}>
+            <SwiperSlide key={book.id}>
             <BookCard
-                to={routeBuilders.book(book.isbn13)}
+                to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}
-                coverSrc={book.cover_img}
-                rating={book.average_rate}
+                coverSrc={book.cover || book.cover_fallback_url}
+                rating={book.average_rating}
                 variant="trending"
               />
             </SwiperSlide>

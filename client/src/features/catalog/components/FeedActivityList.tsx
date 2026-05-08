@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { routeBuilders } from "../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
-import type { FeedActivity } from "../types/book";
+import type { FeedEvent } from "../types/book";
 
 interface ActivityCoverProps {
   src?: string | null | undefined;
@@ -40,7 +40,19 @@ function ActivityCover({ src, title }: ActivityCoverProps): ReactElement {
 }
 
 interface FeedActivityListProps {
-  activities: FeedActivity[];
+  activities: FeedEvent[];
+}
+
+function actorName(activity: FeedEvent): string {
+  return (
+    activity.actor_detail?.display_name ||
+    activity.actor_detail?.email ||
+    `Reader ${activity.actor}`
+  );
+}
+
+function eventLabel(activity: FeedEvent): string {
+  return activity.event_type.replaceAll("_", " ");
 }
 
 export function FeedActivityList({
@@ -48,41 +60,66 @@ export function FeedActivityList({
 }: FeedActivityListProps): ReactElement {
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      {activities.map((activity) => (
-        <Link
-          key={activity.id}
-          to={routeBuilders.book(activity.book.id)}
-          className="glass-card card-lift group grid grid-cols-[1fr_auto] items-center gap-4 p-4 text-primary-white"
-          aria-label={`${activity.username} ${activity.action} ${activity.book.title}`}
-        >
-          <div className="flex min-w-0 items-center gap-4">
-            <div
-              className="fallback-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-primary-white"
-              style={getFallbackHueStyle(activity.username)}
-            >
-              {getInitials(activity.username)}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm leading-relaxed text-primary-gray">
-                <span className="font-semibold text-primary-white">
-                  {activity.username}
-                </span>{" "}
-                {activity.action}
-              </p>
-              <p
-                className="line-clamp-2 text-base font-semibold text-primary-white transition-colors duration-200 ease-out group-hover:text-accent"
-                title={activity.book.title}
+      {activities.map((activity) => {
+        const book = activity.book_detail;
+        const title = book?.title || activity.action_object_label || "Book";
+        const actor = actorName(activity);
+        const content = (
+          <>
+            <div className="flex min-w-0 items-center gap-4">
+              <div
+                className="fallback-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-primary-white"
+                style={getFallbackHueStyle(actor)}
               >
-                {activity.book.title}
-              </p>
-              <p className="mt-2 text-xs text-primary-gray">
-                {activity.timestamp}
-              </p>
+                {getInitials(actor)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm leading-relaxed text-primary-gray">
+                  <span className="font-semibold text-primary-white">
+                    {actor}
+                  </span>{" "}
+                  {eventLabel(activity)}
+                </p>
+                <p
+                  className="line-clamp-2 text-base font-semibold text-primary-white transition-colors duration-200 ease-out group-hover:text-accent"
+                  title={title}
+                >
+                  {title}
+                </p>
+                <p className="mt-2 text-xs text-primary-gray">
+                  {activity.occurred_at ?? activity.created_at}
+                </p>
+              </div>
             </div>
-          </div>
-          <ActivityCover src={activity.book.cover} title={activity.book.title} />
-        </Link>
-      ))}
+            <ActivityCover
+              src={book?.cover || book?.cover_fallback_url}
+              title={title}
+            />
+          </>
+        );
+
+        if (!book) {
+          return (
+            <article
+              key={activity.id}
+              className="glass-card card-lift group grid grid-cols-[1fr_auto] items-center gap-4 p-4 text-primary-white"
+            >
+              {content}
+            </article>
+          );
+        }
+
+        return (
+          <Link
+            key={activity.id}
+            to={routeBuilders.book(book.id)}
+            className="glass-card card-lift group grid grid-cols-[1fr_auto] items-center gap-4 p-4 text-primary-white"
+            aria-label={`${actor} ${eventLabel(activity)} ${title}`}
+          >
+            {content}
+          </Link>
+        );
+      })}
     </div>
   );
 }

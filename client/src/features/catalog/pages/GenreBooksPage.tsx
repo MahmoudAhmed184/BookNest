@@ -117,11 +117,11 @@ export default function GenreBooksPage(): ReactElement {
           <div className="catalog-grid">
             {books.map((book) => (
               <BookCard
-                key={book.isbn13}
-                to={routeBuilders.book(book.isbn13)}
+                key={book.id}
+                to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}
-                coverSrc={book.cover_img}
+                coverSrc={book.cover || book.cover_fallback_url}
               />
             ))}
           </div>

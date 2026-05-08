@@ -1,18 +1,14 @@
 import {
   authHeaders,
-  deleteData,
   getData,
   postData,
   throwApiError,
 } from "../../../lib/axios";
-import {
-  normalizeAuthEnvelope,
-  normalizeEmptyResponse,
-  normalizeProfileEnvelope,
-  type AuthEnvelope,
-  type ProfileEnvelope,
-} from "../../../lib/normalizers";
-import type { Profile } from "../../profile/types/user";
+import { normalizeEmptyResponse } from "../../../lib/normalizers";
+import type {
+  CreateProfilePayload,
+  Profile,
+} from "../../profile/types/user";
 import type {
   AuthenticatedUser,
   AuthTokens,
@@ -20,21 +16,30 @@ import type {
   RegisterPayload,
 } from "../types/auth";
 
+interface AuthApiResponse {
+  access: string;
+  refresh: string;
+  user: AuthenticatedUser;
+}
+
+interface RegistrationApiPayload {
+  email: string;
+  password1: string;
+  password2: string;
+}
+
 interface LogoutPayload {
   refresh?: string;
 }
 
-export async function createProfile(token?: string | null): Promise<Profile> {
+export async function createProfile(
+  data: CreateProfilePayload,
+  token?: string | null
+): Promise<Profile> {
   try {
-    const response = await postData<ProfileEnvelope<Profile>, Record<string, never>>(
-      "/api/v1/profiles/",
-      {},
-      {
-        headers: authHeaders(token),
-      }
-    );
-
-    return normalizeProfileEnvelope(response).profile;
+    return await postData<Profile, CreateProfilePayload>("/api/v1/profiles/", data, {
+      headers: authHeaders(token),
+    });
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -44,25 +49,26 @@ export async function getCurrentUser(
   token?: string | null
 ): Promise<AuthenticatedUser> {
   try {
-    const response = await getData<AuthenticatedUser>("/api/v1/users/me/", {
+    return await getData<AuthenticatedUser>("/api/v1/users/me/", {
       headers: authHeaders(token),
     });
-    return response;
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
-export async function login(
-  formData: LoginPayload
-): Promise<AuthTokens> {
+export async function login(formData: LoginPayload): Promise<AuthTokens> {
   try {
-    const response = await postData<AuthEnvelope<AuthenticatedUser>, LoginPayload>(
-      "/api/v1/auth/sessions/",
+    const response = await postData<AuthApiResponse, LoginPayload>(
+      "/api/v1/auth/login/",
       formData
     );
 
-    return normalizeAuthEnvelope(response);
+    return {
+      access: response.access,
+      refresh: response.refresh,
+      user: response.user,
+    };
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -71,13 +77,23 @@ export async function login(
 export async function register(
   formData: RegisterPayload
 ): Promise<AuthTokens> {
+  const payload: RegistrationApiPayload = {
+    email: formData.email,
+    password1: formData.password1,
+    password2: formData.password2,
+  };
+
   try {
-    const response = await postData<AuthEnvelope<AuthenticatedUser>, RegisterPayload>(
-      "/api/v1/users/",
-      formData
+    const response = await postData<AuthApiResponse, RegistrationApiPayload>(
+      "/api/v1/auth/registration/",
+      payload
     );
 
-    return normalizeAuthEnvelope(response);
+    return {
+      access: response.access,
+      refresh: response.refresh,
+      user: response.user,
+    };
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -89,9 +105,7 @@ export async function logoutCurrentSession(
   const data: LogoutPayload = refreshToken ? { refresh: refreshToken } : {};
 
   try {
-    await deleteData<void, LogoutPayload>("/api/v1/auth/sessions/current/", {
-      data,
-    });
+    await postData<void, LogoutPayload>("/api/v1/auth/logout/", data);
     return normalizeEmptyResponse();
   } catch (error: unknown) {
     throwApiError(error);

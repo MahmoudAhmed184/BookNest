@@ -17,7 +17,7 @@ function normalizeRating(value?: number | string | null): number {
 
 export function BookSummary({ book, authors }: BookSummaryProps): ReactElement {
   const genres = getBookGenres(book);
-  const averageRating = normalizeRating(book.average_rate);
+  const averageRating = normalizeRating(book.average_rating);
 
   return (
     <div className="flex flex-col gap-3">
@@ -32,10 +32,10 @@ export function BookSummary({ book, authors }: BookSummaryProps): ReactElement {
       <div className="flex flex-wrap items-center gap-3">
         <StarRating
           value={averageRating}
-          label={`Rating: ${averageRating} out of 5 from ${book.number_of_ratings || 0} ratings`}
+          label={`Rating: ${averageRating} out of 5 from ${book.rating_count || 0} ratings`}
         />
         <span className="text-sm text-primary-gray">
-          {book.number_of_ratings || 0} ratings
+          {book.rating_count || 0} ratings
         </span>
       </div>
       {genres.length ? (

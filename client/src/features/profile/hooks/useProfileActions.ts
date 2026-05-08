@@ -21,6 +21,7 @@ export function useProfileActions(token?: string | null): UseProfileActionsResul
     onSuccess: () => {
       toast.success("Book removed from your shelf.");
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
     onError: () => {
       toast.error("Couldn't remove the book. Try again.");
@@ -31,6 +32,7 @@ export function useProfileActions(token?: string | null): UseProfileActionsResul
     onSuccess: () => {
       toast.success("Review deleted.");
       queryClient.invalidateQueries({ queryKey: profileKeys.reviews() });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
     onError: () => {
       toast.error("Couldn't delete the review. Try again.");

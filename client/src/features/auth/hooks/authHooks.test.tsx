@@ -154,7 +154,7 @@ describe("auth hooks", () => {
       });
       expect(requestCount).toBe(2);
       expect(postSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/auth/tokens/refresh/`,
+        `${API_BASE_URL}/api/v1/auth/token/refresh/`,
         { refresh: "refresh-token" }
       );
       expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBe("new-access");

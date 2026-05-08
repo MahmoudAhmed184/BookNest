@@ -31,7 +31,7 @@ export default function CollectionDetailPage(): ReactElement {
     refetch,
     removeBook,
   } = useCollectionDetail(id, token);
-  const books = collection?.books ?? [];
+  const items = collection?.items ?? [];
 
   if (isLoading) {
     return (
@@ -74,12 +74,12 @@ export default function CollectionDetailPage(): ReactElement {
               {collection.name}
             </h1>
             <p className="mt-2 text-sm text-primary-gray">
-              {collection.type ?? "custom"} / {collection.privacy ?? "private"} /{" "}
-              {collection.book_count ?? books.length} books
+              {collection.list_type ?? "custom"} / {collection.privacy ?? "private"} /{" "}
+              {collection.item_count ?? items.length} books
             </p>
           </div>
           <Link
-            to={routeBuilders.collection(collection.list_id)}
+            to={routeBuilders.collection(collection.id)}
             className="sr-only"
             aria-current="page"
           >
@@ -88,7 +88,7 @@ export default function CollectionDetailPage(): ReactElement {
         </div>
       </header>
 
-      {books.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
           title="This collection is empty"
           description="Add books from a book detail page to fill this list."
@@ -97,26 +97,30 @@ export default function CollectionDetailPage(): ReactElement {
         />
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {books.map((book) => (
-            <div key={book.isbn13} className="relative">
+          {items.map((item) => {
+            const book = item.book_detail;
+            if (!book) return null;
+
+            return (
+            <div key={item.id} className="relative">
               <BookCard
-                to={routeBuilders.book(book.isbn13)}
+                to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}
-                coverSrc={book.cover_img ?? undefined}
-                rating={book.average_rate}
+                coverSrc={book.cover || book.cover_fallback_url}
+                rating={book.average_rating}
               />
               <button
                 type="button"
                 className="absolute right-3 top-3 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary-black/90 text-sm font-bold text-accent shadow-md hover:text-primary-white"
                 disabled={isRemovingBook}
                 aria-label={`Remove ${book.title} from ${collection.name}`}
-                onClick={() => void removeBook(book.isbn13)}
+                onClick={() => void removeBook(item)}
               >
                 {isRemovingBook ? <InlineSpinner /> : "X"}
               </button>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>

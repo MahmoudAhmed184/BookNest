@@ -1,137 +1,314 @@
-import type {
-  CursorApiResponse,
-  OffsetPaginatedResponse,
-} from "../../../types/api";
+import type { OffsetPaginatedResponse } from "../../../types/api";
 
 export interface Author {
-  author_id?: number;
-  name: string;
-  number_of_books?: number;
-  description?: string | null;
-}
-
-export interface CatalogGenre {
   id: number;
   name: string;
-  description?: string | null;
-  book_count?: number;
+  normalized_name?: string;
+  slug?: string;
+  bio?: string;
+  photo?: string | null;
+  photo_fallback_url?: string | null;
+  birth_date?: string | null;
+  death_date?: string | null;
+  source?: string;
+  books_count?: number;
+  like_count?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Genre {
+  id: number;
+  name: string;
+  normalized_name?: string;
+  slug?: string;
+  description?: string;
+  parent?: number | null;
+  books_count?: number;
+  is_featured?: boolean;
+  carousel_rank?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CatalogGenre = Genre;
+
+export interface AuthorLike {
+  id: number;
+  user: number;
+  author: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Book {
-  isbn13: string;
-  isbn?: string | null;
+  id: number;
   title: string;
-  authors?: Author[] | string[];
-  author?: string;
-  genres?: string[];
-  average_rate?: number | string | null;
-  description?: string | null;
+  subtitle?: string;
+  slug?: string;
+  description?: string;
+  isbn_13?: string | null;
+  isbn_10?: string | null;
+  authors?: Author[];
+  genres?: Genre[];
+  related_books?: number[];
+  cover?: string | null;
+  cover_fallback_url?: string | null;
+  publisher?: string;
   publication_date?: string | null;
-  date?: string;
-  number_of_pages?: number | null;
-  cover_img?: string | null;
-  number_of_ratings?: number;
-  reviews_count?: number;
-  language?: string | null;
-  source?: string | null;
+  publication_year?: number | null;
+  page_count?: number | null;
+  language?: string;
+  source?: string;
+  source_updated_at?: string | null;
+  external_last_synced_at?: string | null;
+  average_rating?: number | string;
+  rating_count?: number;
+  review_count?: number;
+  collection_count?: number;
+  read_count?: number;
+  author_names?: string;
+  genre_labels?: string;
+  is_featured?: boolean;
+  featured_rank?: number | null;
+  popularity_score?: number | string;
+  trending_score?: number | string;
+  is_adult?: boolean;
+  is_public?: boolean;
+  is_archived?: boolean;
+  archived_at?: string | null;
+  archive_reason?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BookAuthor {
+  id: number;
+  book: number;
+  author: number;
+  author_detail?: Author;
+  role: string;
+  position: number;
+  contribution_note?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BookGenre {
+  id: number;
+  book: number;
+  genre: number;
+  genre_detail?: Genre;
+  is_primary: boolean;
+  position: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RelatedBook {
+  id: number;
+  from_book: number;
+  to_book: Book;
+  relation_type: string;
+  score: number | string;
+  source?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BookTrendSnapshot {
+  id: number;
+  book: number;
+  period: string;
+  metric_date: string;
+  view_count: number;
+  rating_count: number;
+  review_count: number;
+  collection_add_count: number;
+  search_click_count: number;
+  score: number | string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type BookSearchResponse = OffsetPaginatedResponse<Book>;
 
 export type AuthorSearchResponse = OffsetPaginatedResponse<Author>;
 
-export interface BookSuggestionsResponse {
-  query: string;
-  suggestions: Book[];
-  count: number;
-}
-
 export type GenreSearchResponse = OffsetPaginatedResponse<CatalogGenre>;
 
-export interface BookReview {
-  review_id: string | number;
-  review_text: string;
+export interface BookSearchApiResponse {
+  query: string;
+  results: Book[];
+}
+
+export interface SearchAutocompleteTerm {
+  id: number;
+  term: string;
+  normalized_term: string;
+  term_type: string;
+  weight: number;
+  use_count: number;
+  target_content_type?: number | null;
+  target_object_id?: number | null;
+  last_seen_at?: string | null;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
-  upvotes_count?: number;
-  downvotes_count?: number;
-  net_votes?: number;
-  book?: string;
-  username?: string;
-  book_title?: string | null;
-  has_upvoted?: boolean;
-  has_downvoted?: boolean;
-  user_vote_type?: "upvote" | "downvote" | null;
-  profile_pic?: string | null;
-  profile_id?: number | null;
-  book_cover?: string | null;
+}
+
+export interface BookReview {
+  id: number;
+  user: number;
+  book: number;
+  book_detail?: Book;
+  rating?: number | null;
+  title?: string;
+  body: string;
+  contains_spoilers?: boolean;
+  is_edited?: boolean;
+  edited_at?: string | null;
+  reviewed_at?: string;
+  upvote_count?: number;
+  downvote_count?: number;
+  score?: number;
+  is_archived?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BookRating {
-  rate_id: string | number;
-  rate: number;
+  id: number;
+  user: number;
+  book: number;
+  book_detail?: Book;
+  value: number;
+  rated_at?: string;
+  is_archived?: boolean;
   created_at?: string;
-  book?: string;
-  username?: string;
-  book_title?: string | null;
-  book_average_rate?: number | string | null;
+  updated_at?: string;
 }
 
-export interface RecommendedBook {
-  book: string;
-  book_title: string;
-  book_author?: string | null;
-  book_cover?: string | null;
+export type ReviewVoteType = "up" | "down";
+
+export interface ReviewVote {
+  id: number;
+  user: number;
+  review: number;
+  vote_type: ReviewVoteType;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface RecommendationRefreshOptions {
-  n_recommendations?: number;
-  async?: boolean;
-  model_id?: number | string;
+export interface UserRecommendation {
+  id: number;
+  user: number;
+  book: number;
+  book_detail?: Book;
+  model: number;
+  source: string;
+  rank: number;
+  score: number | string;
+  reason?: Record<string, unknown>;
+  generated_at?: string;
+  expires_at?: string | null;
+  is_active?: boolean;
+  is_dismissed?: boolean;
+  viewed_at?: string | null;
+  clicked_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface AsyncRecommendationRefreshResponse {
-  task_id?: string;
-  message?: string;
-  recommendations?: RecommendedBook[];
+export interface CatalogRecommendation {
+  id: number;
+  book: number;
+  book_detail?: Book;
+  source: string;
+  rank: number;
+  score: number | string;
+  generated_at?: string;
+  is_active?: boolean;
+  reason?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export type RecommendationRefreshResponse =
-  | RecommendedBook[]
-  | AsyncRecommendationRefreshResponse;
+export type RecommendationFeedbackType =
+  | "viewed"
+  | "clicked"
+  | "dismissed"
+  | "not_interested"
+  | "saved"
+  | "read";
+
+export interface RecommendationFeedback {
+  id: number;
+  user: number;
+  book: number;
+  recommendation?: number | null;
+  feedback_type: RecommendationFeedbackType;
+  payload?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RecommendationFeedbackPayload {
+  book: number;
+  recommendation?: number | null;
+  feedback_type: RecommendationFeedbackType;
+  payload?: Record<string, unknown>;
+}
 
 export interface RecommendationModel {
   id: number;
+  name: string;
+  version: string;
   model_type: string;
-  created_at?: string;
   is_active?: boolean;
-  min_ratings_per_user?: number;
-  n_factors?: number;
-  knn_k?: number;
-  rmse?: number | null;
-  mae?: number | null;
+  rmse?: number | string | null;
+  mae?: number | string | null;
+  min_ratings_threshold?: number;
+  generated_at?: string;
+  training_sample_size?: number;
+  artifact_uri?: string;
+  metrics?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface FeedActivity {
-  id: string;
-  username: string;
-  action: string;
-  timestamp: string;
-  book: {
-    id: string;
-    title: string;
-    cover?: string | null;
+export interface FeedEvent {
+  id: number;
+  actor: number;
+  actor_detail?: {
+    id: number;
+    email: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
   };
+  event_type: string;
+  book?: number | null;
+  book_detail?: Book | null;
+  target_label?: string | null;
+  action_object_label?: string | null;
+  visibility: string;
+  occurred_at?: string;
+  payload?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
 }
-
-export type FeedActivityResponse = CursorApiResponse<FeedActivity>;
 
 export interface CreateReviewPayload {
-  book: string | undefined;
-  review_text: string;
+  book: number | undefined;
+  rating?: number | null;
+  title?: string;
+  body: string;
+  contains_spoilers?: boolean;
 }
 
-export type ReviewSortBy = "created_at" | "upvotes";
+export type ReviewSortBy = "reviewed_at" | "upvote_count";
 export type ReviewSortOrder = "asc" | "desc";
 
 export interface ReviewSortParams {
@@ -140,30 +317,32 @@ export interface ReviewSortParams {
 }
 
 export interface CreateRatingPayload {
-  book: string | undefined;
-  rate: number;
+  book: number | undefined;
+  value: number;
 }
 
 export interface DeleteBookPayload {
-  book_id: string | undefined;
-  list_id: number | null;
-}
-
-export interface BookAuthorPayload {
-  name: string;
-  author_id?: number;
+  collection_book_id: number;
 }
 
 export interface BookWritePayload {
-  isbn13?: string;
-  isbn?: string | null;
   title?: string;
-  authors?: BookAuthorPayload[];
-  genres?: string[];
-  average_rate?: number | string | null;
-  description?: string | null;
+  subtitle?: string;
+  description?: string;
+  isbn_13?: string | null;
+  isbn_10?: string | null;
+  author_ids?: number[];
+  genre_ids?: number[];
+  cover?: string | null;
+  cover_fallback_url?: string | null;
+  publisher?: string;
   publication_date?: string | null;
-  number_of_pages?: number | null;
-  cover_img?: string | null;
-  language?: string | null;
+  publication_year?: number | null;
+  page_count?: number | null;
+  language?: string;
+  source?: string;
+  is_featured?: boolean;
+  featured_rank?: number | null;
+  is_adult?: boolean;
+  is_public?: boolean;
 }

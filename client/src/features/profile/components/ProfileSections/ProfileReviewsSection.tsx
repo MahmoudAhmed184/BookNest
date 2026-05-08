@@ -59,9 +59,13 @@ export function ProfileReviewsSection({
       {!isLoading && !isError && !isRatingsError
         ? reviews?.map((review, index) => (
             <ProfileReviewCard
-              key={review.review_id}
+              key={review.id}
               review={review}
-              rating={ratings?.[index]?.rate ?? 0}
+              rating={
+                ratings?.find((rating) => rating.id === review.rating)?.value ??
+                ratings?.[index]?.value ??
+                0
+              }
               canDelete={canDelete}
               isDeleting={isDeleting}
               onDeleteReview={onDeleteReview}

@@ -12,58 +12,41 @@ import { useAdminBooks } from "../hooks/useAdminBooks";
 import type { Book, BookWritePayload } from "../types/book";
 
 interface BookFormState {
-  isbn13: string;
+  isbn_13: string;
   title: string;
-  authors: string;
-  genres: string;
-  cover_img: string;
+  cover_fallback_url: string;
 }
 
 const emptyBookForm: BookFormState = {
-  isbn13: "",
+  isbn_13: "",
   title: "",
-  authors: "",
-  genres: "",
-  cover_img: "",
+  cover_fallback_url: "",
 };
 
 function toBookPayload(state: BookFormState): BookWritePayload {
   const payload: BookWritePayload = {};
-  const isbn13 = state.isbn13.trim();
+  const isbnValue = state.isbn_13.trim();
   const title = state.title.trim();
-  const authors = state.authors
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({ name }));
-  const genres = state.genres
-    .split(",")
-    .map((genre) => genre.trim())
-    .filter(Boolean);
-  const coverImg = state.cover_img.trim();
+  const coverUrl = state.cover_fallback_url.trim();
 
-  if (isbn13) payload.isbn13 = isbn13;
+  if (isbnValue) payload.isbn_13 = isbnValue;
   if (title) payload.title = title;
-  if (authors.length > 0) payload.authors = authors;
-  if (genres.length > 0) payload.genres = genres;
-  if (coverImg) payload.cover_img = coverImg;
+  if (coverUrl) payload.cover_fallback_url = coverUrl;
 
   return payload;
 }
 
 function getAuthorText(book: Book): string {
   return (book.authors ?? [])
-    .map((author) => (typeof author === "string" ? author : author.name))
+    .map((author) => author.name)
     .join(", ");
 }
 
 function getBookFormState(book: Book): BookFormState {
   return {
-    isbn13: book.isbn13,
+    isbn_13: book.isbn_13 ?? "",
     title: book.title,
-    authors: getAuthorText(book),
-    genres: book.genres?.join(", ") ?? "",
-    cover_img: book.cover_img ?? "",
+    cover_fallback_url: book.cover_fallback_url ?? "",
   };
 }
 
@@ -71,7 +54,7 @@ export default function AdminBooksPage(): ReactElement {
   const { token } = useAuth();
   const { page, setPage } = usePageSearchParam();
   const [createForm, setCreateForm] = useState<BookFormState>(emptyBookForm);
-  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editingBookId, setEditingBookId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<BookFormState>(emptyBookForm);
   const {
     books,
@@ -94,7 +77,7 @@ export default function AdminBooksPage(): ReactElement {
   };
 
   const startEditing = (book: Book): void => {
-    setEditingBookId(book.isbn13);
+    setEditingBookId(book.id);
     setEditForm(getBookFormState(book));
   };
 
@@ -150,14 +133,14 @@ export default function AdminBooksPage(): ReactElement {
       {!isLoading && !isError && books.length > 0 ? (
         <div className="flex flex-col gap-4">
           {books.map((book) => (
-            <article key={book.isbn13} className="settings-panel p-4">
+            <article key={book.id} className="settings-panel p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <h2 className="truncate text-lg font-semibold text-primary-white">
                     {book.title}
                   </h2>
                   <p className="text-sm text-primary-gray">
-                    {book.isbn13} {getAuthorText(book)}
+                    {book.isbn_13 ?? `Book ${book.id}`} {getAuthorText(book)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -172,13 +155,13 @@ export default function AdminBooksPage(): ReactElement {
                     type="button"
                     className="min-h-[40px] rounded-lg px-4 text-sm font-semibold text-primary-gray hover:bg-primary-black hover:text-primary-white disabled:opacity-50"
                     disabled={isDeleting}
-                    onClick={() => void deleteBook(book.isbn13)}
+                    onClick={() => void deleteBook(book.id)}
                   >
                     Delete
                   </button>
                 </div>
               </div>
-              {editingBookId === book.isbn13 ? (
+              {editingBookId === book.id ? (
                 <BookForm
                   title={`Edit ${book.title}`}
                   value={editForm}
@@ -233,8 +216,8 @@ function BookForm({
       <h2 className="text-lg font-semibold text-primary-white">{title}</h2>
       <div className="grid gap-3 md:grid-cols-2">
         <input
-          value={value.isbn13}
-          onChange={(event) => updateField("isbn13", event.target.value)}
+          value={value.isbn_13}
+          onChange={(event) => updateField("isbn_13", event.target.value)}
           className="field text-primary-white"
           placeholder="ISBN13"
           required
@@ -247,20 +230,8 @@ function BookForm({
           required
         />
         <input
-          value={value.authors}
-          onChange={(event) => updateField("authors", event.target.value)}
-          className="field text-primary-white"
-          placeholder="Authors, comma separated"
-        />
-        <input
-          value={value.genres}
-          onChange={(event) => updateField("genres", event.target.value)}
-          className="field text-primary-white"
-          placeholder="Genres, comma separated"
-        />
-        <input
-          value={value.cover_img}
-          onChange={(event) => updateField("cover_img", event.target.value)}
+          value={value.cover_fallback_url}
+          onChange={(event) => updateField("cover_fallback_url", event.target.value)}
           className="field text-primary-white md:col-span-2"
           placeholder="Cover image URL"
         />

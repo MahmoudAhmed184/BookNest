@@ -18,11 +18,11 @@ export function SearchResultsGrid({
     <div id="search-results" className="bento-grid">
       {books.map((book, position) => (
         <BookCard
-          key={book.isbn13}
-          to={routeBuilders.book(book.isbn13)}
+          key={book.id}
+          to={routeBuilders.book(book.id)}
           title={book.title}
           author={getAuthorNames(book)}
-          coverSrc={book.cover_img}
+          coverSrc={book.cover || book.cover_fallback_url}
           variant={position === 0 ? "featured" : undefined}
           className={position === 0 ? "md:col-span-2 md:row-span-2" : ""}
           onClick={onRememberScroll}

@@ -1,30 +1,90 @@
 import type { Book } from "../../catalog/types/book";
 
-export interface ReadingList {
-  list_id: number;
-  id?: number;
-  name: string;
-  type?: string;
-  privacy?: string;
+export type ReadingCollectionStatus = "todo" | "doing" | "done" | "custom";
+export type CollectionPrivacy = "public" | "private";
+
+export interface CollectionBook {
+  id: number;
+  collection: number;
+  book: number;
+  book_detail?: Book;
+  added_by?: number | null;
+  status: ReadingCollectionStatus;
+  position: number;
+  notes?: string;
+  added_at?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  is_archived?: boolean;
   created_at?: string;
-  book_count?: number;
-  owner_username?: string | null;
-  books?: Book[];
+  updated_at?: string;
+}
+
+export interface ReadingCollection {
+  id: number;
+  owner: number;
+  name: string;
+  slug?: string;
+  description?: string;
+  list_type: ReadingCollectionStatus;
+  privacy: CollectionPrivacy;
+  items?: CollectionBook[];
+  is_default?: boolean;
+  item_count?: number;
+  last_book_added_at?: string | null;
+  is_archived?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ReadingProgress {
+  id: number;
+  user: number;
+  book: number;
+  book_detail?: Book;
+  status: ReadingCollectionStatus;
+  current_page: number;
+  percent_complete: number | string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  last_read_at?: string | null;
+  marked_read_at?: string | null;
+  is_archived?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateCollectionPayload {
   name: string;
-  type?: string;
-  privacy?: string;
+  description?: string;
+  list_type?: ReadingCollectionStatus;
+  privacy?: CollectionPrivacy;
 }
 
 export type UpdateCollectionPayload = Partial<CreateCollectionPayload>;
 
 export interface AddToCollectionPayload {
-  book_id: string | undefined;
-  list_id: number | null;
+  collection: number;
+  book: number | undefined;
+  status?: ReadingCollectionStatus;
+  notes?: string;
 }
 
-export interface AddToCollectionResponse {
-  message: string;
+export interface UpdateCollectionBookPayload {
+  status?: ReadingCollectionStatus;
+  position?: number;
+  notes?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+}
+
+export interface UpdateReadingProgressPayload {
+  book: number;
+  status: ReadingCollectionStatus;
+  current_page?: number;
+  percent_complete?: number;
+  started_at?: string | null;
+  finished_at?: string | null;
+  last_read_at?: string | null;
+  marked_read_at?: string | null;
 }

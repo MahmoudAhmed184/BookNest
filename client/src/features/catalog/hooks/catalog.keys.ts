@@ -18,6 +18,8 @@ export const catalogKeys = {
   genres: (limit: number) => ["genres", limit] as const,
   genresPage: (page: number, pageSize: number) =>
     ["genres", "page", page, pageSize] as const,
+  genreOptions: (query: string, limit: number) =>
+    ["genres", "options", query, limit] as const,
   genreBooks: (
     genreId: string | number | undefined,
     page: number,
@@ -34,6 +36,7 @@ export const catalogKeys = {
   relatedBooks: (id: string | undefined) => ["book", id, "related"] as const,
   author: (id: string | undefined) => ["author", id] as const,
   authorBooks: (id: string | undefined) => ["author", id, "books"] as const,
+  authorLikes: () => ["author-likes"] as const,
   reviewsBase: (id: string | undefined) => ["reviews", id] as const,
   reviews: (
     id: string | undefined,
@@ -42,5 +45,6 @@ export const catalogKeys = {
   ) => ["reviews", id, sortBy, order] as const,
   ratings: (id: string | undefined) => ["ratings", id] as const,
   myRating: (id: string | undefined) => ["ratings", id, "me"] as const,
-  feedActivities: (pageSize: number) => ["feed-activities", pageSize] as const,
+  reviewVotes: () => ["review-votes"] as const,
+  feedEvents: (pageSize: number) => ["feed-events", pageSize] as const,
 };

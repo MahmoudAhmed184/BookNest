@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getSuggestions } from "../services/bookService";
-import type { Book } from "../types/book";
+import type { SearchAutocompleteTerm } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 
 interface UseBookSuggestionsResult {
-  suggestions: Book[];
+  suggestions: SearchAutocompleteTerm[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;

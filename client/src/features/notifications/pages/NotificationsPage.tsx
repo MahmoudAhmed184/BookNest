@@ -4,7 +4,7 @@ import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { routePaths } from "../../../routes/paths";
 import { useNotifications } from "../hooks/useNotifications";
-import type { NotificationFilters } from "../types/notification";
+import type { NotificationFilters, NotificationType } from "../types/notification";
 
 const skeletonKeys = ["notification-skeleton-1", "notification-skeleton-2", "notification-skeleton-3"];
 const readTabs = [
@@ -14,6 +14,14 @@ const readTabs = [
 ] as const;
 
 type ReadTab = (typeof readTabs)[number]["id"];
+const notificationTypeValues = new Set<string>([
+  "social",
+  "review",
+  "rating",
+  "collection",
+  "recommendation",
+  "system",
+]);
 
 function NotificationsSkeleton(): ReactElement {
   return (
@@ -32,14 +40,14 @@ export default function Notifications(): ReactElement {
   const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const readFilter = parseReadFilter(searchParams.get("read"));
-  const typeFilter = searchParams.get("type") ?? "";
+  const typeFilter = parseNotificationType(searchParams.get("type"));
   const filters = useMemo<NotificationFilters>(
     () => ({
-      read:
+      is_read:
         readFilter === "all"
           ? undefined
           : readFilter === "read",
-      type: typeFilter || undefined,
+      type: typeFilter,
     }),
     [readFilter, typeFilter]
   );
@@ -61,9 +69,9 @@ export default function Notifications(): ReactElement {
   } = useNotifications(token, Boolean(token), filters);
 
   const unreadNotifications =
-    notifications.filter((notification) => notification.read === false);
-  const hasFilters = readFilter !== "all" || typeFilter.length > 0;
-  const updateFilters = (nextRead: ReadTab, nextType = typeFilter): void => {
+    notifications.filter((notification) => notification.is_read === false);
+  const hasFilters = readFilter !== "all" || Boolean(typeFilter);
+  const updateFilters = (nextRead: ReadTab, nextType = typeFilter ?? ""): void => {
     const nextSearchParams = new URLSearchParams(searchParams);
     if (nextRead === "all") {
       nextSearchParams.delete("read");
@@ -112,15 +120,15 @@ export default function Notifications(): ReactElement {
         <label className="flex max-w-md flex-col gap-2 text-sm font-medium text-primary-white">
           Type
           <select
-            value={typeFilter}
+            value={typeFilter ?? ""}
             onChange={(event) => updateFilters(readFilter, event.target.value)}
             className="field text-primary-white"
             disabled={isTypesLoading}
           >
             <option value="">All types</option>
             {notificationTypes.map((type) => (
-              <option key={type.id} value={type.name}>
-                {type.name}
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>
@@ -172,7 +180,7 @@ export default function Notifications(): ReactElement {
               key={notification.id}
               role="listitem"
               className={`card-lift flex items-start gap-4 rounded-xl p-5 text-primary-white shadow-md ${
-                notification.read ? "settings-panel" : "unread-surface"
+                notification.is_read ? "settings-panel" : "unread-surface"
               }`}
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-black text-accent">
@@ -195,19 +203,19 @@ export default function Notifications(): ReactElement {
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <p className="text-sm leading-relaxed text-primary-white">
                   <strong className="text-accent">
-                    {notification.notification_type_name ?? "Notification"}:
+                    {notification.notification_type}:
                   </strong>{" "}
-                  {notification.verb}
+                  {notification.action}
                 </p>
-                {notification.actor_name || notification.target_name ? (
+                {notification.actor_label || notification.target_label ? (
                   <p className="text-xs text-primary-gray">
-                    {[notification.actor_name, notification.target_name]
+                    {[notification.actor_label, notification.target_label]
                       .filter(Boolean)
                       .join(" -> ")}
                   </p>
                 ) : null}
                 <p className="text-xs text-primary-gray">
-                  {notification.timestamp}
+                  {notification.created_at}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -216,12 +224,12 @@ export default function Notifications(): ReactElement {
                   className="min-h-[36px] rounded-lg border border-secondary-gray px-3 text-xs font-semibold text-primary-gray hover:border-accent hover:text-primary-white disabled:opacity-50"
                   disabled={isUpdatingNotification}
                   onClick={() =>
-                    notification.read
+                    notification.is_read
                       ? markUnread(notification.id)
                       : markRead(notification.id)
                   }
                 >
-                  {notification.read ? "Mark unread" : "Mark read"}
+                  {notification.is_read ? "Mark unread" : "Mark read"}
                 </button>
                 <button
                   type="button"
@@ -243,4 +251,10 @@ export default function Notifications(): ReactElement {
 
 function parseReadFilter(value: string | null): ReadTab {
   return value === "read" || value === "unread" ? value : "all";
+}
+
+function parseNotificationType(value: string | null): NotificationType | undefined {
+  return value && notificationTypeValues.has(value)
+    ? (value as NotificationType)
+    : undefined;
 }

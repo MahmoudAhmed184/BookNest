@@ -1,26 +1,29 @@
 import type { Book, Author } from "../types/book";
 import type { CatalogFilters } from "../types/filters";
 
-function isAuthor(value: string | Author): value is Author {
-  return typeof value !== "string";
-}
-
 function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
 export function getAuthorNames(book: Book): string {
-  if (book.author) return book.author;
+  if (book.author_names) return book.author_names;
   if (!book.authors?.length) return "";
 
   return book.authors
-    .map((author) => (isAuthor(author) ? author.name : author))
+    .map((author: Author) => author.name)
     .filter(Boolean)
     .join(", ");
 }
 
 export function getBookGenres(book: Book): string[] {
-  return book.genres?.filter(Boolean) ?? [];
+  if (book.genre_labels) {
+    return book.genre_labels
+      .split(",")
+      .map((genre) => genre.trim())
+      .filter(Boolean);
+  }
+
+  return book.genres?.map((genre) => genre.name).filter(Boolean) ?? [];
 }
 
 export function filterBooksByCatalogFilters(
@@ -31,10 +34,10 @@ export function filterBooksByCatalogFilters(
     const genres = getBookGenres(book).map(normalize);
     const authors = getAuthorNames(book).toLowerCase();
     const averageRating =
-      typeof book.average_rate === "string"
-        ? Number.parseFloat(book.average_rate)
-        : book.average_rate;
-    const pageCount = book.number_of_pages ?? 0;
+      typeof book.average_rating === "string"
+        ? Number.parseFloat(book.average_rating)
+        : book.average_rating;
+    const pageCount = book.page_count ?? 0;
     const genreMatch =
       !filters.genre || genres.includes(normalize(filters.genre));
     const authorMatch =

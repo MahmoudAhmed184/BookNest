@@ -1,21 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getCollections } from "../../collections/services/collectionService";
 import {
   getMyProfile,
-  getUserRatings,
-  getUserReviews,
+  getUserDataAggregate,
 } from "../services/userService";
 import type { BookRating, BookReview } from "../../catalog/types/book";
-import type { ReadingList } from "../../collections/types/collection";
-import type { UserProfile } from "../types/user";
+import type { ReadingCollection } from "../../collections/types/collection";
+import type {
+  ProfileOverviewStats,
+  ProfileViewerContext,
+  UserProfile,
+} from "../types/user";
 import { profileKeys } from "./profile.keys";
 
 interface UseProfilePageDataResult {
   user?: UserProfile | undefined;
   reviews?: BookReview[] | undefined;
   ratings?: BookRating[] | undefined;
-  collections?: ReadingList[] | undefined;
+  collections?: ReadingCollection[] | undefined;
+  stats?: ProfileOverviewStats | undefined;
+  viewerContext?: ProfileViewerContext | undefined;
   isUserLoading: boolean;
   isUserFetching: boolean;
   isUserError: boolean;
@@ -37,39 +41,33 @@ export function useProfilePageData(token?: string | null): UseProfilePageDataRes
     queryKey: profileKeys.me(),
     queryFn: () => getMyProfile(token),
   });
-  const reviewsQuery = useQuery({
-    queryKey: profileKeys.reviews(),
-    queryFn: () => getUserReviews(userQuery.data?.user_id, token),
-    enabled: !!userQuery.data?.user_id,
+  const overviewQuery = useQuery({
+    queryKey: profileKeys.overview(userQuery.data?.user.id),
+    queryFn: () => getUserDataAggregate(userQuery.data?.user.id, token),
+    enabled: !!userQuery.data?.user.id,
   });
-  const ratingsQuery = useQuery({
-    queryKey: profileKeys.ratings(),
-    queryFn: () => getUserRatings(userQuery.data?.user_id, token),
-    enabled: !!userQuery.data?.user_id,
-  });
-  const collectionsQuery = useQuery({
-    queryKey: profileKeys.collections(),
-    queryFn: () => getCollections(token),
-  });
+  const aggregate = overviewQuery.data;
 
   return {
-    user: userQuery.data,
-    reviews: reviewsQuery.data,
-    ratings: ratingsQuery.data,
-    collections: collectionsQuery.data,
+    user: aggregate?.profile ?? userQuery.data,
+    reviews: aggregate?.reviews,
+    ratings: aggregate?.ratings,
+    collections: aggregate?.reading_collections,
+    stats: aggregate?.stats,
+    viewerContext: aggregate?.viewer_context,
     isUserLoading: userQuery.isLoading,
-    isUserFetching: userQuery.isFetching,
+    isUserFetching: userQuery.isFetching || overviewQuery.isFetching,
     isUserError: userQuery.isError,
-    isReviewsLoading: reviewsQuery.isLoading,
-    isReviewsFetching: reviewsQuery.isFetching,
-    isReviewsError: reviewsQuery.isError,
-    isRatingsError: ratingsQuery.isError,
-    isCollectionsLoading: collectionsQuery.isLoading,
-    isCollectionsFetching: collectionsQuery.isFetching,
-    isCollectionsError: collectionsQuery.isError,
+    isReviewsLoading: overviewQuery.isLoading,
+    isReviewsFetching: overviewQuery.isFetching,
+    isReviewsError: overviewQuery.isError,
+    isRatingsError: overviewQuery.isError,
+    isCollectionsLoading: overviewQuery.isLoading,
+    isCollectionsFetching: overviewQuery.isFetching,
+    isCollectionsError: overviewQuery.isError,
     refetchUser: () => void userQuery.refetch(),
-    refetchReviews: () => void reviewsQuery.refetch(),
-    refetchRatings: () => void ratingsQuery.refetch(),
-    refetchCollections: () => void collectionsQuery.refetch(),
+    refetchReviews: () => void overviewQuery.refetch(),
+    refetchRatings: () => void overviewQuery.refetch(),
+    refetchCollections: () => void overviewQuery.refetch(),
   };
 }

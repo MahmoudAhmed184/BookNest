@@ -28,8 +28,10 @@ export function NavbarProfileMenu({
   onCloseMenus,
   onLogout,
 }: NavbarProfileMenuProps): ReactElement {
-  const profileImage = resolveProfileImage(profile?.profile_pic);
-  const profileLabel = profile?.username || "Profile";
+  const profileImage = resolveProfileImage(
+    profile?.picture || profile?.picture_fallback_url
+  );
+  const profileLabel = profile?.user?.display_name || profile?.handle || "Profile";
 
   return (
     <div className="relative" ref={menuRef}>

@@ -140,7 +140,7 @@ export default function Search(): ReactElement {
   const uniqueBooks = useMemo(
     () =>
       books.filter(
-        (_book, index) => books[index]?.isbn13 !== books[index - 1]?.isbn13
+        (_book, index) => books[index]?.id !== books[index - 1]?.id
       ),
     [books]
   );

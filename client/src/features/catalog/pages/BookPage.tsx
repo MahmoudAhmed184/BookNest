@@ -20,14 +20,14 @@ import {
 import { useBookActions } from "../hooks/useBookActions";
 import { useBookPageData } from "../hooks/useBookPageData";
 import type { BookRouteParams } from "../../../routes/paths";
-import type { ReadingList } from "../../collections/types/collection";
+import type { ReadingCollection } from "../../collections/types/collection";
 import type { ReviewSortBy, ReviewSortOrder } from "../types/book";
 
-function findReadingListByType(
-  collections: ReadingList[] | undefined,
+function findCollectionByStatus(
+  collections: ReadingCollection[] | undefined,
   type: "done"
-): ReadingList | undefined {
-  return collections?.find((collection) => collection.type === type);
+): ReadingCollection | undefined {
+  return collections?.find((collection) => collection.list_type === type);
 }
 
 export default function BookPage(): ReactElement {
@@ -46,6 +46,7 @@ export default function BookPage(): ReactElement {
     book,
     reviews,
     ratings,
+    reviewVotes,
     userRating,
     isBookLoading,
     isBookFetching,
@@ -54,15 +55,16 @@ export default function BookPage(): ReactElement {
     isReviewsFetching,
     isReviewsError,
     isRatingsError,
+    isReviewVotesError,
     refetchBook,
     refetchReviews,
     refetchRatings,
   } = useBookPageData(id, token, { sortBy, order });
-  const completedList = findReadingListByType(collections, "done");
+  const completedList = findCollectionByStatus(collections, "done");
   const bookActions = useBookActions({
     id,
-    completedListId: completedList?.list_id ?? null,
-    currentRatingId: userRating?.rate_id,
+    completedListId: completedList?.id ?? null,
+    currentRatingId: userRating?.id,
     rating,
     reviewText,
     token,
@@ -75,8 +77,8 @@ export default function BookPage(): ReactElement {
   });
 
   useEffect(() => {
-    setRating(userRating?.rate ?? 0);
-  }, [userRating?.rate, id]);
+    setRating(userRating?.value ?? 0);
+  }, [userRating?.value, id]);
 
   const handleSubmitReview = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -146,14 +148,16 @@ export default function BookPage(): ReactElement {
       <ReviewsSection
         reviews={reviews}
         ratings={ratings}
+        reviewVotes={reviewVotes}
         isLoading={isReviewsLoading}
         isFetching={isReviewsFetching}
         isError={isReviewsError}
-        isRatingsError={isRatingsError}
+        isRatingsError={isRatingsError || isReviewVotesError}
         sortBy={sortBy}
         order={order}
-        currentUsername={authUser?.username ?? userRating?.username}
+        currentUserId={authUser?.id ?? null}
         isUpdatingReview={bookActions.isUpdatingReview}
+        isVotingReview={bookActions.isVotingReview}
         onSortChange={(nextSortBy, nextOrder) => {
           const params = new URLSearchParams(searchParams);
           params.set("sort_by", nextSortBy);
@@ -161,12 +165,14 @@ export default function BookPage(): ReactElement {
           setSearchParams(params, { replace: true });
         }}
         onUpdateReview={bookActions.editReview}
+        onVoteReview={bookActions.voteReview}
+        onDeleteReviewVote={bookActions.deleteReviewVote}
         onRetry={() => {
           refetchReviews();
           refetchRatings();
         }}
       />
-      <RelatedBooksCarousel currentBookId={book.isbn13} />
+      <RelatedBooksCarousel currentBookId={book.id} />
       <AddToListDialog
         open={isListDialogOpen}
         collections={collections ?? []}
@@ -182,7 +188,7 @@ export default function BookPage(): ReactElement {
 }
 
 function parseReviewSortBy(value: string | null): ReviewSortBy {
-  return value === "upvotes" ? "upvotes" : "created_at";
+  return value === "upvote_count" ? "upvote_count" : "reviewed_at";
 }
 
 function parseReviewSortOrder(value: string | null): ReviewSortOrder {
@@ -191,7 +197,7 @@ function parseReviewSortOrder(value: string | null): ReviewSortOrder {
 
 interface AddToListDialogProps {
   open: boolean;
-  collections: ReadingList[];
+  collections: ReadingCollection[];
   isPending: boolean;
   onClose: () => void;
   onSelect: (listId: number) => void;
@@ -258,22 +264,22 @@ function AddToListDialog({
         <div className="grid gap-2">
           {collections.map((collection) => (
             <button
-              key={collection.list_id}
+              key={collection.id}
               type="button"
               className="flex min-h-[56px] items-center justify-between gap-3 rounded-xl border border-[var(--surface-glass-border)] px-4 py-3 text-left hover:bg-primary-black"
               disabled={isPending}
-              onClick={() => onSelect(collection.list_id)}
+              onClick={() => onSelect(collection.id)}
             >
               <span>
                 <span className="block font-semibold text-primary-white">
                   {collection.name}
                 </span>
                 <span className="text-xs text-primary-gray">
-                  {collection.type ?? "custom"} / {collection.privacy ?? "private"}
+                  {collection.list_type ?? "custom"} / {collection.privacy ?? "private"}
                 </span>
               </span>
               <span className="text-sm font-semibold text-accent">
-                {collection.book_count ?? collection.books?.length ?? 0}
+                {collection.item_count ?? collection.items?.length ?? 0}
               </span>
             </button>
           ))}

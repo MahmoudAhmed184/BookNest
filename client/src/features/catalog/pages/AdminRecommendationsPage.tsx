@@ -4,8 +4,13 @@ import { EmptyState, ErrorState, InlineSpinner } from "../../../components/ui";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useRecommendationModels } from "../hooks/useRecommendationModels";
 
-function formatMetric(value: number | null | undefined): string {
-  return typeof value === "number" ? value.toFixed(3) : "n/a";
+function formatMetric(value: number | string | null | undefined): string {
+  if (typeof value === "number") return value.toFixed(3);
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed.toFixed(3) : value;
+  }
+  return "n/a";
 }
 
 export default function AdminRecommendationsPage(): ReactElement {
@@ -72,14 +77,14 @@ export default function AdminRecommendationsPage(): ReactElement {
                   <td className="px-3 py-3">
                     <div className="font-semibold">{model.model_type}</div>
                     <div className="text-xs text-primary-gray">
-                      {model.created_at ?? `Model ${model.id}`}
+                    {model.generated_at ?? model.created_at ?? `Model ${model.id}`}
                     </div>
                   </td>
                   <td className="px-3 py-3">{model.is_active ? "Yes" : "No"}</td>
                   <td className="px-3 py-3">{formatMetric(model.rmse)}</td>
                   <td className="px-3 py-3">{formatMetric(model.mae)}</td>
                   <td className="px-3 py-3">
-                    {model.min_ratings_per_user ?? "n/a"}
+                    {model.min_ratings_threshold ?? "n/a"}
                   </td>
                   <td className="px-3 py-3">
                     <button

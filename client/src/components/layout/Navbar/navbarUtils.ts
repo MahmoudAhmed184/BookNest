@@ -1,8 +1,12 @@
 import { routePaths } from "../../../routes/paths";
 
 export interface NavbarProfile {
-  profile_pic?: string | null;
-  username?: string | null;
+  picture?: string | null;
+  picture_fallback_url?: string | null;
+  handle?: string | null;
+  user?: {
+    display_name?: string | null;
+  };
 }
 
 export interface NavItem {

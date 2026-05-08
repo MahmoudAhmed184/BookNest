@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import type { ReactElement } from "react";
 import { useParams } from "react-router-dom";
 
 import { ErrorState } from "../../../components/ui";
@@ -9,6 +9,7 @@ import {
 } from "../components/AuthorSections";
 import { BookPageSkeleton } from "../components/BookPageSections";
 import { useAuthorPageData } from "../hooks/useAuthorPageData";
+import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 
 interface AuthorRouteParams {
   [key: string]: string | undefined;
@@ -17,18 +18,21 @@ interface AuthorRouteParams {
 
 export default function Author(): ReactElement {
   const { id } = useParams<AuthorRouteParams>();
-  const [isLiked, setIsLiked] = useState(false);
+  const { token } = useOptionalAuth();
   const {
     author,
     books,
+    isLiked,
     isAuthorLoading,
     isAuthorFetching,
     isAuthorError,
     isBooksLoading,
     isBooksError,
+    isTogglingLike,
+    toggleAuthorLike,
     refetchAuthor,
     refetchBooks,
-  } = useAuthorPageData(id);
+  } = useAuthorPageData(id, token);
 
   if (isAuthorLoading || isBooksLoading) return <BookPageSkeleton />;
 
@@ -50,7 +54,8 @@ export default function Author(): ReactElement {
       <AuthorHeader
         author={author}
         isLiked={isLiked}
-        onToggleLike={() => setIsLiked((current) => !current)}
+        isLikePending={isTogglingLike}
+        onToggleLike={toggleAuthorLike}
       />
       <AuthorBio author={author} />
       {isBooksError ? (
