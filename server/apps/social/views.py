@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
-from apps.common.pagination import StandardResultsSetPagination
+from apps.common.pagination import FeedCursorPagination, StandardResultsSetPagination
 from apps.social import selectors, services
 from apps.social.serializers import FeedEventSerializer, FollowRelationshipSerializer
 from apps.users import selectors as user_selectors
@@ -79,6 +79,7 @@ class UserFollowingListAPIView(generics.ListAPIView):
 class FeedEventListAPIView(generics.ListAPIView):
     serializer_class = FeedEventSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = FeedCursorPagination
 
     def get_queryset(self):
         return selectors.feed_for_user(user=self.request.user)

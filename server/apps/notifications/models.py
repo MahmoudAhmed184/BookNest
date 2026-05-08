@@ -44,8 +44,11 @@ class Notification(TimeStampedModel):
         RATED_BOOK = "rated_book", "Rated book"
         REVIEWED_BOOK = "reviewed_book", "Reviewed book"
         REVIEW_UPVOTED = "review_upvoted", "Review upvoted"
+        REVIEW_DOWNVOTED = "review_downvoted", "Review downvoted"
+        BOOK_ADDED_TO_COLLECTION = "book_added_to_collection", "Book added to collection"
         COLLECTION_SHARED = "collection_shared", "Collection shared"
         RECOMMENDATION_READY = "recommendation_ready", "Recommendation ready"
+        SYSTEM_MESSAGE = "system_message", "System message"
         TASK_FAILED = "task_failed", "Task failed"
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="notifications", on_delete=models.CASCADE)
