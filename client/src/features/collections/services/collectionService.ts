@@ -8,6 +8,7 @@ import {
 } from "../../../lib/axios";
 import {
   normalizeEmptyResponse,
+  normalizeListResponse,
   normalizePaginatedList,
 } from "../../../lib/normalizers";
 import type {
@@ -29,10 +30,13 @@ export async function getCollections(
   tokenOverride?: string | null
 ): Promise<ReadingCollection[]> {
   try {
-    return await getData<ReadingCollection[]>(
-      "/api/v1/reading-collections/?mine=true",
+    const response = await getData<
+      LimitOffsetApiResponse<ReadingCollection> | ReadingCollection[]
+    >(
+      "/api/v1/reading-collections/?mine=true&page_size=100",
       { headers: authHeaders(tokenOverride) }
     );
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -112,6 +116,21 @@ export async function addToCollection(
   }
 }
 
+export async function getCollectionBooks(
+  token?: string | null
+): Promise<CollectionBook[]> {
+  try {
+    const response = await getData<
+      LimitOffsetApiResponse<CollectionBook> | CollectionBook[]
+    >("/api/v1/collection-books/?page_size=200", {
+      headers: authHeaders(token),
+    });
+    return normalizeListResponse(response);
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
 export async function updateCollectionBook(
   id: number,
   data: UpdateCollectionBookPayload,
@@ -146,9 +165,12 @@ export async function getReadingProgress(
   token?: string | null
 ): Promise<ReadingProgress[]> {
   try {
-    return await getData<ReadingProgress[]>("/api/v1/reading-progress/", {
+    const response = await getData<
+      LimitOffsetApiResponse<ReadingProgress> | ReadingProgress[]
+    >("/api/v1/reading-progress/?page_size=100", {
       headers: authHeaders(token),
     });
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }

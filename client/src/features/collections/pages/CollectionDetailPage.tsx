@@ -104,6 +104,7 @@ export default function CollectionDetailPage(): ReactElement {
             return (
             <div key={item.id} className="relative">
               <BookCard
+                book={book}
                 to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}

@@ -59,6 +59,7 @@ export function useCollections(token?: string | null): UseCollectionsResult {
     onSuccess: () => {
       toast.success("Collection created.");
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.items() });
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
     onError: () => {
@@ -92,6 +93,7 @@ export function useCollections(token?: string | null): UseCollectionsResult {
     onSuccess: (_result, collectionId) => {
       toast.success("Collection deleted.");
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.items() });
       queryClient.removeQueries({
         queryKey: collectionKeys.detail(String(collectionId)),
       });
@@ -135,6 +137,7 @@ export function useCollectionDetail(
       toast.success("Book removed from collection.");
       queryClient.invalidateQueries({ queryKey: collectionKeys.detail(collectionId) });
       queryClient.invalidateQueries({ queryKey: collectionKeys.list() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.items() });
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
     },
     onError: () => {
