@@ -34,11 +34,16 @@ export function ProfileBooksSection({
   return (
     <section className="flex flex-col gap-5" aria-labelledby="profile-books-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 id="profile-books-title" className="text-xl font-bold text-primary-white sm:text-2xl">
-          {title}
-        </h2>
+        <div>
+          <p className="text-xs font-bold uppercase text-accent">Shelf picks</p>
+          <h2 id="profile-books-title" className="text-2xl font-bold text-primary-white">
+            {title}
+          </h2>
+        </div>
         {isFetching && items.length > 0 ? (
-          <p className="text-xs text-primary-gray" role="status">Updating shelf...</p>
+          <p className="rounded-lg border border-[var(--surface-glass-border)] px-3 py-1 text-xs font-semibold text-primary-gray" role="status">
+            Updating shelf...
+          </p>
         ) : null}
       </div>
       {items.length === 0 ? (

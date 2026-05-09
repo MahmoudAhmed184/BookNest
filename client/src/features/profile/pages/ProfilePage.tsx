@@ -19,9 +19,28 @@ import {
 } from "../components/ProfileSections";
 import { useProfileActions } from "../hooks/useProfileActions";
 import { useProfilePageData } from "../hooks/useProfilePageData";
+import { favoriteGenreFromCollections } from "../utils/profileDisplay";
 
 interface PendingBookDelete {
   item: CollectionBook;
+}
+
+function EditProfileIcon(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
 }
 
 export default function Profile(): ReactElement {
@@ -72,19 +91,24 @@ export default function Profile(): ReactElement {
   const primaryCollection = collections?.[0];
   const items = primaryCollection?.items || [];
   const bookCount = items.length || primaryCollection?.item_count || 0;
-  const favoriteGenre = items[0]?.book_detail?.genres?.[0]?.name ?? "Eclectic";
+  const favoriteGenre = favoriteGenreFromCollections(collections, user.interest_links);
 
   return (
     <>
-      <div className="flex flex-col gap-12 py-12 animate-fade-up">
+      <div className="flex flex-col gap-10 py-8 sm:gap-12 sm:py-12 animate-fade-up">
         <ProfileHeader
           user={user}
+          stats={stats}
+          collections={collections}
+          favoriteGenre={favoriteGenre}
+          isOwnProfile
           action={
             <Link
               to={routePaths.settings}
-              className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+              className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
               aria-label={`Edit ${user.handle}'s profile`}
             >
+              <EditProfileIcon />
               Edit Profile
             </Link>
           }
@@ -93,10 +117,11 @@ export default function Profile(): ReactElement {
           bookCount={stats?.books_read_count ?? bookCount}
           reviewCount={stats?.reviews_count ?? reviews?.length ?? 0}
           ratingCount={stats?.ratings_count ?? ratings?.length ?? 0}
+          collectionCount={stats?.collections_count ?? collections?.length ?? 0}
           favoriteGenre={favoriteGenre}
         />
-        <ProfileBio bio={user.bio} />
-        <CollectionsShelf collections={collections} />
+        <ProfileBio user={user} />
+        <CollectionsShelf collections={collections} canOpenCollections />
         <ProfileBooksSection
           title="My Books"
           items={items}

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { A11y, Autoplay, Pagination } from "swiper/modules";
+import { A11y, Keyboard, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { BookCard } from "../../../../components/ui";
@@ -28,12 +28,17 @@ export function BookShelfCarousel({
 }: BookShelfCarouselProps): ReactElement {
   return (
     <Swiper
-      modules={[Pagination, A11y, Autoplay]}
-      spaceBetween={20}
-      slidesPerView={1}
+      modules={[Pagination, A11y, Keyboard]}
+      spaceBetween={18}
+      slidesPerView={1.08}
       pagination={{ clickable: true }}
-      autoplay={{ delay: 3200, disableOnInteraction: false }}
-      breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
+      keyboard={{ enabled: true }}
+      watchOverflow
+      breakpoints={{
+        640: { slidesPerView: 2.05 },
+        1024: { slidesPerView: 3.15 },
+        1280: { slidesPerView: 4.1 },
+      }}
       className="book-carousel-swiper w-full"
     >
       {items.map((item) => {
@@ -41,25 +46,27 @@ export function BookShelfCarousel({
         if (!book) return null;
 
         return (
-        <SwiperSlide key={item.id}>
-          <div className="relative pr-2 pt-2">
-            <BookCard
-              to={routeBuilders.book(book.id)}
-              title={book.title}
-              author={getAuthorNames(book)}
-              coverSrc={book.cover || book.cover_fallback_url}
-            />
-            {canDelete && onDeleteBook ? (
-              <DeleteBookButton
-                item={item}
-                collectionName={primaryCollection?.name}
-                isDeleting={isDeleting}
-                onDeleteBook={onDeleteBook}
+          <SwiperSlide key={item.id}>
+            <div className="relative pr-2 pt-2">
+              <BookCard
+                book={book}
+                to={routeBuilders.book(book.id)}
+                title={book.title}
+                author={getAuthorNames(book)}
+                coverSrc={book.cover || book.cover_fallback_url}
               />
-            ) : null}
-          </div>
-        </SwiperSlide>
-      )})}
+              {canDelete && onDeleteBook ? (
+                <DeleteBookButton
+                  item={item}
+                  collectionName={primaryCollection?.name}
+                  isDeleting={isDeleting}
+                  onDeleteBook={onDeleteBook}
+                />
+              ) : null}
+            </div>
+          </SwiperSlide>
+        );
+      })}
     </Swiper>
   );
 }

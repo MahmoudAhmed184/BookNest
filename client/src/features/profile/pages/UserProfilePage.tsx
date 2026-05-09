@@ -18,6 +18,30 @@ import {
 } from "../components/ProfileSections";
 import { useUserProfilePageData } from "../hooks/useUserProfilePageData";
 import { routeBuilders, routePaths, type UserProfileRouteParams } from "../../../routes/paths";
+import { favoriteGenreFromCollections } from "../utils/profileDisplay";
+
+interface FollowIconProps {
+  isFollowed?: boolean | undefined;
+}
+
+function FollowIcon({ isFollowed = false }: FollowIconProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      {isFollowed ? <path d="m16 11 2 2 4-4" /> : <path d="M19 8v6M16 11h6" />}
+    </svg>
+  );
+}
 
 export default function UserProfile(): ReactElement {
   const { id } = useParams<UserProfileRouteParams>();
@@ -28,6 +52,7 @@ export default function UserProfile(): ReactElement {
     ratings,
     collections,
     stats,
+    viewerContext,
     isUserLoading,
     isUserFetching,
     isUserError,
@@ -71,7 +96,7 @@ export default function UserProfile(): ReactElement {
 
   const primaryCollection = collections?.[0];
   const items = primaryCollection?.items || [];
-  const favoriteGenre = items[0]?.book_detail?.genres?.[0]?.name ?? "Eclectic";
+  const favoriteGenre = favoriteGenreFromCollections(collections, user.interest_links);
   const userId = user.user.id;
   const canUseFollowButton =
     isAuthenticated &&
@@ -99,32 +124,34 @@ export default function UserProfile(): ReactElement {
             type="button"
             onClick={toggleFollow}
             disabled={isFollowBusy}
-            className={`btn inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg ${
+            className={`btn inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg ${
               isFollowed ? "btn-primary-v" : "btn-accent-v"
             }`}
             aria-pressed={isFollowed}
             aria-label={`${isFollowed ? "Unfollow" : "Follow"} ${user.handle}`}
             aria-busy={isFollowBusy}
           >
+            <FollowIcon isFollowed={isFollowed} />
             {isFollowed ? "Following" : "Follow"}
           </button>
         ) : (
           <Link
             to={isAuthenticated ? routePaths.myProfile : routePaths.login}
-            className="btn btn-primary-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+            className="btn btn-primary-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
           >
+            <FollowIcon />
             {isAuthenticated ? "Your profile" : "Sign in to follow"}
           </Link>
         )}
         <Link
           to={routeBuilders.profileFollowers(user.user.id)}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
         >
           {followerCount} followers
         </Link>
         <Link
           to={routeBuilders.profileFollowing(user.user.id)}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
         >
           {followingCount} following
         </Link>
@@ -133,8 +160,16 @@ export default function UserProfile(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-12 py-12 animate-fade-up">
-      <ProfileHeader user={user} center action={followAction} />
+    <div className="flex flex-col gap-10 py-8 sm:gap-12 sm:py-12 animate-fade-up">
+      <ProfileHeader
+        user={user}
+        center
+        stats={stats}
+        collections={collections}
+        favoriteGenre={favoriteGenre}
+        isOwnProfile={viewerContext?.is_self}
+        action={followAction}
+      />
       <ReadingStats
         bookCount={
           stats?.books_read_count ??
@@ -142,9 +177,10 @@ export default function UserProfile(): ReactElement {
         }
         reviewCount={stats?.reviews_count ?? reviews?.length ?? 0}
         ratingCount={stats?.ratings_count ?? ratings?.length ?? 0}
+        collectionCount={stats?.collections_count ?? collections?.length ?? 0}
         favoriteGenre={favoriteGenre}
       />
-      <ProfileBio bio={user.bio} />
+      <ProfileBio user={user} />
       <CollectionsShelf collections={collections} />
       <ProfileBooksSection
         title="Books"

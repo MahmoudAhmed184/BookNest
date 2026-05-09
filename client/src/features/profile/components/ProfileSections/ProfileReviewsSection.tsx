@@ -44,9 +44,14 @@ export function ProfileReviewsSection({
   return (
     <section className="flex flex-col gap-5" aria-labelledby="profile-reviews-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 id="profile-reviews-title" className="text-xl font-bold text-primary-white sm:text-2xl">{title}</h2>
+        <div>
+          <p className="text-xs font-bold uppercase text-accent">Reader notes</p>
+          <h2 id="profile-reviews-title" className="text-2xl font-bold text-primary-white">{title}</h2>
+        </div>
         {isFetching && reviews?.length ? (
-          <p className="text-xs text-primary-gray" role="status">Updating reviews...</p>
+          <p className="rounded-lg border border-[var(--surface-glass-border)] px-3 py-1 text-xs font-semibold text-primary-gray" role="status">
+            Updating reviews...
+          </p>
         ) : null}
       </div>
       {isLoading ? <ReviewSkeleton /> : null}
@@ -56,8 +61,9 @@ export function ProfileReviewsSection({
       {!isLoading && !isError && !isRatingsError && (reviews?.length ?? 0) === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} actionLabel={emptyActionLabel} actionTo={emptyActionTo} />
       ) : null}
-      {!isLoading && !isError && !isRatingsError
-        ? reviews?.map((review, index) => (
+      {!isLoading && !isError && !isRatingsError && (reviews?.length ?? 0) > 0 ? (
+        <div className="grid gap-4">
+          {reviews?.map((review, index) => (
             <ProfileReviewCard
               key={review.id}
               review={review}
@@ -70,8 +76,9 @@ export function ProfileReviewsSection({
               isDeleting={isDeleting}
               onDeleteReview={onDeleteReview}
             />
-          ))
-        : null}
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -80,7 +87,7 @@ function ReviewSkeleton(): ReactElement {
   return (
     <div className="flex flex-col gap-4" role="status" aria-live="polite">
       {skeletonKeys.map((key) => (
-        <div key={key} className="h-44 rounded-xl animate-shimmer" />
+        <div key={key} className="h-44 rounded-lg animate-shimmer" />
       ))}
     </div>
   );
