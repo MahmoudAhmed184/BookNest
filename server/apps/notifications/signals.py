@@ -10,7 +10,7 @@ from django.dispatch import receiver
 
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
-from apps.reviews.models import ReviewVote
+from apps.reviews.models import Rating, Review, ReviewVote
 from apps.social.models import FollowRelationship
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,31 @@ def _create_after_commit(**kwargs) -> None:
             create_notification(**kwargs)
         except Exception as exc:
             logger.warning("Could not create notification: %s", exc)
+
+    transaction.on_commit(create)
+
+
+def _profile_activity_public(user: Any, *, rating_event: bool = False) -> bool:
+    try:
+        preferences = user.preferences
+    except AttributeError:
+        return True
+    if not preferences.profile_public:
+        return False
+    return not rating_event or preferences.show_ratings_publicly
+
+
+def _create_for_followers_after_commit(*, actor: Any, **kwargs) -> None:
+    def create() -> None:
+        followers = FollowRelationship.objects.select_related("follower").filter(following=actor)
+        for relationship in followers:
+            recipient = relationship.follower
+            if recipient.pk == actor.pk or not _in_app_enabled(recipient):
+                continue
+            try:
+                create_notification(recipient=recipient, actor=actor, **kwargs)
+            except Exception as exc:
+                logger.warning("Could not create follower activity notification: %s", exc)
 
     transaction.on_commit(create)
 
@@ -65,6 +90,40 @@ def follow_notification(sender, instance: FollowRelationship, created: bool, **_
         notification_type=Notification.NotificationType.SOCIAL,
         action=Notification.Action.FOLLOWED,
         payload={"follower_id": instance.follower_id},
+    )
+
+
+@receiver(post_save, sender=Review)
+def review_created_notification(sender, instance: Review, created: bool, **_kwargs) -> None:
+    del sender
+    if not created or instance.is_archived:
+        return
+    if not _profile_activity_public(instance.user):
+        return
+    _create_for_followers_after_commit(
+        actor=instance.user,
+        target=instance.book,
+        action_object=instance,
+        notification_type=Notification.NotificationType.REVIEW,
+        action=Notification.Action.REVIEWED_BOOK,
+        payload={"review_id": instance.id, "book_id": instance.book_id},
+    )
+
+
+@receiver(post_save, sender=Rating)
+def rating_created_notification(sender, instance: Rating, created: bool, **_kwargs) -> None:
+    del sender
+    if not created or instance.is_archived:
+        return
+    if not _profile_activity_public(instance.user, rating_event=True):
+        return
+    _create_for_followers_after_commit(
+        actor=instance.user,
+        target=instance.book,
+        action_object=instance,
+        notification_type=Notification.NotificationType.RATING,
+        action=Notification.Action.RATED_BOOK,
+        payload={"rating_id": instance.id, "book_id": instance.book_id, "rating": instance.value},
     )
 
 
