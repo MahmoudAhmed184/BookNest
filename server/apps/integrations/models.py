@@ -242,6 +242,7 @@ class ExternalSyncRun(TimeStampedModel):
 class ExternalSyncState(TimeStampedModel):
     source = models.OneToOneField(ExternalCatalogSource, related_name="sync_state", on_delete=models.CASCADE)
     sync_kind = models.CharField(max_length=32, default="catalog", db_index=True)
+    # Documented provider sync state API; retained for cursor-based providers.
     cursor_token = models.CharField(max_length=500, blank=True)
     last_success_at = models.DateTimeField(null=True, blank=True)
     last_error_at = models.DateTimeField(null=True, blank=True)

@@ -35,6 +35,7 @@ class SearchQueryLog(TimeStampedModel):
     result_count = models.PositiveIntegerField(default=0)
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.FULLTEXT, db_index=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.SUCCESS, db_index=True)
+    # Part of the documented admin telemetry API, even when a search path has no errors or request hashes to record.
     validation_errors = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
     response_ms = models.PositiveIntegerField(null=True, blank=True)

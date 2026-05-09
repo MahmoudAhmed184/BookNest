@@ -319,6 +319,7 @@ class BookTrendSnapshot(TimeStampedModel):
     book = models.ForeignKey(Book, related_name="trend_snapshots", on_delete=models.CASCADE)
     period = models.CharField(max_length=20, choices=Period.choices, db_index=True)
     metric_date = models.DateField(db_index=True)
+    # Documented admin trend API counters; snapshots may be loaded externally before backend jobs consume them.
     view_count = models.PositiveIntegerField(default=0)
     rating_count = models.PositiveIntegerField(default=0)
     review_count = models.PositiveIntegerField(default=0)

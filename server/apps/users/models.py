@@ -75,6 +75,7 @@ class Profile(TimeStampedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="profile", on_delete=models.CASCADE)
     handle = models.SlugField(max_length=64, unique=True)
     bio = models.TextField(blank=True)
+    # Documented profile API metadata; not every field drives backend behavior.
     profile_type = models.CharField(
         max_length=20, choices=ProfileType.choices, default=ProfileType.READER, db_index=True
     )
@@ -131,6 +132,7 @@ class UserPreference(TimeStampedModel):
         PRIVATE = "private", "Private"
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="preferences", on_delete=models.CASCADE)
+    # Documented preference API toggles; backend flows consume a subset directly.
     email_notifications_enabled = models.BooleanField(default=True)
     in_app_notifications_enabled = models.BooleanField(default=True)
     notify_on_follow = models.BooleanField(default=True)
