@@ -41,3 +41,9 @@ export interface PasswordResetPayload {
   password: string;
   confirmPassword: string;
 }
+
+export interface ChangePasswordPayload {
+  old_password: string;
+  new_password1: string;
+  new_password2: string;
+}

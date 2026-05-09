@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
+import { changePassword as changePasswordRequest } from "../../auth/services/authService";
+import type { ChangePasswordPayload } from "../../auth/types/auth";
 import {
   createProfileInterest,
   createUserSocialLink,
@@ -26,16 +29,11 @@ import type {
 } from "../../profile/types/user";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 import { catalogKeys } from "../../catalog/hooks/catalog.keys";
-
-interface SocialLinkDraft {
-  platform: string;
-  url: string;
-  label?: string;
-}
+import type { SettingsSocialLinkDraft } from "../types/settings";
 
 interface SettingsProfilePayload extends UpdateUserPayload, UpdateProfilePayload {
   interests?: ProfileInterestSelection[];
-  social_links?: SocialLinkDraft[];
+  social_links?: SettingsSocialLinkDraft[];
 }
 
 interface UseSettingsProfileResult {
@@ -47,10 +45,12 @@ interface UseSettingsProfileResult {
   isSavingProfile: boolean;
   isSavingPreferences: boolean;
   isUploadingPicture: boolean;
+  isChangingPassword: boolean;
   refetch: () => void;
   updateProfile: (payload: SettingsProfilePayload) => Promise<void>;
   updatePreferences: (payload: Partial<UserPreference>) => Promise<void>;
   uploadProfilePicture: (file: File) => void;
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>;
 }
 
 function normalizeKey(value: string): string {
@@ -102,7 +102,7 @@ async function syncInterests(
 
 async function syncSocialLinks(
   currentLinks: UserSocialLink[],
-  nextLinks: SocialLinkDraft[],
+  nextLinks: SettingsSocialLinkDraft[],
   token?: string | null
 ): Promise<void> {
   const nextByPlatform = new Map(
@@ -135,6 +135,7 @@ async function syncSocialLinks(
 
 export function useSettingsProfile(token?: string | null): UseSettingsProfileResult {
   const queryClient = useQueryClient();
+  const [isSyncingProfile, setIsSyncingProfile] = useState(false);
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
     queryFn: () => getMyProfile(token),
@@ -173,6 +174,16 @@ export function useSettingsProfile(token?: string | null): UseSettingsProfileRes
       toast.error("Couldn't upload picture. Try again.");
     },
   });
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: ChangePasswordPayload) =>
+      changePasswordRequest(data, token),
+    onSuccess: () => {
+      toast.success("Password updated.");
+    },
+    onError: () => {
+      toast.error("Couldn't update password. Check your current password and try again.");
+    },
+  });
 
   return {
     user: profileQuery.data,
@@ -181,14 +192,16 @@ export function useSettingsProfile(token?: string | null): UseSettingsProfileRes
     isFetching: profileQuery.isFetching || preferencesQuery.isFetching,
     isError: profileQuery.isError || preferencesQuery.isError,
     isSavingProfile:
-      updateUserMutation.isPending || updateProfileMutation.isPending,
+      updateUserMutation.isPending || updateProfileMutation.isPending || isSyncingProfile,
     isSavingPreferences: updatePreferencesMutation.isPending,
     isUploadingPicture: uploadPictureMutation.isPending,
+    isChangingPassword: changePasswordMutation.isPending,
     refetch: () => {
       void profileQuery.refetch();
       void preferencesQuery.refetch();
     },
     updateProfile: async (payload) => {
+      setIsSyncingProfile(true);
       const userPayload: UpdateUserPayload = {};
       const profilePayload: UpdateProfilePayload = {};
 
@@ -205,30 +218,37 @@ export function useSettingsProfile(token?: string | null): UseSettingsProfileRes
         profilePayload.website_url = payload.website_url;
       }
 
-      await Promise.all([
-        Object.keys(userPayload).length > 0
-          ? updateUserMutation.mutateAsync(userPayload)
-          : Promise.resolve(),
-        Object.keys(profilePayload).length > 0
-          ? updateProfileMutation.mutateAsync(profilePayload)
-          : Promise.resolve(),
-        payload.interests
-          ? syncInterests(profileQuery.data?.interest_links ?? [], payload.interests, token)
-          : Promise.resolve(),
-        payload.social_links
-          ? syncSocialLinks(profileQuery.data?.social_links ?? [], payload.social_links, token)
-          : Promise.resolve(),
-      ]);
+      try {
+        await Promise.all([
+          Object.keys(userPayload).length > 0
+            ? updateUserMutation.mutateAsync(userPayload)
+            : Promise.resolve(),
+          Object.keys(profilePayload).length > 0
+            ? updateProfileMutation.mutateAsync(profilePayload)
+            : Promise.resolve(),
+          payload.interests
+            ? syncInterests(profileQuery.data?.interest_links ?? [], payload.interests, token)
+            : Promise.resolve(),
+          payload.social_links
+            ? syncSocialLinks(profileQuery.data?.social_links ?? [], payload.social_links, token)
+            : Promise.resolve(),
+        ]);
 
-      toast.success("Profile updated.");
-      queryClient.invalidateQueries({ queryKey: profileKeys.me() });
-      queryClient.invalidateQueries({ queryKey: profileKeys.all });
-      queryClient.invalidateQueries({ queryKey: catalogKeys.genres(200) });
+        toast.success("Profile updated.");
+        queryClient.invalidateQueries({ queryKey: profileKeys.me() });
+        queryClient.invalidateQueries({ queryKey: profileKeys.all });
+        queryClient.invalidateQueries({ queryKey: catalogKeys.genres(200) });
+      } finally {
+        setIsSyncingProfile(false);
+      }
     },
     updatePreferences: async (payload) => {
       await updatePreferencesMutation.mutateAsync(payload);
     },
     uploadProfilePicture: (file) => uploadPictureMutation.mutate(file),
+    changePassword: async (payload) => {
+      await changePasswordMutation.mutateAsync(payload);
+    },
   };
 }
 

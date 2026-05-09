@@ -12,6 +12,7 @@ import type {
 import type {
   AuthenticatedUser,
   AuthTokens,
+  ChangePasswordPayload,
   LoginPayload,
   RegisterPayload,
 } from "../types/auth";
@@ -30,6 +31,10 @@ interface RegistrationApiPayload {
 
 interface LogoutPayload {
   refresh?: string;
+}
+
+interface PasswordChangeResponse {
+  detail?: string;
 }
 
 export async function createProfile(
@@ -107,6 +112,21 @@ export async function logoutCurrentSession(
   try {
     await postData<void, LogoutPayload>("/api/v1/auth/logout/", data);
     return normalizeEmptyResponse();
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function changePassword(
+  data: ChangePasswordPayload,
+  token?: string | null
+): Promise<PasswordChangeResponse> {
+  try {
+    return await postData<PasswordChangeResponse, ChangePasswordPayload>(
+      "/api/v1/auth/password/change/",
+      data,
+      { headers: authHeaders(token) }
+    );
   } catch (error: unknown) {
     throwApiError(error);
   }
