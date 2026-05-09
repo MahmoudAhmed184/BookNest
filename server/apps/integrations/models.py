@@ -19,7 +19,6 @@ class ExternalCatalogSource(TimeStampedModel):
     base_url = models.URLField(max_length=500)
     is_active = models.BooleanField(default=True, db_index=True)
     priority = models.PositiveSmallIntegerField(default=10, db_index=True)
-    rate_limit_per_minute = models.PositiveIntegerField(default=60)
     last_sync_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -27,7 +26,6 @@ class ExternalCatalogSource(TimeStampedModel):
         indexes = [models.Index(fields=["is_active", "priority"], name="extsource_active_idx")]
         constraints = [
             models.CheckConstraint(condition=~models.Q(display_name=""), name="extsource_name_chk"),
-            models.CheckConstraint(condition=models.Q(rate_limit_per_minute__gte=1), name="extsource_rate_chk"),
         ]
         verbose_name = "external catalog source"
         verbose_name_plural = "external catalog sources"

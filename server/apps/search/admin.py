@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog, SearchThrottleBucket
+from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog
 
 
 @admin.register(SearchQueryLog)
@@ -8,13 +8,6 @@ class SearchQueryLogAdmin(admin.ModelAdmin):
     list_display = ("normalized_query", "user", "source", "status", "result_count", "created_at")
     search_fields = ("query", "normalized_query", "user__email")
     list_filter = ("source", "status", "cache_hit", "external_enrichment_requested")
-
-
-@admin.register(SearchThrottleBucket)
-class SearchThrottleBucketAdmin(admin.ModelAdmin):
-    list_display = ("scope", "key_hash", "window_start", "request_count", "blocked_until")
-    search_fields = ("key_hash",)
-    list_filter = ("scope",)
 
 
 @admin.register(SearchAutocompleteTerm)

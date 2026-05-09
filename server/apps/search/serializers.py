@@ -3,18 +3,12 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from apps.books.serializers import BookSerializer
-from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog, SearchThrottleBucket
+from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog
 
 
 class SearchQueryLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = SearchQueryLog
-        fields = "__all__"
-
-
-class SearchThrottleBucketSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SearchThrottleBucket
         fields = "__all__"
 
 

@@ -61,35 +61,6 @@ class SearchQueryLog(TimeStampedModel):
         return f"{self.normalized_query}:{self.status}"
 
 
-class SearchThrottleBucket(TimeStampedModel):
-    class Scope(models.TextChoices):
-        USER = "user", "User"
-        IP = "ip", "IP"
-        ANONYMOUS = "anonymous", "Anonymous"
-
-    scope = models.CharField(max_length=16, choices=Scope.choices, db_index=True)
-    key_hash = models.CharField(max_length=64, db_index=True)
-    window_start = models.DateTimeField(db_index=True)
-    request_count = models.PositiveIntegerField(default=0)
-    blocked_until = models.DateTimeField(null=True, blank=True, db_index=True)
-
-    class Meta:
-        ordering = ("-window_start",)
-        indexes = [
-            models.Index(fields=["scope", "key_hash", "window_start"], name="throttle_scope_key_idx"),
-            models.Index(fields=["blocked_until"], name="throttle_blocked_idx"),
-        ]
-        constraints = [
-            models.UniqueConstraint(fields=["scope", "key_hash", "window_start"], name="uniq_throttle_bucket"),
-            models.CheckConstraint(condition=models.Q(request_count__gte=0), name="throttle_count_chk"),
-        ]
-        verbose_name = "search throttle bucket"
-        verbose_name_plural = "search throttle buckets"
-
-    def __str__(self) -> str:
-        return f"{self.scope}:{self.key_hash}:{self.window_start}"
-
-
 class SearchAutocompleteTerm(TimeStampedModel):
     class TermType(models.TextChoices):
         BOOK = "book", "Book"

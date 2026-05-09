@@ -25,14 +25,4 @@ urlpatterns = [
     ),
     path("search/query-logs/", views.SearchQueryLogListAPIView.as_view(), name="search-query-logs"),
     path("search/query-logs/<int:pk>/", views.SearchQueryLogResourceAPIView.as_view(), name="search-query-log"),
-    path(
-        "search/throttle-buckets/",
-        views.SearchThrottleBucketCollectionAPIView.as_view(),
-        name="search-throttle-bucket-collection",
-    ),
-    path(
-        "search/throttle-buckets/<int:pk>/",
-        views.SearchThrottleBucketResourceAPIView.as_view(),
-        name="search-throttle-bucket-resource",
-    ),
 ]

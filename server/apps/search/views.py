@@ -8,13 +8,12 @@ from apps.books.models import Book
 from apps.books.serializers import BookSerializer
 from apps.common.pagination import StandardResultsSetPagination
 from apps.search import selectors, services
-from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog, SearchThrottleBucket
+from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog
 from apps.search.serializers import (
     BookSearchResponseSerializer,
     SearchAutocompleteTermSerializer,
     SearchIndexStatusSerializer,
     SearchQueryLogSerializer,
-    SearchThrottleBucketSerializer,
 )
 
 
@@ -275,14 +274,3 @@ class SearchQueryLogResourceAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = SearchQueryLogSerializer
     permission_classes = [IsAdminUser]
 
-
-class SearchThrottleBucketCollectionAPIView(generics.ListCreateAPIView):
-    queryset = SearchThrottleBucket.objects.all()
-    serializer_class = SearchThrottleBucketSerializer
-    permission_classes = [IsAdminUser]
-
-
-class SearchThrottleBucketResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = SearchThrottleBucket.objects.all()
-    serializer_class = SearchThrottleBucketSerializer
-    permission_classes = [IsAdminUser]
