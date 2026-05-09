@@ -144,9 +144,10 @@ def search_external_source(*, source: ExternalCatalogSource, query: str, limit: 
     limit = min(max(int(limit), 1), 40)
     timeout = 8
     if source.provider == ExternalCatalogSource.Provider.OPENLIBRARY:
+        params: dict[str, str | int] = {"q": query, "limit": limit}
         response = requests.get(
             f"{source.base_url.rstrip('/')}/search.json",
-            params={"q": query, "limit": limit},
+            params=params,
             timeout=timeout,
         )
         response.raise_for_status()
@@ -157,9 +158,10 @@ def search_external_source(*, source: ExternalCatalogSource, query: str, limit: 
         ]
 
     if source.provider == ExternalCatalogSource.Provider.GOOGLE_BOOKS:
+        params = {"q": query, "maxResults": min(limit, 40)}
         response = requests.get(
             f"{source.base_url.rstrip('/')}/volumes",
-            params={"q": query, "maxResults": min(limit, 40)},
+            params=params,
             timeout=timeout,
         )
         response.raise_for_status()
