@@ -4,7 +4,7 @@ import {
   EmptyState,
   ErrorState,
   InlineSpinner,
-  Pagination,
+  LoadMorePagination,
 } from "../../../components/ui";
 import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -62,6 +62,7 @@ export default function AdminBooksPage(): ReactElement {
     isLoading,
     isFetching,
     isError,
+    isLoadingMore,
     isCreating,
     isUpdating,
     isDeleting,
@@ -88,6 +89,10 @@ export default function AdminBooksPage(): ReactElement {
     void updateBook(editingBookId, toBookPayload(editForm)).then(() =>
       setEditingBookId(null)
     );
+  };
+
+  const loadMore = (): void => {
+    setPage(page + 1);
   };
 
   return (
@@ -174,13 +179,14 @@ export default function AdminBooksPage(): ReactElement {
               ) : null}
             </article>
           ))}
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            hasPreviousPage={pagination.hasPrevious}
-            hasNextPage={pagination.hasNext}
-            onPageChange={setPage}
-            ariaLabel="Admin books pagination"
+          <LoadMorePagination
+            shownCount={books.length}
+            totalCount={pagination.count}
+            hasMore={pagination.hasNext}
+            onLoadMore={loadMore}
+            isLoading={isLoadingMore}
+            itemLabel="books"
+            ariaLabel="More admin books"
           />
         </div>
       ) : null}

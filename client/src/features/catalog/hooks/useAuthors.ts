@@ -1,13 +1,14 @@
 import { useEffect } from "react";
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { getAuthors } from "../services/bookService";
 import type { Author } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
+import {
+  getNextOffsetPageParam,
+  mergeOffsetPages,
+  shouldLoadNextOffsetPage,
+} from "../../../lib/pagination";
 import { catalogKeys } from "./catalog.keys";
 
 const authorsPageSize = 24;
@@ -18,66 +19,56 @@ interface UseAuthorsResult {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  isPlaceholderData: boolean;
+  isLoadingMore: boolean;
   refetch: () => void;
 }
 
-function createEmptyPagination(
-  page: number,
-  pageSize: number
-): OffsetPaginatedResponse<Author> {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-    page,
-    pageSize,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: page > 1,
-  };
-}
-
 export function useAuthors(query: string, page = 1): UseAuthorsResult {
+  const targetPage = Math.max(1, page);
   const trimmedQuery = query.trim();
-  const queryClient = useQueryClient();
-  const authorsQuery = useQuery({
-    queryKey: catalogKeys.authors(page, authorsPageSize, trimmedQuery),
-    queryFn: () =>
+  const authorsQuery = useInfiniteQuery({
+    queryKey: catalogKeys.authorsInfinite(authorsPageSize, trimmedQuery),
+    queryFn: ({ pageParam }) =>
       getAuthors({
-        page,
+        page: pageParam,
         pageSize: authorsPageSize,
         name__icontains: trimmedQuery || undefined,
       }),
-    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: getNextOffsetPageParam,
     staleTime: 60_000,
   });
+  const pages = authorsQuery.data?.pages;
+  const loadedPage = pages?.[pages.length - 1]?.page ?? 0;
+  const { fetchNextPage, hasNextPage, isError, isFetchingNextPage } = authorsQuery;
 
   useEffect(() => {
-    if (authorsQuery.isPlaceholderData || !authorsQuery.data?.hasNext) return;
+    if (
+      !shouldLoadNextOffsetPage({
+        targetPage,
+        loadedPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isError,
+      })
+    ) {
+      return;
+    }
 
-    const nextPage = page + 1;
-    void queryClient.prefetchQuery({
-      queryKey: catalogKeys.authors(nextPage, authorsPageSize, trimmedQuery),
-      queryFn: () =>
-        getAuthors({
-          page: nextPage,
-          pageSize: authorsPageSize,
-          name__icontains: trimmedQuery || undefined,
-        }),
-      staleTime: 60_000,
-    });
+    void fetchNextPage();
   }, [
-    authorsQuery.data?.hasNext,
-    authorsQuery.isPlaceholderData,
-    page,
-    queryClient,
-    trimmedQuery,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    loadedPage,
+    targetPage,
   ]);
 
-  const pagination =
-    authorsQuery.data ?? createEmptyPagination(page, authorsPageSize);
+  const pagination = mergeOffsetPages<Author>(pages, {
+    page: targetPage,
+    pageSize: authorsPageSize,
+  });
 
   return {
     authors: pagination.results,
@@ -85,7 +76,9 @@ export function useAuthors(query: string, page = 1): UseAuthorsResult {
     isLoading: authorsQuery.isLoading,
     isFetching: authorsQuery.isFetching,
     isError: authorsQuery.isError,
-    isPlaceholderData: authorsQuery.isPlaceholderData,
+    isLoadingMore:
+      isFetchingNextPage ||
+      (loadedPage > 0 && targetPage > loadedPage && hasNextPage),
     refetch: () => void authorsQuery.refetch(),
   };
 }

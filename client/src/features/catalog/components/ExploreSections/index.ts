@@ -1,11 +1,6 @@
 export { ExploreControls } from "./ExploreControls";
 export { ExploreBooksSection } from "./ExploreBooksSection";
 export { BookCarousel } from "./BookCarousel";
-export { PopularBooksGrid } from "./PopularBooksGrid";
 export { RecommendationsSection } from "./RecommendationsSection";
 export { SkeletonRow } from "./SkeletonRow";
-export type { ActiveExploreFilter, ExploreControlsProps, ExploreSortMode } from "./ExploreControls";
-export type { ExploreBooksSectionProps } from "./ExploreBooksSection";
-export type { BookCarouselProps } from "./BookCarousel";
-export type { PopularBooksGridProps } from "./PopularBooksGrid";
-export type { RecommendationsSectionProps } from "./RecommendationsSection";
+export type { ActiveExploreFilter, ExploreSortMode } from "./ExploreControls";

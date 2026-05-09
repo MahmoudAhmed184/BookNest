@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { EmptyState, ErrorState, Pagination } from "../../../../components/ui";
+import { EmptyState, ErrorState, LoadMorePagination } from "../../../../components/ui";
 import { routePaths } from "../../../../routes/paths";
 import type { OffsetPaginatedResponse } from "../../../../types/api";
 import type { Book } from "../../types/book";
@@ -15,14 +15,14 @@ export interface SearchResultsSectionProps {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  isPaginationDisabled: boolean;
+  isLoadingMore: boolean;
   hasData: boolean;
   pagination: OffsetPaginatedResponse<Book>;
   onRetry: () => void;
   onClearSearch: () => void;
   onSortChange: (mode: SortMode) => void;
   onRememberScroll: () => void;
-  onPageChange: (page: number) => void;
+  onLoadMore: () => void;
 }
 
 export function SearchResultsSection({
@@ -32,14 +32,14 @@ export function SearchResultsSection({
   isLoading,
   isFetching,
   isError,
-  isPaginationDisabled,
+  isLoadingMore,
   hasData,
   pagination,
   onRetry,
   onClearSearch,
   onSortChange,
   onRememberScroll,
-  onPageChange,
+  onLoadMore,
 }: SearchResultsSectionProps): ReactElement {
   const trimmedSearch = searchTerm.trim();
   const hasActiveSearch = trimmedSearch.length > 0;
@@ -79,14 +79,14 @@ export function SearchResultsSection({
         <SearchResultsGrid books={books} onRememberScroll={onRememberScroll} />
       ) : null}
       {hasActiveSearch && !isLoading && !isError ? (
-        <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
-          hasPreviousPage={pagination.hasPrevious}
-          hasNextPage={pagination.hasNext}
-          onPageChange={onPageChange}
-          isDisabled={isPaginationDisabled}
-          ariaLabel="Search results pagination"
+        <LoadMorePagination
+          shownCount={books.length}
+          totalCount={pagination.count}
+          hasMore={pagination.hasNext}
+          onLoadMore={onLoadMore}
+          isLoading={isLoadingMore}
+          itemLabel="books"
+          ariaLabel="More search results"
         />
       ) : null}
     </section>

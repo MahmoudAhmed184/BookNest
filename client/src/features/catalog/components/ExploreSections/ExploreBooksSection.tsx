@@ -5,7 +5,7 @@ import {
   BookCardSkeleton,
   EmptyState,
   ErrorState,
-  Pagination,
+  LoadMorePagination,
 } from "../../../../components/ui";
 import { routeBuilders, routePaths } from "../../../../routes/paths";
 import type { OffsetPaginatedResponse } from "../../../../types/api";
@@ -20,12 +20,12 @@ export interface ExploreBooksSectionProps {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  isPaginationDisabled: boolean;
+  isLoadingMore: boolean;
   hasActiveRefinement: boolean;
   pagination: OffsetPaginatedResponse<Book>;
   onRetry: () => void;
   onClearRefinements: () => void;
-  onPageChange: (page: number) => void;
+  onLoadMore: () => void;
 }
 
 export function ExploreBooksSection({
@@ -33,12 +33,12 @@ export function ExploreBooksSection({
   isLoading,
   isFetching,
   isError,
-  isPaginationDisabled,
+  isLoadingMore,
   hasActiveRefinement,
   pagination,
   onRetry,
   onClearRefinements,
-  onPageChange,
+  onLoadMore,
 }: ExploreBooksSectionProps): ReactElement {
   return (
     <section className="flex flex-col gap-5" aria-labelledby="explore-books">
@@ -87,14 +87,14 @@ export function ExploreBooksSection({
         </div>
       ) : null}
       {!isLoading && !isError ? (
-        <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
-          hasPreviousPage={pagination.hasPrevious}
-          hasNextPage={pagination.hasNext}
-          onPageChange={onPageChange}
-          isDisabled={isPaginationDisabled}
-          ariaLabel="Explore books pagination"
+        <LoadMorePagination
+          shownCount={books.length}
+          totalCount={pagination.count}
+          hasMore={pagination.hasNext}
+          onLoadMore={onLoadMore}
+          isLoading={isLoadingMore}
+          itemLabel="books"
+          ariaLabel="More explore books"
         />
       ) : null}
     </section>

@@ -1,2 +1,1 @@
-export { FilterSidebar, default } from "./FilterSidebar";
-export type { FilterSidebarProps } from "./FilterSidebar";
+export { FilterSidebar } from "./FilterSidebar";

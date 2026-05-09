@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import {
   searchBooks,
@@ -11,6 +7,11 @@ import {
 } from "../services/bookService";
 import type { Book } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
+import {
+  getNextOffsetPageParam,
+  mergeOffsetPages,
+  shouldLoadNextOffsetPage,
+} from "../../../lib/pagination";
 import { catalogKeys } from "./catalog.keys";
 
 const searchPageSize = 24;
@@ -22,26 +23,9 @@ interface UseSearchBooksResult {
   isFetching: boolean;
   isError: boolean;
   error: Error | null;
-  isPlaceholderData: boolean;
+  isLoadingMore: boolean;
   hasData: boolean;
   refetch: () => void;
-}
-
-function createEmptyPagination(
-  page: number,
-  pageSize: number
-): OffsetPaginatedResponse<Book> {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-    page,
-    pageSize,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: page > 1,
-  };
 }
 
 export function useSearchBooks(
@@ -50,69 +34,59 @@ export function useSearchBooks(
   includeExternal = false,
   ordering: SearchBooksOrdering = "relevance"
 ): UseSearchBooksResult {
-  const queryClient = useQueryClient();
+  const targetPage = Math.max(1, page);
   const trimmedSearch = searchTerm.trim();
-  const query = useQuery({
-    queryKey: catalogKeys.books(
+  const query = useInfiniteQuery({
+    queryKey: catalogKeys.booksInfinite(
       trimmedSearch,
-      page,
       searchPageSize,
       includeExternal,
       ordering
     ),
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       searchBooks({
         query: trimmedSearch,
-        page,
+        page: pageParam,
         pageSize: searchPageSize,
         includeExternal,
         ordering,
       }),
     enabled: trimmedSearch.length > 0,
-    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: getNextOffsetPageParam,
     staleTime: 60_000,
   });
+  const pages = query.data?.pages;
+  const loadedPage = pages?.[pages.length - 1]?.page ?? 0;
+  const { fetchNextPage, hasNextPage, isError, isFetchingNextPage } = query;
 
   useEffect(() => {
     if (
-      trimmedSearch.length === 0 ||
-      query.isPlaceholderData ||
-      !query.data?.hasNext
+      !shouldLoadNextOffsetPage({
+        targetPage,
+        loadedPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isError,
+      })
     ) {
       return;
     }
 
-    const nextPage = page + 1;
-    void queryClient.prefetchQuery({
-      queryKey: catalogKeys.books(
-        trimmedSearch,
-        nextPage,
-        searchPageSize,
-        includeExternal,
-        ordering
-      ),
-      queryFn: () =>
-        searchBooks({
-          query: trimmedSearch,
-          page: nextPage,
-          pageSize: searchPageSize,
-          includeExternal,
-          ordering,
-        }),
-      staleTime: 60_000,
-    });
+    void fetchNextPage();
   }, [
-    page,
-    query.data?.hasNext,
-    query.isPlaceholderData,
-    queryClient,
-    includeExternal,
-    ordering,
-    trimmedSearch,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    loadedPage,
+    targetPage,
   ]);
 
-  const pagination =
-    query.data ?? createEmptyPagination(page, searchPageSize);
+  const pagination = mergeOffsetPages<Book>(pages, {
+    page: targetPage,
+    pageSize: searchPageSize,
+  });
 
   return {
     books: pagination.results,
@@ -121,7 +95,9 @@ export function useSearchBooks(
     isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
-    isPlaceholderData: query.isPlaceholderData,
+    isLoadingMore:
+      isFetchingNextPage ||
+      (loadedPage > 0 && targetPage > loadedPage && hasNextPage),
     hasData: Boolean(query.data),
     refetch: () => void query.refetch(),
   };

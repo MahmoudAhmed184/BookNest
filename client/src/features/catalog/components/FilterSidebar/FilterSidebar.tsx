@@ -15,7 +15,7 @@ import { getGenreOptions } from "../../services/bookService";
 import type { CatalogGenre } from "../../types/book";
 import { emptyCatalogFilters, type CatalogFilters } from "../../types/filters";
 
-export interface FilterSidebarProps {
+interface FilterSidebarProps {
   filters: CatalogFilters;
   resultCount: number;
   onChange: (filters: CatalogFilters) => void;
@@ -566,5 +566,3 @@ function FilterGroup({
     </section>
   );
 }
-
-export default FilterSidebar;

@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import {
@@ -9,6 +10,11 @@ import {
 } from "../services/bookService";
 import type { Book, BookWritePayload } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
+import {
+  getNextOffsetPageParam,
+  mergeOffsetPages,
+  shouldLoadNextOffsetPage,
+} from "../../../lib/pagination";
 import { catalogKeys } from "./catalog.keys";
 
 const adminBooksPageSize = 24;
@@ -19,6 +25,7 @@ interface UseAdminBooksResult {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  isLoadingMore: boolean;
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
@@ -28,33 +35,47 @@ interface UseAdminBooksResult {
   refetch: () => void;
 }
 
-function createEmptyPagination(
-  page: number,
-  pageSize: number
-): OffsetPaginatedResponse<Book> {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-    page,
-    pageSize,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: page > 1,
-  };
-}
-
 export function useAdminBooks(
   token: string | null | undefined,
   page = 1
 ): UseAdminBooksResult {
+  const targetPage = Math.max(1, page);
   const queryClient = useQueryClient();
-  const booksQuery = useQuery({
-    queryKey: catalogKeys.catalogBooks(page, adminBooksPageSize),
-    queryFn: () => getCatalogBooks({ page, pageSize: adminBooksPageSize }),
+  const booksQuery = useInfiniteQuery({
+    queryKey: catalogKeys.catalogBooksInfinite(adminBooksPageSize),
+    queryFn: ({ pageParam }) =>
+      getCatalogBooks({ page: pageParam, pageSize: adminBooksPageSize }),
     enabled: Boolean(token),
+    initialPageParam: 1,
+    getNextPageParam: getNextOffsetPageParam,
   });
+  const pages = booksQuery.data?.pages;
+  const loadedPage = pages?.[pages.length - 1]?.page ?? 0;
+  const { fetchNextPage, hasNextPage, isError, isFetchingNextPage } = booksQuery;
+
+  useEffect(() => {
+    if (
+      !shouldLoadNextOffsetPage({
+        targetPage,
+        loadedPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isError,
+      })
+    ) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    loadedPage,
+    targetPage,
+  ]);
+
   const invalidateBooks = (): void => {
     void queryClient.invalidateQueries({ queryKey: ["books"] });
   };
@@ -80,8 +101,10 @@ export function useAdminBooks(
       invalidateBooks();
     },
   });
-  const pagination =
-    booksQuery.data ?? createEmptyPagination(page, adminBooksPageSize);
+  const pagination = mergeOffsetPages<Book>(pages, {
+    page: targetPage,
+    pageSize: adminBooksPageSize,
+  });
 
   return {
     books: pagination.results,
@@ -89,6 +112,9 @@ export function useAdminBooks(
     isLoading: booksQuery.isLoading,
     isFetching: booksQuery.isFetching,
     isError: booksQuery.isError,
+    isLoadingMore:
+      isFetchingNextPage ||
+      (loadedPage > 0 && targetPage > loadedPage && hasNextPage),
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,

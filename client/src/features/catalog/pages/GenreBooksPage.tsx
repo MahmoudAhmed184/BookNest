@@ -1,7 +1,5 @@
 import {
-  useCallback,
   useEffect,
-  useRef,
   type ReactElement,
 } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -11,7 +9,7 @@ import {
   BookCardSkeleton,
   EmptyState,
   ErrorState,
-  Pagination,
+  LoadMorePagination,
 } from "../../../components/ui";
 import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
 import {
@@ -28,8 +26,6 @@ export default function GenreBooksPage(): ReactElement {
   const { id } = useParams<GenreBooksRouteParams>();
   const [searchParams] = useSearchParams();
   const { page, setPage } = usePageSearchParam();
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledAfterMount = useRef(false);
   const genreName = searchParams.get("name") || `Genre ${id ?? ""}`;
   const {
     books,
@@ -37,29 +33,12 @@ export default function GenreBooksPage(): ReactElement {
     isLoading,
     isFetching,
     isError,
-    isPlaceholderData,
+    isLoadingMore,
     refetch,
   } = useGenreBooks(id, page);
 
-  const scrollToResults = useCallback((): void => {
-    const node = resultsRef.current;
-    if (!node || typeof node.scrollIntoView !== "function") return;
-
-    node.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
-  useEffect(() => {
-    if (!hasScrolledAfterMount.current) {
-      hasScrolledAfterMount.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(scrollToResults);
-  }, [page, scrollToResults]);
-
   useEffect(() => {
     if (
-      isPlaceholderData ||
       pagination.totalPages === 0 ||
       page <= pagination.totalPages
     ) {
@@ -67,7 +46,11 @@ export default function GenreBooksPage(): ReactElement {
     }
 
     setPage(pagination.totalPages, { replace: true });
-  }, [isPlaceholderData, page, pagination.totalPages, setPage]);
+  }, [page, pagination.totalPages, setPage]);
+
+  const loadMore = (): void => {
+    setPage(page + 1);
+  };
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
@@ -86,7 +69,7 @@ export default function GenreBooksPage(): ReactElement {
         </div>
       </header>
 
-      <section ref={resultsRef} className="flex flex-col gap-6" aria-label={`${genreName} books`}>
+      <section className="flex flex-col gap-6" aria-label={`${genreName} books`}>
         {isLoading ? (
           <div className="catalog-grid" role="status" aria-live="polite">
             {skeletonKeys.map((key) => (
@@ -129,14 +112,14 @@ export default function GenreBooksPage(): ReactElement {
         ) : null}
 
         {!isLoading && !isError ? (
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            hasPreviousPage={pagination.hasPrevious}
-            hasNextPage={pagination.hasNext}
-            onPageChange={setPage}
-            isDisabled={isPlaceholderData}
-            ariaLabel={`${genreName} books pagination`}
+          <LoadMorePagination
+            shownCount={books.length}
+            totalCount={pagination.count}
+            hasMore={pagination.hasNext}
+            onLoadMore={loadMore}
+            isLoading={isLoadingMore}
+            itemLabel="books"
+            ariaLabel={`More ${genreName} books`}
           />
         ) : null}
       </section>

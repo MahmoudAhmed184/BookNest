@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useDeferredValue,
   useEffect,
   useId,
@@ -16,7 +15,7 @@ import {
   BookCardSkeleton,
   EmptyState,
   ErrorState,
-  Pagination,
+  LoadMorePagination,
 } from "../../../components/ui";
 import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
 import { routeBuilders, routePaths } from "../../../routes/paths";
@@ -198,15 +197,13 @@ export default function Categories(): ReactElement {
   const activeSearchQuery = deferredSearchQuery.trim();
   const hasSearchQuery = activeSearchQuery.length > 0;
   const previousSearchQuery = useRef(activeSearchQuery);
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledAfterMount = useRef(false);
   const {
     genres,
     pagination,
     isLoading,
     isFetching,
     isError,
-    isPlaceholderData,
+    isLoadingMore,
     refetch,
   } = useCatalogGenres(page, activeSearchQuery);
   const popularGenresQuery = useQuery({
@@ -229,13 +226,6 @@ export default function Categories(): ReactElement {
   });
   const isSearchPending = searchQuery.trim() !== activeSearchQuery;
 
-  const scrollToResults = useCallback((): void => {
-    const node = resultsRef.current;
-    if (!node || typeof node.scrollIntoView !== "function") return;
-
-    node.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
   useEffect(() => {
     if (previousSearchQuery.current === activeSearchQuery) return;
 
@@ -244,17 +234,7 @@ export default function Categories(): ReactElement {
   }, [activeSearchQuery, setPage]);
 
   useEffect(() => {
-    if (!hasScrolledAfterMount.current) {
-      hasScrolledAfterMount.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(scrollToResults);
-  }, [page, scrollToResults]);
-
-  useEffect(() => {
     if (
-      isPlaceholderData ||
       pagination.totalPages === 0 ||
       page <= pagination.totalPages
     ) {
@@ -262,7 +242,11 @@ export default function Categories(): ReactElement {
     }
 
     setPage(pagination.totalPages, { replace: true });
-  }, [isPlaceholderData, page, pagination.totalPages, setPage]);
+  }, [page, pagination.totalPages, setPage]);
+
+  const loadMore = (): void => {
+    setPage(page + 1);
+  };
 
   return (
     <div className="flex flex-col gap-10 py-10 animate-fade-up sm:py-12">
@@ -316,7 +300,6 @@ export default function Categories(): ReactElement {
 
       {hasSearchQuery ? (
         <section
-          ref={resultsRef}
           className="flex flex-col gap-6"
           aria-labelledby="matching-genres"
         >
@@ -370,14 +353,14 @@ export default function Categories(): ReactElement {
           ) : null}
 
           {!isLoading && !isError ? (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              hasPreviousPage={pagination.hasPrevious}
-              hasNextPage={pagination.hasNext}
-              onPageChange={setPage}
-              isDisabled={isPlaceholderData}
-              ariaLabel="Matching genres pagination"
+            <LoadMorePagination
+              shownCount={genres.length}
+              totalCount={pagination.count}
+              hasMore={pagination.hasNext}
+              onLoadMore={loadMore}
+              isLoading={isLoadingMore}
+              itemLabel="genres"
+              ariaLabel="More matching genres"
             />
           ) : null}
         </section>

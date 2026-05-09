@@ -9,6 +9,13 @@ export const catalogKeys = {
     ordering = "relevance"
   ) =>
     ["books", "search", query, page, pageSize, includeExternal, ordering] as const,
+  booksInfinite: (
+    query: string,
+    pageSize: number,
+    includeExternal = false,
+    ordering = "relevance"
+  ) =>
+    ["books", "search", "infinite", query, pageSize, includeExternal, ordering] as const,
   suggestions: (query: string, limit: number, type = "all") =>
     ["search", "suggestions", query, limit, type] as const,
   catalogBooks: (
@@ -16,11 +23,17 @@ export const catalogKeys = {
     pageSize: number,
     filters: Readonly<CatalogBookFilters> = {}
   ) => ["books", "catalog", page, pageSize, filters] as const,
+  catalogBooksInfinite: (
+    pageSize: number,
+    filters: Readonly<CatalogBookFilters> = {}
+  ) => ["books", "catalog", "infinite", pageSize, filters] as const,
   popularBooks: (limit: number) => ["books", "popular", limit] as const,
   newReleaseBooks: (limit: number) => ["books", "new-releases", limit] as const,
   genres: (limit: number) => ["genres", limit] as const,
   genresPage: (page: number, pageSize: number, query = "") =>
     ["genres", "page", page, pageSize, query] as const,
+  genresPageInfinite: (pageSize: number, query = "") =>
+    ["genres", "page", "infinite", pageSize, query] as const,
   genreOptions: (query: string, limit: number) =>
     ["genres", "options", query, limit] as const,
   genreBooks: (
@@ -29,8 +42,15 @@ export const catalogKeys = {
     pageSize: number,
     filters: Readonly<CatalogBookFilters> = {}
   ) => ["genres", genreId, "books", page, pageSize, filters] as const,
+  genreBooksInfinite: (
+    genreId: string | number | undefined,
+    pageSize: number,
+    filters: Readonly<CatalogBookFilters> = {}
+  ) => ["genres", genreId, "books", "infinite", pageSize, filters] as const,
   authors: (page: number, pageSize: number, query: string) =>
     ["authors", "page", page, pageSize, query] as const,
+  authorsInfinite: (pageSize: number, query: string) =>
+    ["authors", "page", "infinite", pageSize, query] as const,
   recommendations: () => ["recommendations"] as const,
   recommendationModels: () => ["recommendation-models"] as const,
   recommendationModel: (id: string | number) =>

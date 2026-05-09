@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import {
   type CatalogBookFilters,
@@ -12,6 +8,11 @@ import {
 } from "../services/bookService";
 import type { Book, CatalogGenre } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
+import {
+  getNextOffsetPageParam,
+  mergeOffsetPages,
+  shouldLoadNextOffsetPage,
+} from "../../../lib/pagination";
 import { catalogKeys } from "./catalog.keys";
 
 const explorePageSize = 24;
@@ -23,7 +24,7 @@ interface UseExploreCatalogResult {
   isBooksLoading: boolean;
   isBooksFetching: boolean;
   isBooksError: boolean;
-  isBooksPlaceholderData: boolean;
+  isBooksLoadingMore: boolean;
   isCategoriesLoading: boolean;
   isCategoriesFetching: boolean;
   isCategoriesError: boolean;
@@ -31,32 +32,17 @@ interface UseExploreCatalogResult {
   refetchCategories: () => void;
 }
 
-function createEmptyPagination<T>(
-  page: number,
-  pageSize: number
-): OffsetPaginatedResponse<T> {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-    page,
-    pageSize,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: page > 1,
-  };
-}
-
 export function useExploreCatalog(
   page = 1,
   filters: CatalogBookFilters = {}
 ): UseExploreCatalogResult {
-  const queryClient = useQueryClient();
-  const booksQuery = useQuery({
-    queryKey: catalogKeys.catalogBooks(page, explorePageSize, filters),
-    queryFn: () => getCatalogBooks({ page, pageSize: explorePageSize, ...filters }),
-    placeholderData: keepPreviousData,
+  const targetPage = Math.max(1, page);
+  const booksQuery = useInfiniteQuery({
+    queryKey: catalogKeys.catalogBooksInfinite(explorePageSize, filters),
+    queryFn: ({ pageParam }) =>
+      getCatalogBooks({ page: pageParam, pageSize: explorePageSize, ...filters }),
+    initialPageParam: 1,
+    getNextPageParam: getNextOffsetPageParam,
     staleTime: 60_000,
   });
   const categoriesQuery = useQuery({
@@ -64,27 +50,37 @@ export function useExploreCatalog(
     queryFn: () => getGenres(50),
     staleTime: 60_000,
   });
+  const pages = booksQuery.data?.pages;
+  const loadedPage = pages?.[pages.length - 1]?.page ?? 0;
+  const { fetchNextPage, hasNextPage, isError, isFetchingNextPage } = booksQuery;
 
   useEffect(() => {
-    if (booksQuery.isPlaceholderData || !booksQuery.data?.hasNext) return;
+    if (
+      !shouldLoadNextOffsetPage({
+        targetPage,
+        loadedPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isError,
+      })
+    ) {
+      return;
+    }
 
-    const nextPage = page + 1;
-    void queryClient.prefetchQuery({
-      queryKey: catalogKeys.catalogBooks(nextPage, explorePageSize, filters),
-      queryFn: () =>
-        getCatalogBooks({ page: nextPage, pageSize: explorePageSize, ...filters }),
-      staleTime: 60_000,
-    });
+    void fetchNextPage();
   }, [
-    booksQuery.data?.hasNext,
-    booksQuery.isPlaceholderData,
-    filters,
-    page,
-    queryClient,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    loadedPage,
+    targetPage,
   ]);
 
-  const booksPagination =
-    booksQuery.data ?? createEmptyPagination<Book>(page, explorePageSize);
+  const booksPagination = mergeOffsetPages<Book>(pages, {
+    page: targetPage,
+    pageSize: explorePageSize,
+  });
 
   return {
     books: booksPagination.results,
@@ -93,7 +89,9 @@ export function useExploreCatalog(
     isBooksLoading: booksQuery.isLoading,
     isBooksFetching: booksQuery.isFetching,
     isBooksError: booksQuery.isError,
-    isBooksPlaceholderData: booksQuery.isPlaceholderData,
+    isBooksLoadingMore:
+      isFetchingNextPage ||
+      (loadedPage > 0 && targetPage > loadedPage && hasNextPage),
     isCategoriesLoading: categoriesQuery.isLoading,
     isCategoriesFetching: categoriesQuery.isFetching,
     isCategoriesError: categoriesQuery.isError,

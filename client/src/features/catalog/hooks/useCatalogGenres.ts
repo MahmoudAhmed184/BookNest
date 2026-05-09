@@ -1,13 +1,14 @@
 import { useEffect } from "react";
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { getGenresPage } from "../services/bookService";
 import type { CatalogGenre } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
+import {
+  getNextOffsetPageParam,
+  mergeOffsetPages,
+  shouldLoadNextOffsetPage,
+} from "../../../lib/pagination";
 import { catalogKeys } from "./catalog.keys";
 
 const categoriesPageSize = 48;
@@ -18,73 +19,59 @@ interface UseCatalogGenresResult {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  isPlaceholderData: boolean;
+  isLoadingMore: boolean;
   refetch: () => void;
-}
-
-function createEmptyPagination(
-  page: number,
-  pageSize: number
-): OffsetPaginatedResponse<CatalogGenre> {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-    page,
-    pageSize,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: page > 1,
-  };
 }
 
 export function useCatalogGenres(
   page = 1,
   query = ""
 ): UseCatalogGenresResult {
-  const queryClient = useQueryClient();
+  const targetPage = Math.max(1, page);
   const trimmedQuery = query.trim();
-  const genresQuery = useQuery({
-    queryKey: catalogKeys.genresPage(page, categoriesPageSize, trimmedQuery),
-    queryFn: () =>
+  const genresQuery = useInfiniteQuery({
+    queryKey: catalogKeys.genresPageInfinite(categoriesPageSize, trimmedQuery),
+    queryFn: ({ pageParam }) =>
       getGenresPage({
-        page,
+        page: pageParam,
         pageSize: categoriesPageSize,
         query: trimmedQuery,
       }),
-    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: getNextOffsetPageParam,
     staleTime: 60_000,
   });
+  const pages = genresQuery.data?.pages;
+  const loadedPage = pages?.[pages.length - 1]?.page ?? 0;
+  const { fetchNextPage, hasNextPage, isError, isFetchingNextPage } = genresQuery;
 
   useEffect(() => {
-    if (genresQuery.isPlaceholderData || !genresQuery.data?.hasNext) return;
+    if (
+      !shouldLoadNextOffsetPage({
+        targetPage,
+        loadedPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isError,
+      })
+    ) {
+      return;
+    }
 
-    const nextPage = page + 1;
-    void queryClient.prefetchQuery({
-      queryKey: catalogKeys.genresPage(
-        nextPage,
-        categoriesPageSize,
-        trimmedQuery
-      ),
-      queryFn: () =>
-        getGenresPage({
-          page: nextPage,
-          pageSize: categoriesPageSize,
-          query: trimmedQuery,
-        }),
-      staleTime: 60_000,
-    });
+    void fetchNextPage();
   }, [
-    page,
-    genresQuery.data?.hasNext,
-    genresQuery.isPlaceholderData,
-    queryClient,
-    trimmedQuery,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    loadedPage,
+    targetPage,
   ]);
 
-  const pagination =
-    genresQuery.data ?? createEmptyPagination(page, categoriesPageSize);
+  const pagination = mergeOffsetPages<CatalogGenre>(pages, {
+    page: targetPage,
+    pageSize: categoriesPageSize,
+  });
 
   return {
     genres: pagination.results,
@@ -92,7 +79,9 @@ export function useCatalogGenres(
     isLoading: genresQuery.isLoading,
     isFetching: genresQuery.isFetching,
     isError: genresQuery.isError,
-    isPlaceholderData: genresQuery.isPlaceholderData,
+    isLoadingMore:
+      isFetchingNextPage ||
+      (loadedPage > 0 && targetPage > loadedPage && hasNextPage),
     refetch: () => void genresQuery.refetch(),
   };
 }

@@ -1,7 +1,5 @@
 import {
-  useCallback,
   useEffect,
-  useRef,
   type ReactElement,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -10,7 +8,7 @@ import {
   EmptyState,
   ErrorState,
   InlineSpinner,
-  Pagination,
+  LoadMorePagination,
 } from "../../../components/ui";
 import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
 import { routeBuilders } from "../../../routes/paths";
@@ -52,8 +50,6 @@ function AuthorCard({ author }: { author: Author }): ReactElement {
 export default function AuthorsPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
   const { page, setPage } = usePageSearchParam();
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledAfterMount = useRef(false);
   const query = searchParams.get("q") ?? "";
   const {
     authors,
@@ -61,16 +57,9 @@ export default function AuthorsPage(): ReactElement {
     isLoading,
     isFetching,
     isError,
-    isPlaceholderData,
+    isLoadingMore,
     refetch,
   } = useAuthors(query, page);
-
-  const scrollToResults = useCallback((): void => {
-    const node = resultsRef.current;
-    if (!node || typeof node.scrollIntoView !== "function") return;
-
-    node.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const setQuery = (value: string): void => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -85,17 +74,7 @@ export default function AuthorsPage(): ReactElement {
   };
 
   useEffect(() => {
-    if (!hasScrolledAfterMount.current) {
-      hasScrolledAfterMount.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(scrollToResults);
-  }, [page, scrollToResults]);
-
-  useEffect(() => {
     if (
-      isPlaceholderData ||
       pagination.totalPages === 0 ||
       page <= pagination.totalPages
     ) {
@@ -103,7 +82,11 @@ export default function AuthorsPage(): ReactElement {
     }
 
     setPage(pagination.totalPages, { replace: true });
-  }, [isPlaceholderData, page, pagination.totalPages, setPage]);
+  }, [page, pagination.totalPages, setPage]);
+
+  const loadMore = (): void => {
+    setPage(page + 1);
+  };
 
   return (
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
@@ -126,7 +109,7 @@ export default function AuthorsPage(): ReactElement {
         />
       </label>
 
-      <section ref={resultsRef} className="flex flex-col gap-6" aria-label="Authors">
+      <section className="flex flex-col gap-6" aria-label="Authors">
         {isLoading ? (
           <div
             className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
@@ -177,14 +160,14 @@ export default function AuthorsPage(): ReactElement {
         ) : null}
 
         {!isLoading && !isError ? (
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            hasPreviousPage={pagination.hasPrevious}
-            hasNextPage={pagination.hasNext}
-            onPageChange={setPage}
-            isDisabled={isPlaceholderData}
-            ariaLabel="Authors pagination"
+          <LoadMorePagination
+            shownCount={authors.length}
+            totalCount={pagination.count}
+            hasMore={pagination.hasNext}
+            onLoadMore={loadMore}
+            isLoading={isLoadingMore}
+            itemLabel="authors"
+            ariaLabel="More authors"
           />
         ) : null}
       </section>

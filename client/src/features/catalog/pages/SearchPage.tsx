@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type FormEvent,
   type ReactElement,
@@ -99,8 +98,6 @@ export default function Search(): ReactElement {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { page, setPage } = usePageSearchParam();
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledAfterMount = useRef(false);
 
   const initialQuery = query ?? "";
   const [searchInput, setSearchInput] = useState(initialQuery);
@@ -118,7 +115,7 @@ export default function Search(): ReactElement {
     isFetching,
     isError,
     error,
-    isPlaceholderData,
+    isLoadingMore,
     hasData,
     refetch,
   } = useSearchBooks(trimmedSearch, page, includeExternal, sortMode);
@@ -129,13 +126,6 @@ export default function Search(): ReactElement {
     Boolean(rateLimitError) && !isRateLimitDismissed && isError;
   const shouldShowResultError =
     isError && !rateLimitError && validationMessages.length === 0;
-
-  const scrollToResults = useCallback((): void => {
-    const node = resultsRef.current;
-    if (!node || typeof node.scrollIntoView !== "function") return;
-
-    node.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const uniqueBooks = useMemo(
     () =>
@@ -191,17 +181,7 @@ export default function Search(): ReactElement {
   }, [retrySeconds, shouldShowRateLimit]);
 
   useEffect(() => {
-    if (!hasScrolledAfterMount.current) {
-      hasScrolledAfterMount.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(scrollToResults);
-  }, [page, scrollToResults]);
-
-  useEffect(() => {
     if (
-      isPlaceholderData ||
       pagination.totalPages === 0 ||
       page <= pagination.totalPages
     ) {
@@ -209,7 +189,7 @@ export default function Search(): ReactElement {
     }
 
     setPage(pagination.totalPages, { replace: true });
-  }, [isPlaceholderData, page, pagination.totalPages, setPage]);
+  }, [page, pagination.totalPages, setPage]);
 
   useEffect(() => {
     const savedPosition = getSearchScrollPosition();
@@ -245,6 +225,10 @@ export default function Search(): ReactElement {
   const rememberScroll = (): void => {
     saveSearchScrollPosition(window.scrollY);
   };
+
+  const loadMore = useCallback((): void => {
+    setPage(page + 1);
+  }, [page, setPage]);
 
   const handleSearchChange = (value: string): void => {
     setSearchInput(value);
@@ -315,7 +299,7 @@ export default function Search(): ReactElement {
           </div>
         </div>
       ) : null}
-      <div ref={resultsRef}>
+      <div>
         <SearchResultsSection
           books={sortedBooks}
           searchTerm={searchTerm}
@@ -323,14 +307,14 @@ export default function Search(): ReactElement {
           isLoading={isLoading}
           isFetching={isFetching}
           isError={shouldShowResultError}
-          isPaginationDisabled={isPlaceholderData}
+          isLoadingMore={isLoadingMore}
           hasData={hasData}
           pagination={pagination}
           onRetry={refetch}
           onClearSearch={clearSearch}
           onSortChange={setSortMode}
           onRememberScroll={rememberScroll}
-          onPageChange={setPage}
+          onLoadMore={loadMore}
         />
       </div>
     </div>

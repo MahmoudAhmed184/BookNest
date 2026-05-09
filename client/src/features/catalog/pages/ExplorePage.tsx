@@ -3,7 +3,6 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactElement,
 } from "react";
@@ -182,8 +181,6 @@ function toCatalogBookFilters(
 export default function Explore(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
   const { page, setPage } = usePageSearchParam();
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledAfterMount = useRef(false);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearchInput = useDeferredValue(searchInput);
   const [sortMode, setSortMode] = useState<ExploreSortMode>("relevance");
@@ -202,16 +199,9 @@ export default function Explore(): ReactElement {
     isBooksLoading,
     isBooksFetching,
     isBooksError,
-    isBooksPlaceholderData,
+    isBooksLoadingMore,
     refetchBooks,
   } = useExploreCatalog(page, serverFilters);
-
-  const scrollToResults = useCallback((): void => {
-    const node = resultsRef.current;
-    if (!node || typeof node.scrollIntoView !== "function") return;
-
-    node.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const resetPage = useCallback((): void => {
     if (page === 1) return;
@@ -220,17 +210,7 @@ export default function Explore(): ReactElement {
   }, [page, setPage]);
 
   useEffect(() => {
-    if (!hasScrolledAfterMount.current) {
-      hasScrolledAfterMount.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(scrollToResults);
-  }, [page, scrollToResults]);
-
-  useEffect(() => {
     if (
-      isBooksPlaceholderData ||
       booksPagination.totalPages === 0 ||
       page <= booksPagination.totalPages
     ) {
@@ -240,7 +220,6 @@ export default function Explore(): ReactElement {
     setPage(booksPagination.totalPages, { replace: true });
   }, [
     booksPagination.totalPages,
-    isBooksPlaceholderData,
     page,
     setPage,
   ]);
@@ -309,6 +288,10 @@ export default function Explore(): ReactElement {
     resetPage();
   };
 
+  const loadMore = useCallback((): void => {
+    setPage(page + 1);
+  }, [page, setPage]);
+
   return (
     <div className="flex flex-col gap-10 py-10 animate-fade-up sm:py-12">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -342,7 +325,7 @@ export default function Explore(): ReactElement {
           resultCount={booksPagination.count}
           onChange={handleFiltersChange}
         />
-        <div ref={resultsRef} className="flex min-w-0 flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-5">
           <ExploreControls
             searchInput={searchInput}
             resultCount={sortedBooks.length}
@@ -363,12 +346,12 @@ export default function Explore(): ReactElement {
             isLoading={isBooksLoading}
             isFetching={isBooksFetching}
             isError={isBooksError}
-            isPaginationDisabled={isBooksPlaceholderData}
+            isLoadingMore={isBooksLoadingMore}
             hasActiveRefinement={hasActiveRefinement}
             pagination={booksPagination}
             onRetry={refetchBooks}
             onClearRefinements={clearAllRefinements}
-            onPageChange={setPage}
+            onLoadMore={loadMore}
           />
         </div>
       </div>
