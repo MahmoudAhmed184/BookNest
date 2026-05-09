@@ -23,10 +23,6 @@ app.conf.beat_schedule = {
         "task": "apps.integrations.tasks.sync_external_books",
         "schedule": crontab(hour=0, minute=0),  # Run daily at midnight
     },
-    "update-book-metadata": {
-        "task": "apps.integrations.tasks.update_book_metadata",
-        "schedule": crontab(hour="*/6"),  # Run every 6 hours
-    },
 }
 
 

@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 
-from apps.integrations.models import ExternalEnrichmentRequest, ExternalSyncRun, ExternalSyncState
+from apps.integrations.models import ExternalEnrichmentRequest, ExternalSyncState
 from apps.integrations.services import ensure_default_sources, search_and_merge_external_books
 
 
@@ -14,11 +14,6 @@ def sync_external_books() -> int:
             defaults={"last_success_at": timezone.now(), "last_error_message": ""},
         )
     return len(sources)
-
-
-@shared_task(name="apps.integrations.tasks.sync_external_books_for_query")
-def sync_external_books_for_query(query: str, page_size: int = 20) -> dict[str, int]:
-    return search_and_merge_external_books(query=query, limit=page_size)
 
 
 @shared_task(name="apps.integrations.tasks.process_external_enrichment_request")
@@ -50,14 +45,3 @@ def enqueue_external_enrichment_request(*, request: ExternalEnrichmentRequest, p
         retry=False,
     )
 
-
-def enqueue_sync_external_books_for_query(query: str, page_size: int = 20):
-    return sync_external_books_for_query.apply_async(
-        kwargs={"query": query, "page_size": page_size},
-        retry=False,
-    )
-
-
-@shared_task(name="apps.integrations.tasks.update_book_metadata")
-def update_book_metadata() -> int:
-    return ExternalSyncRun.objects.filter(status=ExternalSyncRun.Status.PENDING).count()
