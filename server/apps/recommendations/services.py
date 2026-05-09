@@ -443,13 +443,6 @@ def refresh_catalog_recommendations(
     return replace_catalog_recommendations(source=source, ranked_books=ranked_books)
 
 
-@transaction.atomic
-def set_active_model(*, model: RecommendationModel) -> RecommendationModel:
-    model.is_active = True
-    model.save(update_fields=["is_active", "updated_at"])
-    return model
-
-
 def execute_recommendation_run(*, run: RecommendationRun) -> int:
     parameters = run.parameters or {}
     run.status = RecommendationRun.Status.RUNNING

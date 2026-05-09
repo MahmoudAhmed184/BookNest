@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 
 from apps.collections.models import CollectionPrivacy, ReadingCollection, ReadingProgress
 from apps.users import selectors as user_selectors
@@ -33,10 +32,6 @@ def collections_for_target_user(*, target_user: Any, viewer: Any) -> QuerySet[Re
     if user_selectors.can_view_private_profile_data(target_user=target_user, viewer=viewer):
         return queryset
     return queryset.filter(privacy=CollectionPrivacy.PUBLIC)
-
-
-def get_owned_collection(*, user: Any, collection_id: int) -> ReadingCollection:
-    return get_object_or_404(owned_collections_for_user(user=user), id=collection_id)
 
 
 def progress_queryset() -> QuerySet[ReadingProgress]:

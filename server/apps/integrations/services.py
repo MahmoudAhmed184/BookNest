@@ -16,7 +16,6 @@ from apps.integrations.models import (
     ExternalBookRecord,
     ExternalCatalogSource,
     ExternalEnrichmentRequest,
-    ExternalSyncRun,
     ExternalSyncState,
 )
 
@@ -361,14 +360,3 @@ def search_and_merge_external_books(*, query: str, limit: int = 20) -> dict[str,
         )
 
     return stats
-
-
-@transaction.atomic
-def start_sync_run(*, source: ExternalCatalogSource, query: str = "") -> ExternalSyncRun:
-    return ExternalSyncRun.objects.create(
-        source=source,
-        sync_type=ExternalSyncRun.SyncType.QUERY if query else ExternalSyncRun.SyncType.INCREMENTAL,
-        status=ExternalSyncRun.Status.RUNNING,
-        query=query,
-        started_at=timezone.now(),
-    )

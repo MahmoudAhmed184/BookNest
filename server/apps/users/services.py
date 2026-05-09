@@ -4,8 +4,6 @@ from typing import Any
 
 import cloudinary.uploader
 from django.db import transaction
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import Profile, UserPreference
 
@@ -27,15 +25,6 @@ def ensure_user_defaults(*, user: Any) -> None:
 def create_profile(*, user: Any, validated_data: dict[str, Any]) -> Profile:
     profile = Profile.objects.create(user=user, **validated_data)
     profile.full_clean()
-    return profile
-
-
-@transaction.atomic
-def update_profile(*, profile: Profile, validated_data: dict[str, Any]) -> Profile:
-    for field, value in validated_data.items():
-        setattr(profile, field, value)
-    profile.full_clean()
-    profile.save()
     return profile
 
 
@@ -63,14 +52,3 @@ def upload_profile_picture(*, profile: Profile, image_file: Any) -> dict[str, An
     profile.picture = upload_result["secure_url"]
     profile.save(update_fields=["picture", "updated_at"])
     return upload_result
-
-
-def blacklist_logout_tokens(*, user: Any, refresh_token: str | None = None) -> None:
-    if refresh_token:
-        refresh = RefreshToken(refresh_token)  # type: ignore[arg-type]
-        refresh.blacklist()
-        return
-
-    if user.is_authenticated:
-        for outstanding_token in OutstandingToken.objects.filter(user=user):
-            BlacklistedToken.objects.get_or_create(token=outstanding_token)

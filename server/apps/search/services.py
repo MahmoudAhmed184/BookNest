@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import date
 from time import perf_counter
 from typing import Any
 
@@ -412,14 +411,6 @@ def related_book_suggestions(*, book: Book, limit: int = 10):
         .distinct()
         .order_by("-same_author", "-same_genre", "-trending_score", "-average_rating", "title", "id")[:limit]
     )
-
-
-def parse_date(value: Any) -> date | None:
-    if not value:
-        return None
-    if isinstance(value, date):
-        return value
-    return date.fromisoformat(str(value))
 
 
 @transaction.atomic

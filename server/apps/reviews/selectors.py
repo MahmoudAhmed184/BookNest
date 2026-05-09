@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from django.shortcuts import get_object_or_404
-
 from apps.reviews.models import Rating, Review
 from apps.users import selectors as user_selectors
 
@@ -34,10 +32,6 @@ def ratings_for_book(*, book_id: int) -> QuerySet[Rating]:
     return rating_queryset().filter(book_id=book_id)
 
 
-def get_rating_for_user(*, rating_id: int, user: Any) -> Rating:
-    return get_object_or_404(rating_queryset(), id=rating_id, user=user)
-
-
 def review_queryset() -> QuerySet[Review]:
     return Review.objects.select_related("user", "book", "rating").filter(is_archived=False)
 
@@ -53,7 +47,3 @@ def reviews_for_target_user(*, target_user: Any, viewer: Any) -> QuerySet[Review
 
 def reviews_for_book(*, book_id: int) -> QuerySet[Review]:
     return review_queryset().filter(book_id=book_id)
-
-
-def get_review_for_user(*, review_id: int, user: Any) -> Review:
-    return get_object_or_404(review_queryset(), id=review_id, user=user)

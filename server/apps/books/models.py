@@ -2,8 +2,6 @@ from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
-from django.db.models import Value
-from django.db.models.aggregates import StringAgg
 
 from apps.common.models import SoftDeleteModel, TimeStampedModel
 
@@ -23,24 +21,6 @@ class MariaDBFullTextIndex(models.Index):
 class BookQuerySet(models.QuerySet):
     def visible(self):
         return self.filter(is_archived=False, is_public=True)
-
-    def with_author_labels(self):
-        return self.annotate(
-            author_names_agg=StringAgg(
-                "book_authors__author__name",
-                delimiter=Value(", "),
-                order_by=("book_authors__position", "book_authors__author__name"),
-            )
-        )
-
-    def with_genre_labels(self):
-        return self.annotate(
-            genre_labels_agg=StringAgg(
-                "book_genres__genre__name",
-                delimiter=Value(", "),
-                order_by=("book_genres__position", "book_genres__genre__name"),
-            )
-        )
 
 
 class Author(TimeStampedModel):
@@ -233,13 +213,6 @@ class Book(SoftDeleteModel):
         return self.title
 
 
-class BookAuthorQuerySet(models.QuerySet):
-    def names_by_book(self):
-        return self.values("book_id").annotate(
-            author_names=StringAgg("author__name", delimiter=Value(", "), order_by=("position", "author__name"))
-        )
-
-
 class BookAuthor(TimeStampedModel):
     class Role(models.TextChoices):
         AUTHOR = "author", "Author"
@@ -254,8 +227,6 @@ class BookAuthor(TimeStampedModel):
     role = models.CharField(max_length=24, choices=Role.choices, default=Role.AUTHOR, db_index=True)
     position = models.PositiveSmallIntegerField(default=0, db_index=True)
     contribution_note = models.CharField(max_length=255, blank=True)
-
-    objects = BookAuthorQuerySet.as_manager()
 
     class Meta:
         ordering = ("book_id", "position", "author__name")
@@ -274,20 +245,11 @@ class BookAuthor(TimeStampedModel):
         return f"{self.book_id}:{self.author_id}:{self.role}"
 
 
-class BookGenreQuerySet(models.QuerySet):
-    def labels_by_book(self):
-        return self.values("book_id").annotate(
-            genre_labels=StringAgg("genre__name", delimiter=Value(", "), order_by=("position", "genre__name"))
-        )
-
-
 class BookGenre(TimeStampedModel):
     book = models.ForeignKey(Book, related_name="book_genres", on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, related_name="book_genres", on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=False, db_index=True)
     position = models.PositiveSmallIntegerField(default=0, db_index=True)
-
-    objects = BookGenreQuerySet.as_manager()
 
     class Meta:
         ordering = ("book_id", "position", "genre__name")

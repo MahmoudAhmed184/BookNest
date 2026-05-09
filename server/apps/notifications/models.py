@@ -14,9 +14,6 @@ class NotificationQuerySet(models.QuerySet):
     def unread(self):
         return self.visible().filter(is_read=False)
 
-    def read(self):
-        return self.visible().filter(is_read=True)
-
     def for_recipient(self, user):
         return self.visible().filter(recipient=user)
 
@@ -25,9 +22,6 @@ class NotificationQuerySet(models.QuerySet):
 
     def mark_unread(self):
         return self.update(is_read=False, read_at=None)
-
-    def unread_counts(self):
-        return self.unread().values("recipient_id").annotate(unread_count=models.Count("id"))
 
 
 class Notification(TimeStampedModel):

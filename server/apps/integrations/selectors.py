@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from apps.integrations.models import (
-    ExternalCatalogSource,
     ExternalEnrichmentRequest,
     ExternalSyncRun,
     ExternalSyncState,
@@ -11,10 +10,6 @@ from apps.integrations.models import (
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
-
-
-def active_sources() -> QuerySet[ExternalCatalogSource]:
-    return ExternalCatalogSource.objects.filter(is_active=True)
 
 
 def enrichment_requests() -> QuerySet[ExternalEnrichmentRequest]:

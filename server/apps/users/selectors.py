@@ -35,16 +35,8 @@ def visible_profiles_for_viewer(*, viewer: Any) -> QuerySet[Profile]:
     return queryset.filter(public_filter)
 
 
-def profile_for_user(*, user: Any) -> Profile | None:
-    return profile_queryset().filter(user=user).first()
-
-
 def get_profile_for_user(*, user: Any) -> Profile:
     return get_object_or_404(profile_queryset(), user=user)
-
-
-def get_profile(*, pk: int) -> Profile:
-    return get_object_or_404(profile_queryset(), pk=pk)
 
 
 def preference_for_user(*, user: Any) -> UserPreference:

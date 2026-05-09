@@ -9,20 +9,7 @@ from django.utils import timezone
 from apps.common.models import TimeStampedModel
 
 
-class UserQuerySet(models.QuerySet):
-    def active(self):
-        return self.filter(is_active=True)
-
-    def with_unread_notifications(self):
-        return self.annotate(
-            unread_notification_count=models.Count(
-                "notifications",
-                filter=models.Q(notifications__is_read=False, notifications__is_deleted=False),
-            )
-        )
-
-
-class UserManager(BaseUserManager.from_queryset(UserQuerySet)):
+class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def create_user(self, email: str, password: str | None = None, **extra_fields):
