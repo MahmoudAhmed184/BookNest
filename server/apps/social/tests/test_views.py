@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.notifications.models import Notification
 from apps.social.models import FollowRelationship
 from apps.users.models import Profile
 
@@ -62,3 +63,17 @@ class UserScopedFollowViewsTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["id"], target_follow.id)
+
+    def test_follow_endpoint_creates_notification_for_followed_user(self):
+        viewer = self.create_reader("viewer@example.com", "viewer")
+        target = self.create_reader("target@example.com", "target")
+
+        self.client.force_authenticate(user=viewer)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post("/api/v1/follows/", {"following": target.id}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        notification = Notification.objects.get(recipient=target, action=Notification.Action.FOLLOWED)
+        self.assertEqual(notification.actor_object_id, viewer.id)
+        self.assertEqual(notification.payload["follower_id"], viewer.id)
+        self.assertFalse(Notification.objects.filter(recipient=viewer, action=Notification.Action.FOLLOWED).exists())
