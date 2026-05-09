@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -18,6 +19,24 @@ import type {
 } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
+
+function sortBookReviews(
+  reviews: BookReview[],
+  sort: ReviewSortParams
+): BookReview[] {
+  const direction = sort.order === "asc" ? 1 : -1;
+
+  return [...reviews].sort((a, b) => {
+    if (sort.sortBy === "upvote_count") {
+      return ((a.upvote_count ?? 0) - (b.upvote_count ?? 0)) * direction;
+    }
+
+    return (
+      new Date(a.reviewed_at ?? a.created_at ?? 0).getTime() -
+      new Date(b.reviewed_at ?? b.created_at ?? 0).getTime()
+    ) * direction;
+  });
+}
 
 interface UseBookPageDataResult {
   collections?: ReadingCollection[] | undefined;
@@ -54,8 +73,8 @@ export function useBookPageData(
     queryFn: () => getBook(id),
   });
   const reviewsQuery = useQuery({
-    queryKey: catalogKeys.reviews(id, reviewSort.sortBy, reviewSort.order),
-    queryFn: () => getReviews(id, reviewSort),
+    queryKey: catalogKeys.reviewsBase(id),
+    queryFn: () => getReviews(id),
   });
   const ratingsQuery = useQuery({
     queryKey: catalogKeys.ratings(id),
@@ -74,10 +93,18 @@ export function useBookPageData(
     enabled: Boolean(token),
   });
 
+  const sortedReviews = useMemo(
+    () =>
+      reviewsQuery.data
+        ? sortBookReviews(reviewsQuery.data, reviewSort)
+        : undefined,
+    [reviewsQuery.data, reviewSort]
+  );
+
   return {
     collections: collectionsQuery.data,
     book: bookQuery.data,
-    reviews: reviewsQuery.data,
+    reviews: sortedReviews,
     ratings: ratingsQuery.data,
     reviewVotes: reviewVotesQuery.data,
     userRating: userRatingQuery.data,

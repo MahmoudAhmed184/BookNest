@@ -68,18 +68,19 @@ export function BookHero({
 
   return (
     <section
-      className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden pb-6 pt-6 sm:pb-10 sm:pt-10"
+      className="relative left-1/2 w-screen -translate-x-1/2 pb-6 pt-6 sm:pb-10 sm:pt-10"
       aria-labelledby="book-title"
     >
-      {canShowCover ? (
-        <img
-          src={cover ?? undefined}
-          alt=""
-          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-15 blur-3xl"
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary-black/20 via-primary-black/75 to-primary-black" aria-hidden="true" />
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+        {canShowCover ? (
+          <img
+            src={cover ?? undefined}
+            alt=""
+            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-15 blur-3xl"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-black/20 via-primary-black/75 to-primary-black" />
+      </div>
       <div className="container relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="mx-auto w-full max-w-[320px] lg:sticky lg:top-28 lg:mx-0 lg:max-w-none lg:self-start">
           <div className="overflow-hidden rounded-xl border border-[var(--surface-glass-border)] bg-secondary-black shadow-lg">
@@ -107,7 +108,7 @@ export function BookHero({
         </aside>
         <div className="min-w-0">
           <BookSummary book={book} authors={authors} />
-          <div className="glass-card mt-6 p-4 sm:p-5">
+          <div className="glass-card relative z-30 mt-6 overflow-visible p-4 sm:p-5">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -153,7 +154,7 @@ export function BookHero({
               />
             </div>
           </div>
-          <div className="glass-card mt-6 p-5 sm:p-7">
+          <div className="glass-card relative z-10 mt-6 p-5 sm:p-7">
             <BookDescription
               description={description}
               isExpanded={isDescriptionExpanded}

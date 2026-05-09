@@ -46,7 +46,7 @@ function findCollectionByStatus(
 export default function BookPage(): ReactElement {
   const { id } = useParams<BookRouteParams>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, authUser } = useOptionalAuth();
+  const { token } = useOptionalAuth();
   const sortBy = parseReviewSortBy(searchParams.get("sort_by"));
   const order = parseReviewSortOrder(searchParams.get("order"));
   const [rating, setRating] = useState(0);
@@ -197,7 +197,6 @@ export default function BookPage(): ReactElement {
         isRatingsError={isRatingsError || isReviewVotesError}
         sortBy={sortBy}
         order={order}
-        currentUserId={authUser?.id ?? null}
         isUpdatingReview={bookActions.isUpdatingReview}
         isVotingReview={bookActions.isVotingReview}
         onSortChange={(nextSortBy, nextOrder) => {
@@ -320,15 +319,17 @@ function AddToListDialog({
         return {
           ...cachedCollection,
           item_count: alreadyCounted ? baseCount : baseCount + 1,
-          items: cachedCollection.items
-            ? [
+          ...(cachedCollection.items
+            ? {
+                items: [
                 ...cachedCollection.items.filter(
                   (item) =>
                     !(item.collection === collection.id && item.book === bookId)
                 ),
                 collectionBook,
-              ]
-            : cachedCollection.items,
+                ],
+              }
+            : {}),
         };
       });
       setOptimisticAddedCollectionIds((current) => {
@@ -368,9 +369,15 @@ function AddToListDialog({
         return {
           ...cachedCollection,
           item_count: wasCounted ? Math.max(0, baseCount - 1) : baseCount,
-          items: cachedCollection.items?.map((item) =>
-            item.id === collectionBook.id ? { ...item, is_archived: true } : item
-          ),
+          ...(cachedCollection.items
+            ? {
+                items: cachedCollection.items.map((item) =>
+                  item.id === collectionBook.id
+                    ? { ...item, is_archived: true }
+                    : item
+                ),
+              }
+            : {}),
         };
       });
       setOptimisticRemovedItemIds((current) => {
