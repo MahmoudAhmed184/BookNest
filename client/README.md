@@ -226,7 +226,7 @@ Tailwind CSS is configured through `@import 'tailwindcss'`, `@theme inline`, and
 
 Reusable UI primitives currently exported from `src/components/ui/index.ts` are `BookCard`, `BookCardSkeleton`, `EmptyState`, `ErrorState`, `FieldError`, `InlineSpinner`, `LoadMorePagination`, `StarRating`, and `ToggleSwitch`.
 
-Static public assets live in `public/`: `logo.svg`, `Logo.png`, `highlighted-quote.jpg`, `man-in-the-dark.jpg`, `user_profile.png`, and `william_shakespere.jpg`. The favicon, navbar/footer logo, and auth shell use `/logo.svg`; the login page uses `/highlighted-quote.jpg`.
+Static public assets live in `public/`: `logo.svg`, `highlighted-quote.jpg`, and `user_profile.png`. The favicon, navbar/footer logo, and auth shell use `/logo.svg`; the login page uses `/highlighted-quote.jpg`; profile fallback URLs can use `/user_profile.png`.
 
 ## Environment Variables
 
