@@ -28,6 +28,7 @@ class CollectionBookSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ("id", "added_by", "is_archived", "created_at", "updated_at")
+        validators = []
 
 
 class ReadingCollectionSerializer(serializers.ModelSerializer):
