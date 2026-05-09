@@ -13,7 +13,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--output-dir", default="exports/recommendations")
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **options):
         output_dir = Path(options["output_dir"])
         output_dir.mkdir(parents=True, exist_ok=True)
 

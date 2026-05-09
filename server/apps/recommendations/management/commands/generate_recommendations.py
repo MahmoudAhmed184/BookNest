@@ -26,7 +26,7 @@ class Command(BaseCommand):
             help="Do not train a model when no active artifact is available; use fallback candidates.",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **options):
         user_id = options["user_id"]
         generate_all = options["all"]
         if bool(user_id) == bool(generate_all):

@@ -606,7 +606,7 @@ class Command(BaseCommand):
             help="Skip autocomplete/search-label rebuild after applying changes.",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **options):
         apply = options["apply"]
         plan = self.build_plan()
         self.print_plan(plan=plan, apply=apply)

@@ -24,7 +24,8 @@ def _recommendations_enabled(user) -> bool:
 
 
 @receiver(post_save, sender=Rating)
-def trigger_recommendations_after_rating(sender, instance: Rating, created: bool, **kwargs) -> None:
+def trigger_recommendations_after_rating(sender, instance: Rating, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.is_archived or not _recommendations_enabled(instance.user):
         return
 

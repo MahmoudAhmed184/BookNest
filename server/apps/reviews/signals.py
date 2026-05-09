@@ -7,17 +7,20 @@ from apps.reviews.services import sync_book_rating_stats, sync_book_review_count
 
 @receiver(post_save, sender=Rating)
 @receiver(post_delete, sender=Rating)
-def sync_rating_stats(sender, instance: Rating, **kwargs) -> None:
+def sync_rating_stats(sender, instance: Rating, **_kwargs) -> None:
+    del sender
     sync_book_rating_stats(book=instance.book)
 
 
 @receiver(post_save, sender=Review)
 @receiver(post_delete, sender=Review)
-def sync_review_stats(sender, instance: Review, **kwargs) -> None:
+def sync_review_stats(sender, instance: Review, **_kwargs) -> None:
+    del sender
     sync_book_review_count(book=instance.book)
 
 
 @receiver(post_save, sender=ReviewVote)
 @receiver(post_delete, sender=ReviewVote)
-def sync_review_votes(sender, instance: ReviewVote, **kwargs) -> None:
+def sync_review_votes(sender, instance: ReviewVote, **_kwargs) -> None:
+    del sender
     sync_review_vote_counts(review=instance.review)

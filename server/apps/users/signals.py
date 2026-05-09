@@ -10,13 +10,15 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=User)
-def create_user_defaults(sender, instance, created, **kwargs) -> None:
+def create_user_defaults(sender, instance, created, **_kwargs) -> None:
+    del sender
     if not created:
         return
     ensure_user_defaults(user=instance)
 
 
 @receiver(post_save, sender=Profile)
-def create_default_collections(sender, instance: Profile, created, **kwargs) -> None:
+def create_default_collections(sender, instance: Profile, created, **_kwargs) -> None:
+    del sender
     if created:
         create_default_collections_for_user(user=instance.user)

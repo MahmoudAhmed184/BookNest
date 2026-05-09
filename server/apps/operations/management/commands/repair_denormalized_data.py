@@ -10,7 +10,7 @@ from apps.reviews.services import sync_book_rating_stats, sync_book_review_count
 class Command(BaseCommand):
     help = "Repair denormalized counters and search-display labels."
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **_options):
         for author in Author.objects.all():
             sync_author_book_count(author=author)
         for genre in Genre.objects.all():

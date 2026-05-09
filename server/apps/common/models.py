@@ -22,6 +22,7 @@ class SoftDeleteModel(TimeStampedModel):
         self.save(update_fields=["is_archived", "archived_at", "archive_reason", "updated_at"])
 
     def delete(self, using=None, keep_parents=False):
+        del using, keep_parents
         self.archive()
 
     class Meta:

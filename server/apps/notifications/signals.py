@@ -38,7 +38,8 @@ def _create_after_commit(**kwargs) -> None:
 
 
 @receiver(post_save, sender=User)
-def user_welcome_notification(sender, instance, created: bool, **kwargs) -> None:
+def user_welcome_notification(sender, instance, created: bool, **_kwargs) -> None:
+    del sender
     if not created or not _in_app_enabled(instance):
         return
     _create_after_commit(
@@ -50,7 +51,8 @@ def user_welcome_notification(sender, instance, created: bool, **kwargs) -> None
 
 
 @receiver(post_save, sender=FollowRelationship)
-def follow_notification(sender, instance: FollowRelationship, created: bool, **kwargs) -> None:
+def follow_notification(sender, instance: FollowRelationship, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.follower_id == instance.following_id:
         return
     if not _in_app_enabled(instance.following, preference_name="notify_on_follow"):
@@ -67,7 +69,8 @@ def follow_notification(sender, instance: FollowRelationship, created: bool, **k
 
 
 @receiver(post_save, sender=ReviewVote)
-def review_vote_notification(sender, instance: ReviewVote, created: bool, **kwargs) -> None:
+def review_vote_notification(sender, instance: ReviewVote, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.user_id == instance.review.user_id:
         return
     recipient = instance.review.user

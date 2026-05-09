@@ -7,12 +7,14 @@ from apps.collections.services import sync_book_collection_count, sync_collectio
 
 @receiver(post_save, sender=CollectionBook)
 @receiver(post_delete, sender=CollectionBook)
-def sync_collection_book_counters(sender, instance: CollectionBook, **kwargs) -> None:
+def sync_collection_book_counters(sender, instance: CollectionBook, **_kwargs) -> None:
+    del sender
     sync_collection_item_count(collection=instance.collection)
     sync_book_collection_count(book=instance.book)
 
 
 @receiver(post_save, sender=ReadingProgress)
 @receiver(post_delete, sender=ReadingProgress)
-def sync_progress_counters(sender, instance: ReadingProgress, **kwargs) -> None:
+def sync_progress_counters(sender, instance: ReadingProgress, **_kwargs) -> None:
+    del sender
     sync_book_collection_count(book=instance.book)

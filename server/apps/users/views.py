@@ -28,7 +28,7 @@ from apps.users.serializers import (
 
 
 class IsProfileOwnerOrStaffOrReadOnly(BasePermission):
-    def has_object_permission(self, request, view, obj: Profile) -> bool:
+    def has_object_permission(self, request, _view, obj: Profile) -> bool:
         if request.method in SAFE_METHODS:
             return selectors.can_view_profile(target_user=obj.user, viewer=request.user)
         return bool(

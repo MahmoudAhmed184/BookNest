@@ -11,7 +11,8 @@ from apps.social.services import sync_follow_counts
 
 @receiver(post_save, sender=FollowRelationship)
 @receiver(post_delete, sender=FollowRelationship)
-def sync_follow_relationship_counts(sender, instance: FollowRelationship, **kwargs) -> None:
+def sync_follow_relationship_counts(sender, instance: FollowRelationship, **_kwargs) -> None:
+    del sender
     sync_follow_counts(follower=instance.follower, following=instance.following)
 
 
@@ -67,7 +68,8 @@ def _create_feed_event_after_commit(
 
 
 @receiver(post_save, sender=Rating)
-def rating_created_feed_event(sender, instance: Rating, created: bool, **kwargs) -> None:
+def rating_created_feed_event(sender, instance: Rating, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.is_archived:
         return
     _create_feed_event_after_commit(
@@ -82,7 +84,8 @@ def rating_created_feed_event(sender, instance: Rating, created: bool, **kwargs)
 
 
 @receiver(post_save, sender=Review)
-def review_created_feed_event(sender, instance: Review, created: bool, **kwargs) -> None:
+def review_created_feed_event(sender, instance: Review, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.is_archived:
         return
     _create_feed_event_after_commit(
@@ -97,7 +100,8 @@ def review_created_feed_event(sender, instance: Review, created: bool, **kwargs)
 
 
 @receiver(post_save, sender=CollectionBook)
-def collection_book_feed_event(sender, instance: CollectionBook, created: bool, **kwargs) -> None:
+def collection_book_feed_event(sender, instance: CollectionBook, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.is_archived:
         return
     actor = instance.added_by or instance.collection.owner
@@ -113,7 +117,8 @@ def collection_book_feed_event(sender, instance: CollectionBook, created: bool, 
 
 
 @receiver(post_save, sender=ReadingCollection)
-def collection_created_feed_event(sender, instance: ReadingCollection, created: bool, **kwargs) -> None:
+def collection_created_feed_event(sender, instance: ReadingCollection, created: bool, **_kwargs) -> None:
+    del sender
     if not created or instance.is_archived or instance.is_default:
         return
     _create_feed_event_after_commit(

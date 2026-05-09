@@ -16,7 +16,7 @@ class Command(BaseCommand):
         parser.add_argument("--min-ratings", type=int, default=services.DEFAULT_MIN_RATINGS_FOR_RECOMMENDATIONS)
         parser.add_argument("--version", default=None)
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **options):
         model = services.train_recommendation_model(
             model_type=options["model_type"],
             min_ratings_per_user=options["min_ratings"],

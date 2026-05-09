@@ -12,7 +12,7 @@ class JWTCookieAuthenticationHeaderOnlyScheme(OpenApiAuthenticationExtension):
     name = "jwtHeaderAuth"
     priority = 1
 
-    def get_security_definition(self, auto_schema: Any) -> dict[str, Any]:
+    def get_security_definition(self, _auto_schema: Any) -> dict[str, Any]:
         return build_bearer_security_scheme_object(
             header_name=getattr(api_settings, "AUTH_HEADER_NAME", "HTTP_AUTHORIZATION"),
             token_prefix=api_settings.AUTH_HEADER_TYPES[0],

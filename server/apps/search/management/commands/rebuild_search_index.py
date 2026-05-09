@@ -6,7 +6,7 @@ from apps.search.services import rebuild_autocomplete_terms, rebuild_book_search
 class Command(BaseCommand):
     help = "Rebuild denormalized book search labels and autocomplete terms."
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **_options):
         book_documents = rebuild_book_search_labels()
         autocomplete_terms = rebuild_autocomplete_terms()
         self.stdout.write(

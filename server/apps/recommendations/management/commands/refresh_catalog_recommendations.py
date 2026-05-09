@@ -11,7 +11,7 @@ class Command(BaseCommand):
         parser.add_argument("--source", default=CatalogRecommendation.Source.TRENDING)
         parser.add_argument("--limit", type=int, default=50)
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **options):
         source = options["source"]
         limit = options["limit"]
         recommendations = refresh_catalog_recommendations(source=source, limit=limit)

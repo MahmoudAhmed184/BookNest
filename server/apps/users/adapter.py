@@ -4,7 +4,7 @@ from django.core.mail import EmailMultiAlternatives
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
-    def send_mail(self, template_prefix, email_address, context):
+    def send_mail(self, _template_prefix, email_address, context):
         uid = context.get("uid")
         token = context.get("token")
 
