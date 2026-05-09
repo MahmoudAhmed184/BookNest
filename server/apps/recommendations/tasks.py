@@ -46,6 +46,8 @@ def generate_recommendations(run_id: int) -> int:
 def ensure_task_log(*, run: RecommendationRun, task_id: str) -> TaskLog:
     if run.task_log_id:
         task_log = run.task_log
+        if task_log is None:
+            task_log = TaskLog.objects.get(pk=run.task_log_id)
         task_log.task_id = task_id
         task_log.task_type = task_type_for_run(run)
         task_log.status = TaskLog.Status.PENDING

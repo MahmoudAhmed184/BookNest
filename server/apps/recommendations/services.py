@@ -151,6 +151,7 @@ def load_recommendation_model(
     model_id: int | None = None,
 ) -> tuple[RecommendationEngine, RecommendationModel] | None:
     try:
+        model: RecommendationModel | None
         if model_id:
             model = RecommendationModel.objects.get(pk=model_id)
         else:
@@ -179,6 +180,14 @@ def load_recommendation_model(
         ValueError,
     ) as exc:
         logger.warning("Could not load recommendation model: %s", exc)
+        return None
+
+
+def _try_train_recommendation_model(*, min_ratings_per_user: int) -> RecommendationModel | None:
+    try:
+        return train_recommendation_model(min_ratings_per_user=min_ratings_per_user)
+    except (OSError, pickle.PickleError) as exc:
+        logger.warning("Could not train recommendation model; using fallback recommendations: %s", exc)
         return None
 
 
@@ -242,15 +251,17 @@ def _recommendation_candidates(
     source = UserRecommendation.Source.PERSONALIZED
     reason: dict[str, Any] = {"strategy": "personalized"}
     candidates: list[tuple[int, float]] = []
+    attempted_training = False
 
     if _preference_enabled(user=user):
         if force_train:
-            model_record = train_recommendation_model(min_ratings_per_user=min_ratings_per_user)
+            attempted_training = True
+            model_record = _try_train_recommendation_model(min_ratings_per_user=min_ratings_per_user)
             if model_record:
                 model_id = model_record.id
         model_data = load_recommendation_model(model_id=model_id)
-        if not model_data and train_if_missing:
-            model_record = train_recommendation_model(min_ratings_per_user=min_ratings_per_user)
+        if not model_data and train_if_missing and not attempted_training:
+            model_record = _try_train_recommendation_model(min_ratings_per_user=min_ratings_per_user)
             if model_record:
                 model_data = load_recommendation_model(model_id=model_record.id)
 
@@ -446,9 +457,10 @@ def execute_recommendation_run(*, run: RecommendationRun) -> int:
     run.error_message = ""
     run.save(update_fields=["status", "started_at", "error_message", "updated_at"])
 
-    if run.task_log_id:
-        run.task_log.status = run.task_log.Status.RUNNING
-        run.task_log.save(update_fields=["status", "updated_at"])
+    task_log = run.task_log if run.task_log_id else None
+    if task_log is not None:
+        task_log.status = task_log.Status.RUNNING
+        task_log.save(update_fields=["status", "updated_at"])
 
     try:
         affected = 0
@@ -473,10 +485,10 @@ def execute_recommendation_run(*, run: RecommendationRun) -> int:
         run.parameters = {**parameters, "affected_count": affected}
         run.save(update_fields=["status", "finished_at", "parameters", "updated_at"])
 
-        if run.task_log_id:
-            run.task_log.status = run.task_log.Status.SUCCESS
-            run.task_log.finished_at = run.finished_at
-            run.task_log.save(update_fields=["status", "finished_at", "updated_at"])
+        if task_log is not None:
+            task_log.status = task_log.Status.SUCCESS
+            task_log.finished_at = run.finished_at
+            task_log.save(update_fields=["status", "finished_at", "updated_at"])
         _notify_recommendation_run_success(run=run, affected=affected)
         return affected
     except Exception as exc:
@@ -484,11 +496,11 @@ def execute_recommendation_run(*, run: RecommendationRun) -> int:
         run.finished_at = timezone.now()
         run.error_message = str(exc)
         run.save(update_fields=["status", "finished_at", "error_message", "updated_at"])
-        if run.task_log_id:
-            run.task_log.status = run.task_log.Status.FAILURE
-            run.task_log.finished_at = run.finished_at
-            run.task_log.error_message = str(exc)
-            run.task_log.save(update_fields=["status", "finished_at", "error_message", "updated_at"])
+        if task_log is not None:
+            task_log.status = task_log.Status.FAILURE
+            task_log.finished_at = run.finished_at
+            task_log.error_message = str(exc)
+            task_log.save(update_fields=["status", "finished_at", "error_message", "updated_at"])
         raise
 
 

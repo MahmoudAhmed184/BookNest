@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import pandas as pd
 from django.contrib.auth import get_user_model
@@ -66,6 +67,17 @@ class RecommendationServiceTests(TestCase):
             n_recommendations=10,
             train_if_missing=False,
         )
+
+        self.assertEqual([recommendation.book_id for recommendation in recommendations], [self.candidate.id])
+        self.assertEqual(recommendations[0].source, "fallback")
+
+    def test_generation_falls_back_when_training_artifact_cannot_be_saved(self) -> None:
+        with patch.object(services, "train_recommendation_model", side_effect=PermissionError("media unwritable")):
+            recommendations = services.generate_recommendations_for_user(
+                user=self.user,
+                n_recommendations=10,
+                train_if_missing=True,
+            )
 
         self.assertEqual([recommendation.book_id for recommendation in recommendations], [self.candidate.id])
         self.assertEqual(recommendations[0].source, "fallback")
