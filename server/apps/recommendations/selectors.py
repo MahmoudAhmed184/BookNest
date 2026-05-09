@@ -16,12 +16,6 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
 
 
-def active_recommendation_model(*, model_id: int | None = None) -> RecommendationModel | None:
-    if model_id:
-        return RecommendationModel.objects.filter(pk=model_id).first()
-    return RecommendationModel.objects.filter(is_active=True).first()
-
-
 def recommendation_models() -> QuerySet[RecommendationModel]:
     return RecommendationModel.objects.all()
 

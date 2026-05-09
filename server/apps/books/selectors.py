@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 
 from apps.books.models import Author, Book, Genre, RelatedBook
 
@@ -115,10 +114,6 @@ def book_catalog_queryset(
     return queryset.distinct().order_by(*BOOK_ORDERINGS.get(ordering, BOOK_ORDERINGS["trending"]))
 
 
-def get_book(*, pk: int, include_archived: bool = False) -> Book:
-    return get_object_or_404(book_queryset(include_archived=include_archived), pk=pk)
-
-
 def author_queryset(*, include_inactive: bool = False) -> QuerySet[Author]:
     queryset = Author.objects.all()
     if not include_inactive:
@@ -141,10 +136,6 @@ def author_catalog_queryset(
     return queryset.order_by(*AUTHOR_ORDERINGS.get(ordering, AUTHOR_ORDERINGS["name"]))
 
 
-def get_author(*, pk: int) -> Author:
-    return get_object_or_404(author_queryset(), pk=pk)
-
-
 def genre_queryset() -> QuerySet[Genre]:
     return Genre.objects.all().order_by(*GENRE_ORDERINGS["name"])
 
@@ -164,10 +155,6 @@ def genre_catalog_queryset(
     if is_featured is not None:
         queryset = queryset.filter(is_featured=is_featured)
     return queryset.order_by(*GENRE_ORDERINGS.get(ordering, GENRE_ORDERINGS["name"]))
-
-
-def get_genre(*, pk: int) -> Genre:
-    return get_object_or_404(genre_queryset(), pk=pk)
 
 
 def books_for_author(*, author_id: int) -> QuerySet[Book]:
