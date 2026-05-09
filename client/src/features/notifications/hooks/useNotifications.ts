@@ -188,7 +188,7 @@ function updateNotificationListCaches(
   queryClient: QueryClient,
   updater: (notifications: Notification[]) => Notification[]
 ): void {
-  queryClient.setQueriesData<unknown>({ queryKey: notificationKeys.all }, (cached) => {
+  queryClient.setQueriesData<unknown>({ queryKey: notificationKeys.all }, (cached: unknown) => {
     if (!Array.isArray(cached)) return cached;
     return updater(cached as Notification[]);
   });

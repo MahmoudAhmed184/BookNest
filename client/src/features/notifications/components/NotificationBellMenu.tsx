@@ -32,12 +32,7 @@ export function NotificationBellMenu({
     isMarkingAllAsRead,
     markAllAsRead,
     markRead,
-    refetch,
   } = useNotifications(token, Boolean(token) && isOpen, { page_size: 6 });
-
-  useEffect(() => {
-    if (isOpen) refetch();
-  }, [isOpen, refetch]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -98,7 +93,7 @@ export function NotificationBellMenu({
             </p>
             <p className="text-xs text-primary-gray" aria-live="polite">
               {unreadCount} unread
-              {isFetching ? " · refreshing" : ""}
+              {isFetching ? <span className="sr-only">, refreshing</span> : null}
             </p>
           </div>
           <button

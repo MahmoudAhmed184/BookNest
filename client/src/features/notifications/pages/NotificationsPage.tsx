@@ -90,7 +90,7 @@ export default function Notifications(): ReactElement {
           <h1 className="display-heading">Notifications</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-primary-gray">
             Follows, reviews, ratings, and account updates are grouped here so unread activity stays easy to scan.
-            {isFetching && !isLoading ? " Refreshing..." : ""}
+            {isFetching && !isLoading ? <span className="sr-only"> Refreshing.</span> : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
