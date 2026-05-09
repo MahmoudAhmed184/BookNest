@@ -12,15 +12,17 @@ export interface NavbarProfile {
 export interface NavItem {
   to: string;
   label: string;
+  authRequired?: boolean;
 }
 
-export const primaryLinks: NavItem[] = [
+export const primaryLinks = [
   { to: routePaths.explore, label: "Explore" },
-  { to: routePaths.categories, label: "Categories" },
-  { to: routePaths.authors, label: "Authors" },
-  { to: routePaths.feed, label: "Feed" },
-  { to: routePaths.search, label: "Search" },
-];
+  { to: routePaths.feed, label: "Feed", authRequired: true },
+] satisfies NavItem[];
+
+export function getPrimaryLinks(isAuthenticated: boolean): NavItem[] {
+  return primaryLinks.filter((link) => !link.authRequired || isAuthenticated);
+}
 
 export function resolveProfileImage(src?: string | null): string | undefined {
   if (!src) return undefined;
@@ -29,11 +31,10 @@ export function resolveProfileImage(src?: string | null): string | undefined {
 
 export function navLinkClass(isActive: boolean): string {
   return [
-    "relative flex min-h-[44px] items-center rounded-full px-3 py-2 text-sm font-medium",
-    "after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:origin-left after:rounded-full after:bg-accent after:transition-transform after:duration-200",
+    "inline-flex min-h-12 items-center rounded-full px-4 py-2 text-sm font-bold",
     isActive
-      ? "bg-secondary-black text-primary-white after:scale-x-100"
-      : "text-primary-gray hover:text-primary-white after:scale-x-0 hover:after:scale-x-100",
+      ? "bg-secondary-black/80 text-primary-white"
+      : "text-primary-white/90 hover:bg-secondary-black/70 hover:text-primary-white",
   ].join(" ");
 }
 

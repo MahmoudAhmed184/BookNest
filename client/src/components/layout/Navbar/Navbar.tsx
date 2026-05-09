@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
 import { useAuth } from "../../../features/auth/hooks/useAuth";
+import { NotificationBellMenu } from "../../../features/notifications/components/NotificationBellMenu";
 import { useUnreadNotificationCount } from "../../../features/notifications/hooks/useNotifications";
 import { useNavbarProfile } from "../../../features/profile/hooks/useNavbarProfile";
 import { useScrolled } from "../../../hooks/useScrolled";
+import { useThemeMode } from "../../../hooks/useThemeMode";
 import { DesktopLinks, GuestLinks } from "./NavbarLinks";
 import { NavbarBrand } from "./NavbarBrand";
 import { MobileMenuButton, NavbarMobileMenu } from "./NavbarMobileMenu";
 import { NavbarProfileMenu } from "./NavbarProfileMenu";
 import { NavbarSearch } from "./NavbarSearch";
+import { NavbarThemeToggle } from "./NavbarThemeToggle";
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = "a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -29,6 +32,7 @@ export function Navbar(): ReactElement {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileDialogRef = useRef<HTMLDivElement>(null);
   const isScrolled = useScrolled(48);
+  const { theme, toggleTheme } = useThemeMode();
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent): void {
@@ -48,8 +52,7 @@ export function Navbar(): ReactElement {
     if (!isOpen) return;
 
     const dialog = mobileDialogRef.current;
-    const focusable = dialog ? getFocusableElements(dialog) : [];
-    focusable[0]?.focus();
+    dialog?.focus({ preventScroll: true });
 
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
@@ -87,45 +90,56 @@ export function Navbar(): ReactElement {
       <nav
         className={`w-full border-b py-3 text-primary-white transition-all duration-200 ease-out ${
           isScrolled
-            ? "glass-card rounded-none border-[var(--surface-glass-border)]"
+            ? "border-[var(--surface-glass-border)] bg-primary-black/90 shadow-xl backdrop-blur-xl"
             : "border-secondary-gray/40 bg-primary-black/95 shadow-md"
         }`}
       >
-        <div className="container flex items-center justify-between gap-4">
+        <div className="container flex min-h-16 items-center gap-4 xl:gap-6">
           <NavbarBrand onClick={closeMenus} />
-          <MobileMenuButton
-            isOpen={isOpen}
-            onClick={() => {
-              setIsOpen((current) => !current);
-              setIsProfileOpen(false);
-            }}
-          />
-          <div className="hidden grow items-center gap-6 lg:flex">
-            <DesktopLinks user={user} />
-            <NavbarSearch className="w-72 shrink-0" />
-            <div className="flex items-center gap-3">
-              {!user ? <GuestLinks /> : null}
-              {user ? (
+          <NavbarSearch className="hidden min-w-0 flex-1 md:block lg:max-w-[44rem] xl:max-w-[58rem]" />
+          <div className="ml-auto flex items-center gap-2 lg:hidden">
+            {user ? (
+              <NotificationBellMenu token={token} unreadCount={unreadCount} />
+            ) : null}
+            <MobileMenuButton
+              isOpen={isOpen}
+              onClick={() => {
+                setIsOpen((current) => !current);
+                setIsProfileOpen(false);
+              }}
+            />
+          </div>
+          <div className="ml-auto hidden items-center gap-3 lg:flex">
+            <DesktopLinks isAuthenticated={user} />
+            {!user ? <GuestLinks /> : null}
+            <NavbarThemeToggle theme={theme} onToggle={toggleTheme} />
+            {user ? (
+              <>
+                <NotificationBellMenu
+                  token={token}
+                  unreadCount={unreadCount}
+                />
                 <NavbarProfileMenu
                   profile={profile}
                   isOpen={isProfileOpen}
-                  unreadCount={unreadCount}
                   menuRef={profileMenuRef}
                   onToggle={() => setIsProfileOpen((current) => !current)}
                   onCloseMenus={closeMenus}
                   onLogout={logout}
                 />
-              ) : null}
-            </div>
+              </>
+            ) : null}
           </div>
         </div>
         <NavbarMobileMenu
           isOpen={isOpen}
           user={user}
           unreadCount={unreadCount}
+          theme={theme}
           dialogRef={mobileDialogRef}
           onCloseMenus={closeMenus}
           onLogout={logout}
+          onToggleTheme={toggleTheme}
         />
       </nav>
     </header>

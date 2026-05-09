@@ -1,10 +1,12 @@
 import type { ReactElement, RefObject } from "react";
 import { NavLink } from "react-router-dom";
 
+import type { ThemeMode } from "../../../lib/theme";
 import { routePaths } from "../../../routes/paths";
 import { MobileAccountLinks } from "./NavbarMobileLinks";
 import { NavbarSearch } from "./NavbarSearch";
-import { mobileNavLinkClass, primaryLinks } from "./navbarUtils";
+import { NavbarThemeMenuItem } from "./NavbarThemeToggle";
+import { getPrimaryLinks, mobileNavLinkClass } from "./navbarUtils";
 
 export interface MobileMenuButtonProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ export function MobileMenuButton({
   return (
     <button
       type="button"
-      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-primary-white hover:bg-secondary-black lg:hidden"
+      className="flex min-h-12 min-w-12 items-center justify-center rounded-full text-primary-white hover:bg-secondary-black lg:hidden"
       onClick={onClick}
       aria-label={isOpen ? "Close menu" : "Open menu"}
       aria-expanded={isOpen}
@@ -39,35 +41,45 @@ export interface NavbarMobileMenuProps {
   isOpen: boolean;
   user: boolean;
   unreadCount: number;
+  theme: ThemeMode;
   dialogRef: RefObject<HTMLDivElement | null>;
   onCloseMenus: () => void;
   onLogout: () => void;
+  onToggleTheme: () => void;
 }
 
 export function NavbarMobileMenu({
   isOpen,
   user,
   unreadCount,
+  theme,
   dialogRef,
   onCloseMenus,
   onLogout,
+  onToggleTheme,
 }: NavbarMobileMenuProps): ReactElement {
   return (
     <div
       id="mobile-navigation"
       ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Main navigation"
       aria-hidden={!isOpen}
-      className={`glass-card fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto p-4 lg:hidden ${
+      className={`glass-card fixed inset-x-4 top-24 z-50 max-h-[calc(100vh-7rem)] overflow-y-auto p-4 lg:hidden ${
         isOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
       }`}
     >
       <div className="flex flex-col gap-4">
-        <NavbarSearch onNavigate={onCloseMenus} />
+        <NavbarSearch onNavigate={onCloseMenus} showIdlePanel={false} />
+        <NavbarThemeMenuItem
+          theme={theme}
+          tabIndex={isOpen ? 0 : -1}
+          onToggle={onToggleTheme}
+        />
         <div className="flex flex-col gap-2">
-          {primaryLinks.map((link) => (
+          {getPrimaryLinks(user).map((link) => (
             <NavLink
               key={link.to}
               to={link.to}

@@ -2,16 +2,16 @@ import type { ReactElement } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 import { routePaths } from "../../../routes/paths";
-import { navLinkClass, primaryLinks } from "./navbarUtils";
+import { getPrimaryLinks, navLinkClass } from "./navbarUtils";
 
-export interface DesktopLinksProps {
-  user: boolean;
+interface DesktopLinksProps {
+  isAuthenticated: boolean;
 }
 
-export function DesktopLinks({ user }: DesktopLinksProps): ReactElement {
+export function DesktopLinks({ isAuthenticated }: DesktopLinksProps): ReactElement {
   return (
-    <div className="flex grow justify-center gap-2">
-      {primaryLinks.map((link) => (
+    <div className="flex items-center gap-3">
+      {getPrimaryLinks(isAuthenticated).map((link) => (
         <NavLink
           key={link.to}
           to={link.to}
@@ -20,22 +20,6 @@ export function DesktopLinks({ user }: DesktopLinksProps): ReactElement {
           {link.label}
         </NavLink>
       ))}
-      {user ? (
-        <>
-          <NavLink
-            to={routePaths.collections}
-            className={({ isActive }) => navLinkClass(isActive)}
-          >
-            Collections
-          </NavLink>
-          <NavLink
-            to={routePaths.myProfile}
-            className={({ isActive }) => navLinkClass(isActive)}
-          >
-            Profile
-          </NavLink>
-        </>
-      ) : null}
     </div>
   );
 }
@@ -51,7 +35,7 @@ export function GuestLinks(): ReactElement {
       </NavLink>
       <Link
         to={routePaths.register}
-        className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center px-5 py-2 text-sm shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+        className="inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-7 py-2 text-sm font-bold text-primary-black shadow-md hover:bg-primary-white hover:shadow-lg"
       >
         Register
       </Link>

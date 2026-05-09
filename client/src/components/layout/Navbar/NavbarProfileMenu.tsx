@@ -8,21 +8,15 @@ import { resolveProfileImage, type NavbarProfile } from "./navbarUtils";
 export interface NavbarProfileMenuProps {
   profile?: NavbarProfile | null | undefined;
   isOpen: boolean;
-  unreadCount: number;
   menuRef: RefObject<HTMLDivElement | null>;
   onToggle: () => void;
   onCloseMenus: () => void;
   onLogout: () => void;
 }
 
-function notificationLabel(count: number): string {
-  return count === 1 ? "1 unread notification" : `${count} unread notifications`;
-}
-
 export function NavbarProfileMenu({
   profile,
   isOpen,
-  unreadCount,
   menuRef,
   onToggle,
   onCloseMenus,
@@ -38,13 +32,13 @@ export function NavbarProfileMenu({
       <button
         type="button"
         onClick={onToggle}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-secondary-black p-1 hover:-translate-y-0.5 hover:shadow-lg"
+        className="flex min-h-12 min-w-12 items-center justify-center rounded-full bg-secondary-black/80 p-1 hover:-translate-y-0.5 hover:shadow-lg"
         aria-label="Open profile menu"
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-controls="profile-menu"
       >
-        <span className="h-10 w-10 overflow-hidden rounded-xl bg-secondary-gray">
+        <span className="h-10 w-10 overflow-hidden rounded-full bg-secondary-gray">
           {profileImage ? (
             <img
               src={profileImage}
@@ -71,13 +65,8 @@ export function NavbarProfileMenu({
           isOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
         }`}
       >
-        <ProfileMenuLink
-          to={routePaths.notifications}
-          isOpen={isOpen}
-          onClick={onCloseMenus}
-          badge={unreadCount}
-        >
-          Notifications
+        <ProfileMenuLink to={routePaths.myProfile} isOpen={isOpen} onClick={onCloseMenus}>
+          Profile
         </ProfileMenuLink>
         <ProfileMenuLink to={routePaths.settings} isOpen={isOpen} onClick={onCloseMenus}>
           Settings
@@ -102,7 +91,6 @@ interface ProfileMenuLinkProps {
   isOpen: boolean;
   onClick: () => void;
   children: string;
-  badge?: number | undefined;
 }
 
 function ProfileMenuLink({
@@ -110,7 +98,6 @@ function ProfileMenuLink({
   isOpen,
   onClick,
   children,
-  badge = 0,
 }: ProfileMenuLinkProps): ReactElement {
   return (
     <Link
@@ -121,14 +108,6 @@ function ProfileMenuLink({
       onClick={onClick}
     >
       <span>{children}</span>
-      {badge > 0 ? (
-        <span
-          className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-primary-black"
-          aria-label={notificationLabel(badge)}
-        >
-          {badge}
-        </span>
-      ) : null}
     </Link>
   );
 }
