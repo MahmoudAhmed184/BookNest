@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 from celery import Celery
 from celery.schedules import crontab
@@ -24,8 +23,3 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=0, minute=0),  # Run daily at midnight
     },
 }
-
-
-@app.task(bind=True)
-def debug_task(self: Any) -> None:
-    print(f"Request: {self.request!r}")
