@@ -5,19 +5,22 @@ export const catalogKeys = {
     query: string,
     page: number,
     pageSize: number,
-    includeExternal = false
-  ) => ["books", "search", query, page, pageSize, includeExternal] as const,
-  suggestions: (query: string, limit: number) =>
-    ["books", "suggestions", query, limit] as const,
+    includeExternal = false,
+    ordering = "relevance"
+  ) =>
+    ["books", "search", query, page, pageSize, includeExternal, ordering] as const,
+  suggestions: (query: string, limit: number, type = "all") =>
+    ["search", "suggestions", query, limit, type] as const,
   catalogBooks: (
     page: number,
     pageSize: number,
     filters: Readonly<CatalogBookFilters> = {}
   ) => ["books", "catalog", page, pageSize, filters] as const,
   popularBooks: (limit: number) => ["books", "popular", limit] as const,
+  newReleaseBooks: (limit: number) => ["books", "new-releases", limit] as const,
   genres: (limit: number) => ["genres", limit] as const,
-  genresPage: (page: number, pageSize: number) =>
-    ["genres", "page", page, pageSize] as const,
+  genresPage: (page: number, pageSize: number, query = "") =>
+    ["genres", "page", page, pageSize, query] as const,
   genreOptions: (query: string, limit: number) =>
     ["genres", "options", query, limit] as const,
   genreBooks: (

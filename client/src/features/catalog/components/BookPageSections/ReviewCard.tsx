@@ -23,6 +23,18 @@ function resolveProfileImage(src?: string | null): string | undefined {
   return src.endsWith("image") ? `${src}.svg` : src;
 }
 
+function formatReviewDate(value?: string): string {
+  if (!value) return "Unknown date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 export function ReviewCard({
   review,
   rating,
@@ -65,31 +77,36 @@ export function ReviewCard({
   );
 
   return (
-    <article className="glass-card card-lift p-4 text-primary-white">
+    <article className="glass-card p-5 text-primary-white">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           {profilePath ? (
             <Link
               to={profilePath}
-              className="h-11 w-11 overflow-hidden rounded-xl bg-primary-gray"
+              className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-primary-gray"
               aria-label={`View ${username} profile`}
             >
               {avatar}
             </Link>
           ) : (
-            <span className="h-11 w-11 overflow-hidden rounded-xl bg-primary-gray">
+            <span className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-primary-gray">
               {avatar}
             </span>
           )}
-          <strong>
-            {profilePath ? (
-              <Link to={profilePath} className="hover:text-accent">
-                {username}
-              </Link>
-            ) : (
-              username
-            )}
-          </strong>
+          <div className="min-w-0">
+            <strong className="block truncate">
+              {profilePath ? (
+                <Link to={profilePath} className="hover:text-accent">
+                  {username}
+                </Link>
+              ) : (
+                username
+              )}
+            </strong>
+            <span className="text-xs text-primary-gray">
+              {formatReviewDate(review.reviewed_at ?? review.created_at)}
+            </span>
+          </div>
         </div>
         <StarRating value={rating} size="sm" label={`Reader rating ${rating} out of 5`} />
       </div>
@@ -126,15 +143,15 @@ export function ReviewCard({
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm leading-relaxed text-primary-white">{review.body}</p>
+        <p className="mt-4 text-sm leading-7 text-primary-gray">{review.body}</p>
       )}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
-        <span>{review.reviewed_at ?? review.created_at}</span>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
+        <span>{review.is_edited ? "Edited" : "Reviewed"}</span>
         <div className="flex flex-wrap gap-2">
           {canEdit ? (
             <button
               type="button"
-              className="min-h-[44px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-black"
+              className="min-h-[40px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-white/10"
               onClick={() => setIsEditing(true)}
             >
               Edit
@@ -142,7 +159,7 @@ export function ReviewCard({
           ) : null}
           <button
             type="button"
-            className="min-h-[44px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-black"
+            className={`min-h-[40px] rounded-full px-3 py-2 font-semibold ${currentVote === "up" ? "bg-accent text-accent-contrast" : "text-primary-white hover:bg-primary-white/10"}`}
             aria-pressed={currentVote === "up"}
             disabled={isVoting}
             onClick={() => handleVote("up")}
@@ -151,7 +168,7 @@ export function ReviewCard({
           </button>
           <button
             type="button"
-            className="min-h-[44px] rounded-full px-3 py-2 font-semibold text-primary-white hover:bg-primary-black"
+            className={`min-h-[40px] rounded-full px-3 py-2 font-semibold ${currentVote === "down" ? "bg-secondary-black text-primary-white" : "text-primary-white hover:bg-primary-white/10"}`}
             aria-pressed={currentVote === "down"}
             disabled={isVoting}
             onClick={() => handleVote("down")}

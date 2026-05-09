@@ -121,7 +121,7 @@ export default function Search(): ReactElement {
     isPlaceholderData,
     hasData,
     refetch,
-  } = useSearchBooks(trimmedSearch, page, includeExternal);
+  } = useSearchBooks(trimmedSearch, page, includeExternal, sortMode);
   const validationMessages = useMemo(() => getValidationMessages(error), [error]);
   const rateLimitError =
     error instanceof ApiRequestError && error.status === 429 ? error : null;

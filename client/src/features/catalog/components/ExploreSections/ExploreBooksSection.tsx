@@ -77,6 +77,7 @@ export function ExploreBooksSection({
           {books.map((book) => (
             <BookCard
               key={book.id}
+              book={book}
               to={routeBuilders.book(book.id)}
               title={book.title}
               author={getAuthorNames(book)}

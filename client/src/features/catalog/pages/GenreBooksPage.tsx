@@ -73,10 +73,10 @@ export default function GenreBooksPage(): ReactElement {
     <div className="flex flex-col gap-8 py-12 animate-fade-up">
       <header className="flex flex-col gap-3">
         <Link
-          to={routePaths.categories}
+          to={routePaths.genres}
           className="text-sm font-semibold text-accent transition hover:text-primary-white"
         >
-          Back to categories
+          Back to genres
         </Link>
         <div className="flex flex-col gap-2">
           <h1 className="display-heading text-3xl sm:text-4xl">{genreName}</h1>
@@ -108,8 +108,8 @@ export default function GenreBooksPage(): ReactElement {
           <EmptyState
             title="No books found"
             description="This genre does not have catalog books yet."
-            actionLabel="Browse categories"
-            actionTo={routePaths.categories}
+            actionLabel="Browse genres"
+            actionTo={routePaths.genres}
           />
         ) : null}
 
@@ -118,6 +118,7 @@ export default function GenreBooksPage(): ReactElement {
             {books.map((book) => (
               <BookCard
                 key={book.id}
+                book={book}
                 to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}

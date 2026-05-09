@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -9,13 +10,9 @@ import {
 import { useSearchParams } from "react-router-dom";
 
 import { usePageSearchParam } from "../../../hooks/usePageSearchParam";
-import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 import {
   ExploreBooksSection,
   ExploreControls,
-  GenreCarousel,
-  PopularBooksGrid,
-  RecommendationsSection,
   type ActiveExploreFilter,
   type ExploreSortMode,
 } from "../components/ExploreSections";
@@ -24,53 +21,53 @@ import { useExploreCatalog } from "../hooks/useExploreCatalog";
 import type { CatalogBookFilters } from "../services/bookService";
 import type { Book } from "../types/book";
 import { emptyCatalogFilters, type CatalogFilters } from "../types/filters";
-import { getAuthorNames, getBookGenres } from "../utils/bookFacets";
+import { getBookGenres } from "../utils/bookFacets";
 
-type FacetCounts = {
-  genres: Record<string, number>;
-};
-
-function normalizeSearch(value: string): string {
-  return value.trim().toLowerCase();
+function numericValue(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === "") return 0;
+  const parsed = typeof value === "number" ? value : Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function bookMatchesSearch(book: Book, query: string): boolean {
-  if (!query) return true;
+function publicationSortValue(book: Book): number {
+  if (book.publication_date) {
+    const timestamp = Date.parse(book.publication_date);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
 
-  const searchableText = [
-    book.title,
-    getAuthorNames(book),
-    ...getBookGenres(book),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  return searchableText.includes(query);
+  return book.publication_year ? Date.UTC(book.publication_year, 0, 1) : 0;
 }
 
-function buildFacetCounts(books: Book[]): FacetCounts {
-  const counts: FacetCounts = {
-    genres: {},
-  };
-
-  books.forEach((book) => {
-    getBookGenres(book).forEach((genre) => {
-      counts.genres[genre] = (counts.genres[genre] ?? 0) + 1;
-    });
-  });
-
-  return counts;
+function compareTitle(a: Book, b: Book): number {
+  return a.title.localeCompare(b.title);
 }
 
 function sortBooks(books: Book[], sortMode: ExploreSortMode): Book[] {
-  if (sortMode === "title") {
-    return [...books].sort((a, b) => a.title.localeCompare(b.title));
+  if (sortMode === "newest") {
+    return [...books].sort(
+      (a, b) => publicationSortValue(b) - publicationSortValue(a) || compareTitle(a, b)
+    );
   }
 
-  if (sortMode === "author") {
-    return [...books].sort((a, b) =>
-      getAuthorNames(a).localeCompare(getAuthorNames(b))
+  if (sortMode === "highest") {
+    return [...books].sort(
+      (a, b) =>
+        numericValue(b.average_rating) - numericValue(a.average_rating) ||
+        numericValue(b.rating_count) - numericValue(a.rating_count) ||
+        compareTitle(a, b)
     );
+  }
+
+  if (sortMode === "reviews") {
+    return [...books].sort(
+      (a, b) =>
+        numericValue(b.review_count) - numericValue(a.review_count) ||
+        compareTitle(a, b)
+    );
+  }
+
+  if (sortMode === "az") {
+    return [...books].sort(compareTitle);
   }
 
   return books;
@@ -81,8 +78,14 @@ function readCatalogFilters(searchParams: URLSearchParams): CatalogFilters {
     author: searchParams.get("author") ?? "",
     genre: searchParams.get("genre") ?? "",
     min_rating: searchParams.get("min_rating") ?? "",
-    pub_date_from: searchParams.get("pub_date_from") ?? "",
-    pub_date_to: searchParams.get("pub_date_to") ?? "",
+    publication_year_from:
+      searchParams.get("publication_year_from") ??
+      searchParams.get("pub_date_from")?.slice(0, 4) ??
+      "",
+    publication_year_to:
+      searchParams.get("publication_year_to") ??
+      searchParams.get("pub_date_to")?.slice(0, 4) ??
+      "",
     num_pages_min: searchParams.get("num_pages_min") ?? "",
     num_pages_max: searchParams.get("num_pages_max") ?? "",
   };
@@ -92,6 +95,9 @@ function writeCatalogFilters(
   searchParams: URLSearchParams,
   filters: CatalogFilters
 ): void {
+  searchParams.delete("pub_date_from");
+  searchParams.delete("pub_date_to");
+
   Object.entries(filters).forEach(([key, value]) => {
     const trimmedValue = value.trim();
     if (trimmedValue) {
@@ -110,55 +116,95 @@ function parsePositiveNumber(value: string): number | undefined {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-function toCatalogBookFilters(filters: CatalogFilters): CatalogBookFilters {
+function parsePositiveInteger(value: string): number | undefined {
+  if (!value.trim()) return undefined;
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : undefined;
+}
+
+function parsePublicationYear(value: string): number | undefined {
+  const trimmedValue = value.trim();
+  if (!/^\d{4}$/.test(trimmedValue)) return undefined;
+
+  const parsed = Number(trimmedValue);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : undefined;
+}
+
+function parseRating(value: string): number | undefined {
+  const parsed = parsePositiveNumber(value);
+  if (parsed === undefined || parsed > 5) return undefined;
+
+  return parsed;
+}
+
+function toApiOrdering(
+  sortMode: ExploreSortMode
+): CatalogBookFilters["ordering"] {
+  if (sortMode === "newest") return "newest";
+  if (sortMode === "highest") return "rating";
+  if (sortMode === "az") return "title";
+  return undefined;
+}
+
+function toCatalogBookFilters(
+  filters: CatalogFilters,
+  query: string,
+  sortMode: ExploreSortMode
+): CatalogBookFilters {
+  const publicationYearFrom = parsePublicationYear(filters.publication_year_from);
+  const publicationYearTo = parsePublicationYear(filters.publication_year_to);
+  const minPages = parsePositiveInteger(filters.num_pages_min);
+  const maxPages = parsePositiveInteger(filters.num_pages_max);
+  const trimmedQuery = query.trim();
+
   return {
+    query: trimmedQuery.length >= 2 ? trimmedQuery : undefined,
     author: filters.author.trim() || undefined,
     genre: filters.genre.trim() || undefined,
-    min_rating: parsePositiveNumber(filters.min_rating),
-    pub_date_from: filters.pub_date_from.trim() || undefined,
-    pub_date_to: filters.pub_date_to.trim() || undefined,
-    num_pages_min: parsePositiveNumber(filters.num_pages_min),
-    num_pages_max: parsePositiveNumber(filters.num_pages_max),
+    min_rating: parseRating(filters.min_rating),
+    publication_year_from: publicationYearFrom,
+    publication_year_to:
+      publicationYearFrom !== undefined &&
+      publicationYearTo !== undefined &&
+      publicationYearTo < publicationYearFrom
+        ? undefined
+        : publicationYearTo,
+    num_pages_min: minPages,
+    num_pages_max:
+      minPages !== undefined && maxPages !== undefined && maxPages < minPages
+        ? undefined
+        : maxPages,
+    ordering: toApiOrdering(sortMode),
   };
 }
 
 export default function Explore(): ReactElement {
-  const { token } = useOptionalAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { page, setPage } = usePageSearchParam();
   const resultsRef = useRef<HTMLDivElement>(null);
   const hasScrolledAfterMount = useRef(false);
   const [searchInput, setSearchInput] = useState("");
-  const [sortMode, setSortMode] = useState<ExploreSortMode>("recommended");
+  const deferredSearchInput = useDeferredValue(searchInput);
+  const [sortMode, setSortMode] = useState<ExploreSortMode>("relevance");
   const filters = useMemo(
     () => readCatalogFilters(searchParams),
     [searchParams]
   );
   const serverFilters = useMemo(
-    () => toCatalogBookFilters(filters),
-    [filters]
+    () => toCatalogBookFilters(filters, deferredSearchInput, sortMode),
+    [deferredSearchInput, filters, sortMode]
   );
   const {
     books,
     booksPagination,
     categories = [],
-    popularBooks = [],
-    recommendations,
     isBooksLoading,
     isBooksFetching,
     isBooksError,
     isBooksPlaceholderData,
-    isRecommendationsLoading,
-    isRecommendationsFetching,
-    isRecommendationsError,
-    isRefreshingRecommendations,
     refetchBooks,
-    refetchRecommendations,
-    refreshRecommendations,
-    dismissRecommendation,
-    clickRecommendation,
-    submitRecommendationFeedback,
-  } = useExploreCatalog(token, page, serverFilters);
+  } = useExploreCatalog(page, serverFilters);
 
   const scrollToResults = useCallback((): void => {
     const node = resultsRef.current;
@@ -199,27 +245,11 @@ export default function Explore(): ReactElement {
     setPage,
   ]);
 
-  const genreOptions = useMemo(() => {
-    if (categories.length > 0) {
-      return categories.slice(0, 10).map((category) => category.name);
-    }
-
-    return Array.from(new Set(books.flatMap(getBookGenres))).slice(0, 10);
-  }, [books, categories]);
-
-  const facetCounts = useMemo(() => buildFacetCounts(books), [books]);
-
-  const filteredBooks = useMemo(
-    () => {
-      const query = normalizeSearch(searchInput);
-      return books.filter((book) => bookMatchesSearch(book, query));
-    },
-    [books, searchInput]
-  );
+  const genreCount = categories.length || new Set(books.flatMap(getBookGenres)).size;
 
   const sortedBooks = useMemo(
-    () => sortBooks(filteredBooks, sortMode),
-    [filteredBooks, sortMode]
+    () => sortBooks(books, sortMode),
+    [books, sortMode]
   );
 
   const handleFiltersChange = useCallback(
@@ -252,8 +282,8 @@ export default function Explore(): ReactElement {
     addFilter("genre", "Genre", filters.genre);
     addFilter("author", "Author", filters.author);
     addFilter("min_rating", "Min rating", filters.min_rating);
-    addFilter("pub_date_from", "Published from", filters.pub_date_from);
-    addFilter("pub_date_to", "Published to", filters.pub_date_to);
+    addFilter("publication_year_from", "Published from", filters.publication_year_from);
+    addFilter("publication_year_to", "Published to", filters.publication_year_to);
     addFilter("num_pages_min", "Min pages", filters.num_pages_min);
     addFilter("num_pages_max", "Max pages", filters.num_pages_max);
 
@@ -290,8 +320,8 @@ export default function Explore(): ReactElement {
             Explore
           </h1>
           <p className="max-w-2xl text-sm text-primary-gray leading-relaxed">
-            Browse popular genres, search the catalog, and keep every shelf easy
-            to scan.
+            Search the catalog, refine by book details, and keep every shelf
+            easy to scan.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:flex">
@@ -300,19 +330,15 @@ export default function Explore(): ReactElement {
             <p className="text-xs text-primary-gray">Books</p>
           </div>
           <div className="settings-panel min-w-[132px] px-4 py-3">
-            <p className="text-2xl font-bold text-primary-white">{genreOptions.length}</p>
+            <p className="text-2xl font-bold text-primary-white">{genreCount}</p>
             <p className="text-xs text-primary-gray">Genres</p>
           </div>
         </div>
       </header>
 
-      {categories.length > 0 ? <GenreCarousel categories={categories.slice(0, 10)} /> : null}
-
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <FilterSidebar
           filters={filters}
-          genreOptions={genreOptions}
-          facetCounts={facetCounts}
           resultCount={booksPagination.count}
           onChange={handleFiltersChange}
         />
@@ -347,20 +373,6 @@ export default function Explore(): ReactElement {
         </div>
       </div>
 
-      <RecommendationsSection
-        recommendations={recommendations}
-        isLoading={isRecommendationsLoading}
-        isFetching={isRecommendationsFetching}
-        isError={isRecommendationsError}
-        isRefreshing={isRefreshingRecommendations}
-        canRefresh={Boolean(token)}
-        onRetry={refetchRecommendations}
-        onRefresh={() => refreshRecommendations()}
-        onRecommendationClick={clickRecommendation}
-        onDismiss={dismissRecommendation}
-        onFeedback={submitRecommendationFeedback}
-      />
-      {popularBooks.length > 0 ? <PopularBooksGrid books={popularBooks} /> : null}
     </div>
   );
 }

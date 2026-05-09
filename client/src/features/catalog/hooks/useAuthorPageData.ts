@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 import {
   getAuthor,
@@ -61,14 +62,26 @@ export function useAuthorPageData(
       if (authorId === null) throw new Error("Author id is required");
       return likeAuthor(authorId, token);
     },
-    onSuccess: invalidateLikes,
+    onSuccess: () => {
+      toast.success("Author added to favorites.");
+      invalidateLikes();
+    },
+    onError: () => {
+      toast.error("Couldn't favorite this author. Try again.");
+    },
   });
   const unlikeMutation = useMutation({
     mutationFn: () => {
       if (!existingLike) throw new Error("Author like is required");
       return unlikeAuthor(existingLike.id, token);
     },
-    onSuccess: invalidateLikes,
+    onSuccess: () => {
+      toast.success("Author removed from favorites.");
+      invalidateLikes();
+    },
+    onError: () => {
+      toast.error("Couldn't update this author. Try again.");
+    },
   });
 
   return {
@@ -84,6 +97,10 @@ export function useAuthorPageData(
     isBooksError: booksQuery.isError,
     isTogglingLike: likeMutation.isPending || unlikeMutation.isPending,
     toggleAuthorLike: () => {
+      if (!token) {
+        toast.error("Sign in to favorite authors.");
+        return;
+      }
       if (existingLike) {
         unlikeMutation.mutate();
         return;

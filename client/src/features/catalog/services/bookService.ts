@@ -7,8 +7,14 @@ import {
   throwApiError,
   throwApiRequestError,
 } from "../../../lib/axios";
-import { normalizeEmptyResponse } from "../../../lib/normalizers";
+import {
+  normalizeEmptyResponse,
+  normalizeListResponse,
+  normalizePaginatedList,
+} from "../../../lib/normalizers";
 import type {
+  CursorApiResponse,
+  LimitOffsetApiResponse,
   OffsetPageParams,
   OffsetPaginatedResponse,
 } from "../../../types/api";
@@ -41,30 +47,73 @@ import type {
 } from "../types/book";
 import { getAuthorNames, getBookGenres } from "../utils/bookFacets";
 
+export type SearchBooksOrdering =
+  | "relevance"
+  | "trending"
+  | "popular"
+  | "rating"
+  | "newest"
+  | "title";
+
 export interface SearchBooksParams extends OffsetPageParams {
   query: string;
   includeExternal?: boolean | undefined;
-}
-
-export interface CatalogBookFilters {
   author?: string | undefined;
   genre?: string | undefined;
   min_rating?: number | undefined;
   pub_date_from?: string | undefined;
   pub_date_to?: string | undefined;
+  publication_year_from?: number | undefined;
+  publication_year_to?: number | undefined;
   num_pages_min?: number | undefined;
   num_pages_max?: number | undefined;
+  ordering?: SearchBooksOrdering | undefined;
+}
+
+export interface CatalogBookFilters {
+  query?: string | undefined;
+  author?: string | undefined;
+  genre?: string | undefined;
+  min_rating?: number | undefined;
+  pub_date_from?: string | undefined;
+  pub_date_to?: string | undefined;
+  publication_year_from?: number | undefined;
+  publication_year_to?: number | undefined;
+  num_pages_min?: number | undefined;
+  num_pages_max?: number | undefined;
+  ordering?: SearchBooksOrdering | undefined;
 }
 
 export interface CatalogBooksParams
   extends OffsetPageParams,
     CatalogBookFilters {}
 
+export interface GenreListParams extends OffsetPageParams {
+  query?: string | undefined;
+}
+
 export interface AuthorListParams extends OffsetPageParams {
   name__icontains?: string | undefined;
 }
 
 type SearchBooksInput = string | SearchBooksParams;
+type ListResponse<T> = LimitOffsetApiResponse<T> | T[];
+type FeedEventsResponse = CursorApiResponse<FeedEvent> | FeedEvent[];
+
+interface SearchSuggestionResponse {
+  suggestions: SearchAutocompleteTerm[];
+}
+
+interface RecommendationRunResponse {
+  id: number;
+  status: string;
+}
+
+function isListResponse<T>(
+  response: ListResponse<T> | RecommendationRunResponse
+): response is ListResponse<T> {
+  return Array.isArray(response) || "results" in response;
+}
 
 const defaultSearchPageParams: OffsetPageParams = {
   page: 1,
@@ -117,6 +166,9 @@ function filterBooks(books: Book[], filters: CatalogBookFilters): Book[] {
     const rating = numericValue(book.average_rating);
     const pageCount = book.page_count ?? 0;
     const publicationDate = book.publication_date ?? "";
+    const publicationYear =
+      book.publication_year ??
+      (publicationDate ? Number.parseInt(publicationDate.slice(0, 4), 10) : null);
 
     if (filters.author && !authors.includes(filters.author.toLowerCase())) {
       return false;
@@ -141,6 +193,20 @@ function filterBooks(books: Book[], filters: CatalogBookFilters): Book[] {
     }
 
     if (filters.pub_date_to && publicationDate > filters.pub_date_to) {
+      return false;
+    }
+
+    if (
+      typeof filters.publication_year_from === "number" &&
+      (publicationYear === null || publicationYear < filters.publication_year_from)
+    ) {
+      return false;
+    }
+
+    if (
+      typeof filters.publication_year_to === "number" &&
+      (publicationYear === null || publicationYear > filters.publication_year_to)
+    ) {
       return false;
     }
 
@@ -183,13 +249,24 @@ function sortReviews(
   return sorted;
 }
 
-function buildQuery(params: Record<string, string | undefined>): string {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined | null>
+): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value) searchParams.set(key, value);
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.set(key, String(value));
+    }
   });
 
   return searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+}
+
+function apiPathFromUrl(url: string): string {
+  if (!/^https?:\/\//i.test(url)) return url;
+
+  const parsed = new URL(url);
+  return `${parsed.pathname}${parsed.search}`;
 }
 
 export async function getBooks(
@@ -210,22 +287,36 @@ export async function getBooks(
 
 export async function getSuggestions(
   query: string,
-  limit = 5
+  limit = 8,
+  type?: string | undefined
 ): Promise<SearchAutocompleteTerm[]> {
-  return getSearchAutocomplete(query, "book", limit);
+  return getSearchAutocomplete(query, type, limit);
 }
 
 export async function getCatalogBooks(
   params: CatalogBooksParams
 ): Promise<BookSearchResponse> {
-  const catalogQuery = params.author?.trim() || params.genre?.trim() || "";
-  const response = await searchBooks({
-    query: catalogQuery,
-    page: 1,
-    pageSize: 50,
-  });
+  const rawCatalogQuery =
+    params.query?.trim() ||
+    params.author?.trim() ||
+    params.genre?.trim() ||
+    "";
+  const catalogQuery = rawCatalogQuery.length >= 2 ? rawCatalogQuery : "";
 
-  return pageFromArray(filterBooks(response.results, params), params);
+  return searchBooks({
+    query: catalogQuery,
+    page: params.page,
+    pageSize: params.pageSize,
+    genre: params.genre,
+    min_rating: params.min_rating,
+    pub_date_from: params.pub_date_from,
+    pub_date_to: params.pub_date_to,
+    publication_year_from: params.publication_year_from,
+    publication_year_to: params.publication_year_to,
+    num_pages_min: params.num_pages_min,
+    num_pages_max: params.num_pages_max,
+    ordering: params.ordering,
+  });
 }
 
 export async function getPopularBooks(limit = 12): Promise<Book[]> {
@@ -244,12 +335,36 @@ export async function getPopularBooks(limit = 12): Promise<Book[]> {
   }
 }
 
-export async function getGenresPage(
-  params: OffsetPageParams
-): Promise<GenreSearchResponse> {
+export async function getNewReleaseBooks(limit = 12): Promise<Book[]> {
+  const query = buildQuery({
+    ordering: "newest",
+    page: 1,
+    page_size: limit,
+  });
+
   try {
-    const genres = await getData<CatalogGenre[]>("/api/v1/genres/");
-    return pageFromArray(genres, params);
+    const response = await getData<ListResponse<Book>>(`/api/v1/books/${query}`);
+    return normalizeListResponse(response).slice(0, limit);
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function getGenresPage(
+  params: GenreListParams
+): Promise<GenreSearchResponse> {
+  const query = buildQuery({
+    q: params.query?.trim(),
+    page: params.page,
+    page_size: params.pageSize,
+    ordering: "books",
+  });
+
+  try {
+    const genres = await getData<ListResponse<CatalogGenre>>(
+      `/api/v1/genres/${query}`
+    );
+    return normalizePaginatedList(genres, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -270,11 +385,15 @@ export async function getGenreOptions(
 ): Promise<CatalogGenre[]> {
   const requestQuery = buildQuery({
     q: query.trim(),
-    limit: String(limit),
+    page_size: limit,
+    ordering: "books",
   });
 
   try {
-    return await getData<CatalogGenre[]>(`/api/v1/genres/${requestQuery}`);
+    const response = await getData<ListResponse<CatalogGenre>>(
+      `/api/v1/genres/${requestQuery}`
+    );
+    return normalizeListResponse(response).slice(0, limit);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -284,8 +403,16 @@ export async function getGenreBooks(
   genreId: string | number | undefined,
   params: CatalogBooksParams
 ): Promise<BookSearchResponse> {
+  const query = buildQuery({
+    page: 1,
+    page_size: 100,
+  });
+
   try {
-    const books = await getData<Book[]>(`/api/v1/genres/${genreId}/books/`);
+    const response = await getData<ListResponse<Book>>(
+      `/api/v1/genres/${genreId}/books/${query}`
+    );
+    const books = normalizeListResponse(response);
     return pageFromArray(filterBooks(books, params), params);
   } catch (error: unknown) {
     throwApiError(error);
@@ -330,14 +457,17 @@ export async function updateBook(
 export async function getAuthors(
   params: AuthorListParams
 ): Promise<AuthorSearchResponse> {
-  try {
-    const authors = await getData<Author[]>("/api/v1/authors/");
-    const query = params.name__icontains?.trim().toLowerCase();
-    const filteredAuthors = query
-      ? authors.filter((author) => author.name.toLowerCase().includes(query))
-      : authors;
+  const requestQuery = buildQuery({
+    q: params.name__icontains?.trim(),
+    page: params.page,
+    page_size: params.pageSize,
+  });
 
-    return pageFromArray(filteredAuthors, params);
+  try {
+    const authors = await getData<ListResponse<Author>>(
+      `/api/v1/authors/${requestQuery}`
+    );
+    return normalizePaginatedList(authors, params);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -352,8 +482,13 @@ export async function getAuthor(id: string | undefined): Promise<Author> {
 }
 
 export async function getAuthorBooks(id: string | undefined): Promise<Book[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    return await getData<Book[]>(`/api/v1/authors/${id}/books/`);
+    const response = await getData<ListResponse<Book>>(
+      `/api/v1/authors/${id}/books/${query}`
+    );
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -362,10 +497,13 @@ export async function getAuthorBooks(id: string | undefined): Promise<Book[]> {
 export async function listAuthorLikes(
   token?: string | null
 ): Promise<AuthorLike[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    return await getData<AuthorLike[]>("/api/v1/author-likes/", {
+    const response = await getData<ListResponse<AuthorLike>>(`/api/v1/author-likes/${query}`, {
       headers: authHeaders(token),
     });
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -403,18 +541,42 @@ export async function unlikeAuthor(
 export async function getRelatedBooks(
   id: string | undefined
 ): Promise<RelatedBook[]> {
+  const query = buildQuery({ page_size: 12 });
+
   try {
-    return await getData<RelatedBook[]>(
-      `/api/v1/books/${id}/related-books/`
+    const response = await getData<ListResponse<RelatedBook>>(
+      `/api/v1/books/${id}/related-books/${query}`
     );
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
 }
 
-export async function getFeedEvents(): Promise<FeedEvent[]> {
+export async function getFeedEvents(
+  pageUrl?: string | undefined,
+  pageSize = 20
+): Promise<CursorApiResponse<FeedEvent>> {
+  const url = pageUrl
+    ? apiPathFromUrl(pageUrl)
+    : `/api/v1/feed-events/${buildQuery({ page_size: pageSize })}`;
+
   try {
-    return await getData<FeedEvent[]>("/api/v1/feed-events/");
+    const response = await getData<FeedEventsResponse>(url);
+
+    if (Array.isArray(response)) {
+      return {
+        next: null,
+        previous: null,
+        results: response,
+      };
+    }
+
+    return {
+      next: response.next ?? null,
+      previous: response.previous ?? null,
+      results: response.results,
+    };
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -422,13 +584,28 @@ export async function getFeedEvents(): Promise<FeedEvent[]> {
 
 export async function searchBooks(input: SearchBooksInput): Promise<BookSearchResponse> {
   const search = normalizeSearchInput(input);
-  const query = buildQuery({ q: search.query });
+  const query = buildQuery({
+    q: search.query,
+    page: search.page,
+    page_size: search.pageSize,
+    include_external: search.includeExternal,
+    authors: search.author?.trim(),
+    genres: search.genre?.trim(),
+    min_rating: search.min_rating,
+    pub_date_from: search.pub_date_from,
+    pub_date_to: search.pub_date_to,
+    publication_year_from: search.publication_year_from,
+    publication_year_to: search.publication_year_to,
+    page_count_min: search.num_pages_min,
+    page_count_max: search.num_pages_max,
+    ordering: search.ordering,
+  });
 
   try {
     const response = await getData<BookSearchApiResponse>(
       `/api/v1/search/books/${query}`
     );
-    return pageFromArray(response.results, search);
+    return normalizePaginatedList(response, search);
   } catch (error: unknown) {
     throwApiRequestError(error);
   }
@@ -436,15 +613,21 @@ export async function searchBooks(input: SearchBooksInput): Promise<BookSearchRe
 
 export async function getSearchAutocomplete(
   query: string,
-  type = "book",
+  type: string | undefined = undefined,
   limit = 20
 ): Promise<SearchAutocompleteTerm[]> {
-  const requestQuery = buildQuery({ q: query, type });
+  const requestQuery = buildQuery({ q: query, type, limit, page_size: limit });
 
   try {
-    const terms = await getData<SearchAutocompleteTerm[]>(
+    const response = await getData<
+      SearchSuggestionResponse | ListResponse<SearchAutocompleteTerm>
+    >(
       `/api/v1/search/autocomplete/${requestQuery}`
     );
+    const terms =
+      "suggestions" in response
+        ? response.suggestions
+        : normalizeListResponse(response);
     return terms.slice(0, limit);
   } catch (error: unknown) {
     throwApiRequestError(error);
@@ -455,10 +638,13 @@ export async function getReviews(
   id: string | undefined,
   sort?: ReviewSortParams
 ): Promise<BookReview[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    const reviews = await getData<BookReview[]>(
-      `/api/v1/books/${id}/reviews/`
+    const response = await getData<ListResponse<BookReview>>(
+      `/api/v1/books/${id}/reviews/${query}`
     );
+    const reviews = normalizeListResponse(response);
     return sortReviews(reviews, sort);
   } catch (error: unknown) {
     throwApiError(error);
@@ -518,9 +704,10 @@ export async function getRatingForBook(
   if (!id || !token) return null;
 
   try {
-    const ratings = await getData<BookRating[]>("/api/v1/ratings/?mine=true", {
+    const response = await getData<ListResponse<BookRating>>("/api/v1/ratings/?mine=true&page_size=100", {
       headers: authHeaders(token),
     });
+    const ratings = normalizeListResponse(response);
     return ratings.find((rating) => String(rating.book) === String(id)) ?? null;
   } catch (error: unknown) {
     throwApiError(error);
@@ -561,10 +748,13 @@ export async function getBookRatings(
   id: string | undefined,
   token?: string | null
 ): Promise<BookRating[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    return await getData<BookRating[]>(`/api/v1/books/${id}/ratings/`, {
+    const response = await getData<ListResponse<BookRating>>(`/api/v1/books/${id}/ratings/${query}`, {
       headers: authHeaders(token),
     });
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -573,10 +763,13 @@ export async function getBookRatings(
 export async function listReviewVotes(
   token?: string | null
 ): Promise<ReviewVote[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    return await getData<ReviewVote[]>("/api/v1/review-votes/", {
+    const response = await getData<ListResponse<ReviewVote>>(`/api/v1/review-votes/${query}`, {
       headers: authHeaders(token),
     });
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -649,10 +842,34 @@ export async function deleteBook(
 export async function getRecommendedBooks(
   token?: string | null
 ): Promise<UserRecommendation[]> {
+  const query = buildQuery({ page_size: 50 });
+
   try {
-    return await getData<UserRecommendation[]>("/api/v1/recommendations/", {
+    const response = await getData<ListResponse<UserRecommendation>>(`/api/v1/recommendations/${query}`, {
       headers: authHeaders(token),
     });
+    const recommendations = normalizeListResponse(response);
+
+    if (recommendations.length > 0) {
+      return recommendations;
+    }
+
+    try {
+      const generated = await postData<
+        ListResponse<UserRecommendation> | RecommendationRunResponse,
+        { n_recommendations: number }
+      >(
+        "/api/v1/recommendations/generate/",
+        { n_recommendations: 10 },
+        { headers: authHeaders(token) }
+      );
+
+      return isListResponse<UserRecommendation>(generated)
+        ? normalizeListResponse(generated)
+        : [];
+    } catch {
+      return [];
+    }
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -692,12 +909,13 @@ export async function clickRecommendation(
 export async function getCatalogRecommendations(
   source?: string
 ): Promise<CatalogRecommendation[]> {
-  const query = buildQuery({ source });
+  const query = buildQuery({ source, page_size: 50 });
 
   try {
-    return await getData<CatalogRecommendation[]>(
+    const response = await getData<ListResponse<CatalogRecommendation>>(
       `/api/v1/catalog-recommendations/${query}`
     );
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -722,11 +940,14 @@ export async function createRecommendationFeedback(
 export async function listRecommendationModels(
   token?: string | null
 ): Promise<RecommendationModel[]> {
+  const query = buildQuery({ page_size: 100 });
+
   try {
-    return await getData<RecommendationModel[]>(
-      "/api/v1/recommendation-models/",
+    const response = await getData<ListResponse<RecommendationModel>>(
+      `/api/v1/recommendation-models/${query}`,
       { headers: authHeaders(token) }
     );
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -739,6 +960,24 @@ export async function getRecommendationModel(
   try {
     return await getData<RecommendationModel>(
       `/api/v1/recommendation-models/${id}/`,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+export async function triggerRecommendationRefresh(
+  modelId: number,
+  token?: string | null
+): Promise<RecommendationRunResponse> {
+  try {
+    return await postData<
+      RecommendationRunResponse,
+      { model: number; run_type: "refresh"; status: "pending" }
+    >(
+      "/api/v1/recommendation-runs/",
+      { model: modelId, run_type: "refresh", status: "pending" },
       { headers: authHeaders(token) }
     );
   } catch (error: unknown) {

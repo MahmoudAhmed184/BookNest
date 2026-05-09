@@ -5,9 +5,9 @@ import { ErrorState } from "../../../components/ui";
 import {
   AuthorBio,
   AuthorBooks,
-  AuthorHeader,
+  AuthorHero,
+  AuthorPageSkeleton,
 } from "../components/AuthorSections";
-import { BookPageSkeleton } from "../components/BookPageSections";
 import { useAuthorPageData } from "../hooks/useAuthorPageData";
 import { useOptionalAuth } from "../../auth/hooks/useOptionalAuth";
 
@@ -27,6 +27,7 @@ export default function Author(): ReactElement {
     isAuthorFetching,
     isAuthorError,
     isBooksLoading,
+    isBooksFetching,
     isBooksError,
     isTogglingLike,
     toggleAuthorLike,
@@ -34,7 +35,7 @@ export default function Author(): ReactElement {
     refetchBooks,
   } = useAuthorPageData(id, token);
 
-  if (isAuthorLoading || isBooksLoading) return <BookPageSkeleton />;
+  if (isAuthorLoading) return <AuthorPageSkeleton />;
 
   if (isAuthorError || !author) {
     return (
@@ -50,9 +51,10 @@ export default function Author(): ReactElement {
   }
 
   return (
-    <div className="py-12 flex flex-col gap-12 animate-fade-up">
-      <AuthorHeader
+    <div className="flex flex-col gap-12 pb-16 animate-fade-up">
+      <AuthorHero
         author={author}
+        books={books}
         isLiked={isLiked}
         isLikePending={isTogglingLike}
         onToggleLike={toggleAuthorLike}
@@ -65,7 +67,12 @@ export default function Author(): ReactElement {
           onRetry={refetchBooks}
         />
       ) : (
-        <AuthorBooks books={books} />
+        <AuthorBooks
+          author={author}
+          books={books}
+          isLoading={isBooksLoading}
+          isFetching={isBooksFetching}
+        />
       )}
     </div>
   );

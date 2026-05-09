@@ -23,9 +23,14 @@ export function RelatedBooksCarousel({
 
   return (
     <section className="flex flex-col gap-5" aria-labelledby="related-books-title">
-      <h2 id="related-books-title" className="text-xl font-bold text-primary-white">
-        Related Books
-      </h2>
+      <div>
+        <h2 id="related-books-title" className="font-display text-3xl font-bold text-primary-white">
+          Related books
+        </h2>
+        <p className="mt-1 text-sm text-primary-gray">
+          More catalog matches from this shelf.
+        </p>
+      </div>
       {isLoading ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" role="status" aria-live="polite">
           {["related-1", "related-2", "related-3", "related-4"].map((key) => (
@@ -49,11 +54,12 @@ export function RelatedBooksCarousel({
           pagination={{ clickable: true }}
           autoplay={{ delay: 3300, disableOnInteraction: false }}
           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
-          className="w-full"
+          className="book-carousel-swiper w-full"
         >
           {books.map((book) => (
             <SwiperSlide key={book.id}>
               <BookCard
+                book={book}
                 to={routeBuilders.book(book.id)}
                 title={book.title}
                 author={getAuthorNames(book)}

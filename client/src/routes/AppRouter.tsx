@@ -71,6 +71,10 @@ export function AppRouter(): ReactElement {
             element={withSuspense(<GenreBooks />)}
           />
           <Route
+            path={routePaths.genres}
+            element={withSuspense(<Categories />)}
+          />
+          <Route
             path={routePaths.userProfile}
             element={withSuspense(<UserProfile />)}
           />

@@ -14,21 +14,22 @@ export function BookDescription({
   onToggle,
 }: BookDescriptionProps): ReactElement {
   return (
-    <section className="flex max-w-3xl flex-col gap-3" aria-labelledby="description-title">
-      <h2 id="description-title" className="text-xl font-bold text-primary-white">
-        Description
+    <section className="flex flex-col gap-4" aria-labelledby="description-title">
+      <h2 id="description-title" className="font-display text-3xl font-bold leading-tight text-primary-white sm:text-4xl">
+        About this book
       </h2>
-      <p className={`text-base leading-relaxed text-primary-white ${shouldCollapse && !isExpanded ? "line-clamp-4" : ""}`}>
+      <p className={`max-w-4xl whitespace-pre-line text-sm leading-7 text-primary-gray sm:text-base sm:leading-8 ${shouldCollapse && !isExpanded ? "line-clamp-5" : ""}`}>
         {description}
       </p>
       {shouldCollapse ? (
         <button
           type="button"
           onClick={onToggle}
-          className="min-h-[44px] self-start rounded-full px-3 py-2 text-sm font-medium text-accent hover:bg-secondary-black"
+          className="inline-flex min-h-[44px] items-center gap-2 self-start rounded-full px-4 py-2 text-sm font-semibold text-primary-white hover:bg-primary-white/10"
           aria-expanded={isExpanded}
         >
-          {isExpanded ? "Show less" : "Show more"}
+          {isExpanded ? "Read less" : "Read more"}
+          <span aria-hidden="true">{isExpanded ? "^" : "v"}</span>
         </button>
       ) : null}
     </section>

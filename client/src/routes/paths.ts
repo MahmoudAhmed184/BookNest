@@ -8,6 +8,7 @@ export const routePaths = {
   searchQuery: "/search/:query",
   authors: "/authors",
   author: "/author/:id",
+  genres: "/genres",
   genreBooks: "/genres/:id/books",
   myProfile: "/profile/me",
   userProfile: "/profile/:id",

@@ -1,28 +1,16 @@
 import { useEffect } from "react";
 import {
   keepPreviousData,
-  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 
 import {
-  clickRecommendation,
-  createRecommendationFeedback,
-  dismissRecommendation,
   type CatalogBookFilters,
   getCatalogBooks,
   getGenres,
-  getPopularBooks,
-  getRecommendedBooks,
 } from "../services/bookService";
-import type {
-  Book,
-  CatalogGenre,
-  UserRecommendation,
-  RecommendationFeedbackType,
-} from "../types/book";
+import type { Book, CatalogGenre } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
 import { catalogKeys } from "./catalog.keys";
 
@@ -32,8 +20,6 @@ interface UseExploreCatalogResult {
   books: Book[];
   booksPagination: OffsetPaginatedResponse<Book>;
   categories: CatalogGenre[];
-  popularBooks: Book[];
-  recommendations: UserRecommendation[];
   isBooksLoading: boolean;
   isBooksFetching: boolean;
   isBooksError: boolean;
@@ -41,24 +27,8 @@ interface UseExploreCatalogResult {
   isCategoriesLoading: boolean;
   isCategoriesFetching: boolean;
   isCategoriesError: boolean;
-  isPopularBooksLoading: boolean;
-  isPopularBooksFetching: boolean;
-  isPopularBooksError: boolean;
-  isRecommendationsLoading: boolean;
-  isRecommendationsFetching: boolean;
-  isRecommendationsError: boolean;
-  isRefreshingRecommendations: boolean;
   refetchBooks: () => void;
   refetchCategories: () => void;
-  refetchPopularBooks: () => void;
-  refetchRecommendations: () => void;
-  refreshRecommendations: () => void;
-  dismissRecommendation: (id: number) => void;
-  clickRecommendation: (id: number) => void;
-  submitRecommendationFeedback: (
-    recommendation: UserRecommendation,
-    feedbackType: RecommendationFeedbackType
-  ) => void;
 }
 
 function createEmptyPagination<T>(
@@ -79,7 +49,6 @@ function createEmptyPagination<T>(
 }
 
 export function useExploreCatalog(
-  token?: string | null,
   page = 1,
   filters: CatalogBookFilters = {}
 ): UseExploreCatalogResult {
@@ -90,60 +59,10 @@ export function useExploreCatalog(
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
-  const popularBooksQuery = useQuery({
-    queryKey: catalogKeys.popularBooks(12),
-    queryFn: () => getPopularBooks(12),
-    staleTime: 60_000,
-  });
   const categoriesQuery = useQuery({
     queryKey: catalogKeys.genres(50),
     queryFn: () => getGenres(50),
     staleTime: 60_000,
-  });
-  const recommendationsQuery = useQuery({
-    queryKey: catalogKeys.recommendations(),
-    queryFn: () => getRecommendedBooks(token),
-    enabled: Boolean(token),
-  });
-  const dismissMutation = useMutation({
-    mutationFn: (id: number) => dismissRecommendation(id, token),
-    onSuccess: () => {
-      toast.success("Recommendation dismissed.");
-      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
-    },
-    onError: () => {
-      toast.error("Couldn't dismiss that recommendation.");
-    },
-  });
-  const clickMutation = useMutation({
-    mutationFn: (id: number) => clickRecommendation(id, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
-    },
-  });
-  const feedbackMutation = useMutation({
-    mutationFn: ({
-      recommendation,
-      feedbackType,
-    }: {
-      recommendation: UserRecommendation;
-      feedbackType: RecommendationFeedbackType;
-    }) =>
-      createRecommendationFeedback(
-        {
-          book: recommendation.book,
-          recommendation: recommendation.id,
-          feedback_type: feedbackType,
-        },
-        token
-      ),
-    onSuccess: () => {
-      toast.success("Recommendation feedback saved.");
-      queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
-    },
-    onError: () => {
-      toast.error("Couldn't save that feedback.");
-    },
   });
 
   useEffect(() => {
@@ -171,8 +90,6 @@ export function useExploreCatalog(
     books: booksPagination.results,
     booksPagination,
     categories: categoriesQuery.data || [],
-    popularBooks: popularBooksQuery.data || [],
-    recommendations: recommendationsQuery.data || [],
     isBooksLoading: booksQuery.isLoading,
     isBooksFetching: booksQuery.isFetching,
     isBooksError: booksQuery.isError,
@@ -180,26 +97,7 @@ export function useExploreCatalog(
     isCategoriesLoading: categoriesQuery.isLoading,
     isCategoriesFetching: categoriesQuery.isFetching,
     isCategoriesError: categoriesQuery.isError,
-    isPopularBooksLoading: popularBooksQuery.isLoading,
-    isPopularBooksFetching: popularBooksQuery.isFetching,
-    isPopularBooksError: popularBooksQuery.isError,
-    isRecommendationsLoading: recommendationsQuery.isLoading,
-    isRecommendationsFetching: recommendationsQuery.isFetching,
-    isRecommendationsError: recommendationsQuery.isError,
-    isRefreshingRecommendations:
-      dismissMutation.isPending ||
-      clickMutation.isPending ||
-      feedbackMutation.isPending,
     refetchBooks: () => void booksQuery.refetch(),
     refetchCategories: () => void categoriesQuery.refetch(),
-    refetchPopularBooks: () => void popularBooksQuery.refetch(),
-    refetchRecommendations: () => void recommendationsQuery.refetch(),
-    refreshRecommendations: () => {
-      void recommendationsQuery.refetch();
-    },
-    dismissRecommendation: (id) => dismissMutation.mutate(id),
-    clickRecommendation: (id) => clickMutation.mutate(id),
-    submitRecommendationFeedback: (recommendation, feedbackType) =>
-      feedbackMutation.mutate({ recommendation, feedbackType }),
   };
 }

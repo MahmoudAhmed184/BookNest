@@ -52,9 +52,15 @@ export function filterBooksByCatalogFilters(
     const maxPagesMatch =
       !filters.num_pages_max || pageCount <= Number(filters.num_pages_max);
     const publicationDate = book.publication_date ?? "";
-    const dateFromMatch =
-      !filters.pub_date_from || publicationDate >= filters.pub_date_from;
-    const dateToMatch = !filters.pub_date_to || publicationDate <= filters.pub_date_to;
+    const publicationYear =
+      book.publication_year ||
+      (publicationDate ? Number.parseInt(publicationDate.slice(0, 4), 10) : 0);
+    const yearFromMatch =
+      !filters.publication_year_from ||
+      publicationYear >= Number(filters.publication_year_from);
+    const yearToMatch =
+      !filters.publication_year_to ||
+      publicationYear <= Number(filters.publication_year_to);
 
     return (
       genreMatch &&
@@ -62,8 +68,8 @@ export function filterBooksByCatalogFilters(
       ratingMatch &&
       minPagesMatch &&
       maxPagesMatch &&
-      dateFromMatch &&
-      dateToMatch
+      yearFromMatch &&
+      yearToMatch
     );
   });
 }

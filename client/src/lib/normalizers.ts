@@ -54,6 +54,13 @@ export interface NormalizedLimitOffsetList<TItem> {
   results: TItem[];
 }
 
+export interface ApiListResponse<TItem> {
+  results: TItem[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
 export function normalizeAuthEnvelope<
   TUser,
   TMeta extends AuthEnvelopeMeta = AuthEnvelopeMeta,
@@ -114,6 +121,12 @@ export function normalizePaginatedList<TItem>(
     hasNext: params.page < totalPages,
     hasPrevious: params.page > 1,
   };
+}
+
+export function normalizeListResponse<TItem>(
+  response: ApiListResponse<TItem> | TItem[]
+): TItem[] {
+  return Array.isArray(response) ? response : response.results;
 }
 
 export function normalizeArrayResponse<TItem>(response: TItem[]): TItem[] {

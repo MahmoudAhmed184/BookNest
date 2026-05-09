@@ -4,6 +4,7 @@ import {
   normalizeArrayResponse,
   normalizeAuthEnvelope,
   normalizeEmptyResponse,
+  normalizeListResponse,
   normalizeLimitOffsetList,
   normalizeProfileEnvelope,
   type AuthEnvelopeMeta,
@@ -76,6 +77,17 @@ describe("normalizers", () => {
     const response = [{ id: 1, username: "reader" }];
 
     expect(normalizeArrayResponse<TestUser>(response)).toBe(response);
+  });
+
+  it("unwraps paginated list envelopes", () => {
+    const response = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ id: 1, username: "reader" }],
+    };
+
+    expect(normalizeListResponse<TestUser>(response)).toEqual(response.results);
   });
 
   it("normalizes empty 204 responses to void", () => {

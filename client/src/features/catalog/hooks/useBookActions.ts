@@ -15,6 +15,7 @@ import {
   addToCollection,
   saveReadingProgress,
 } from "../../collections/services/collectionService";
+import { collectionKeys } from "../../collections/hooks/collection.keys";
 import { catalogKeys } from "./catalog.keys";
 import { profileKeys } from "../../profile/hooks/profile.keys";
 
@@ -33,6 +34,7 @@ interface UseBookActionsResult {
   isAddingBook: boolean;
   isMarkingAsRead: boolean;
   isSubmittingReview: boolean;
+  isSavingRating: boolean;
   isDeletingRating: boolean;
   isUpdatingReview: boolean;
   isVotingReview: boolean;
@@ -42,7 +44,7 @@ interface UseBookActionsResult {
   editReview: (reviewId: string | number, reviewText: string) => void;
   voteReview: (reviewId: string | number, voteType: ReviewVoteType) => void;
   deleteReviewVote: (reviewId: string | number) => void;
-  submitRating: () => void;
+  submitRating: (nextRating?: number) => void;
   submitReview: () => void;
 }
 
@@ -58,19 +60,28 @@ export function useBookActions({
 }: UseBookActionsOptions): UseBookActionsResult {
   const queryClient = useQueryClient();
   const bookId = id ? Number(id) : undefined;
-  const ratingPayload = () => ({ book: bookId, value: rating });
+  const ratingPayload = (value: number) => ({ book: bookId, value });
   const invalidateRatingState = (): void => {
     queryClient.invalidateQueries({ queryKey: catalogKeys.book(id) });
     queryClient.invalidateQueries({ queryKey: catalogKeys.ratings(id) });
     queryClient.invalidateQueries({ queryKey: catalogKeys.myRating(id) });
     queryClient.invalidateQueries({ queryKey: catalogKeys.recommendations() });
   };
-  const saveRating = (): Promise<BookRating> => {
-    if (currentRatingId !== null && currentRatingId !== undefined) {
-      return updateRating(currentRatingId, rating, token);
+  const requireAuth = (message: string): boolean => {
+    if (token) return true;
+    toast.error(message);
+    return false;
+  };
+  const saveRating = (nextRating = rating): Promise<BookRating> => {
+    if (!bookId || nextRating < 1) {
+      throw new Error("A book and rating are required");
     }
 
-    return createRating(ratingPayload(), token);
+    if (currentRatingId !== null && currentRatingId !== undefined) {
+      return updateRating(currentRatingId, nextRating, token);
+    }
+
+    return createRating(ratingPayload(nextRating), token);
   };
 
   const addBookMutation = useMutation({
@@ -79,6 +90,7 @@ export function useBookActions({
     onSuccess: () => {
       toast.success("Added to your shelf!");
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.items() });
     },
     onError: () => {
       toast.error("Couldn't save. Try again.");
@@ -87,7 +99,7 @@ export function useBookActions({
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
       if (completedListId === null || bookId === undefined) {
-        throw new Error("A completed collection is required");
+        throw new Error("A completed collection is required.");
       }
 
       await addToCollection(
@@ -107,6 +119,7 @@ export function useBookActions({
     onSuccess: () => {
       toast.success("Marked as read.");
       queryClient.invalidateQueries({ queryKey: profileKeys.collections() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.items() });
     },
     onError: () => {
       toast.error("Couldn't mark this book as read. Try again.");
@@ -114,7 +127,7 @@ export function useBookActions({
   });
   const reviewMutation = useMutation({
     mutationFn: async () => {
-      const savedRating = await saveRating();
+      const savedRating = await saveRating(rating);
       const ratingId =
         typeof savedRating === "object" &&
         savedRating !== null &&
@@ -143,7 +156,7 @@ export function useBookActions({
     },
   });
   const ratingMutation = useMutation({
-    mutationFn: saveRating,
+    mutationFn: (nextRating?: number) => saveRating(nextRating),
     onSuccess: () => {
       toast.success("Rating saved.");
       invalidateRatingState();
@@ -216,19 +229,45 @@ export function useBookActions({
     isAddingBook: addBookMutation.isPending,
     isMarkingAsRead: markAsReadMutation.isPending,
     isSubmittingReview: reviewMutation.isPending || ratingMutation.isPending,
+    isSavingRating: ratingMutation.isPending,
     isDeletingRating: deleteRatingMutation.isPending,
     isUpdatingReview: updateReviewMutation.isPending,
     isVotingReview:
       voteReviewMutation.isPending || deleteReviewVoteMutation.isPending,
-    addBookToList: (listId) => addBookMutation.mutate(listId),
-    markAsRead: () => markAsReadMutation.mutate(),
-    deleteRating: () => deleteRatingMutation.mutate(),
+    addBookToList: (listId) => {
+      if (!requireAuth("Sign in to save books to a list.")) return;
+      addBookMutation.mutate(listId);
+    },
+    markAsRead: () => {
+      if (!requireAuth("Sign in to mark books as read.")) return;
+      if (completedListId === null) {
+        toast.error("Create a completed list before marking books as read.");
+        return;
+      }
+      markAsReadMutation.mutate();
+    },
+    deleteRating: () => {
+      if (!requireAuth("Sign in to manage ratings.")) return;
+      deleteRatingMutation.mutate();
+    },
     editReview: (reviewId, text) =>
+      requireAuth("Sign in to edit reviews.") &&
       updateReviewMutation.mutate({ reviewId, text }),
-    voteReview: (reviewId, voteType) =>
-      voteReviewMutation.mutate({ reviewId, voteType }),
-    deleteReviewVote: (reviewId) => deleteReviewVoteMutation.mutate(reviewId),
-    submitRating: () => ratingMutation.mutate(),
-    submitReview: () => reviewMutation.mutate(),
+    voteReview: (reviewId, voteType) => {
+      if (!requireAuth("Sign in to vote on reviews.")) return;
+      voteReviewMutation.mutate({ reviewId, voteType });
+    },
+    deleteReviewVote: (reviewId) => {
+      if (!requireAuth("Sign in to manage review votes.")) return;
+      deleteReviewVoteMutation.mutate(reviewId);
+    },
+    submitRating: (nextRating) => {
+      if (!requireAuth("Sign in to rate books.")) return;
+      ratingMutation.mutate(nextRating);
+    },
+    submitReview: () => {
+      if (!requireAuth("Sign in to review books.")) return;
+      reviewMutation.mutate();
+    },
   };
 }

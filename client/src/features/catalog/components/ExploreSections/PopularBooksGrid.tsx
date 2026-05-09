@@ -18,6 +18,7 @@ export function PopularBooksGrid({ books }: PopularBooksGridProps): ReactElement
         {books.map((book) => (
           <BookCard
             key={book.id}
+            book={book}
             to={routeBuilders.book(book.id)}
             title={book.title}
             author={getAuthorNames(book)}

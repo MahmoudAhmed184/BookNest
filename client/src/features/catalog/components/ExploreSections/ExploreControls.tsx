@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export type ExploreSortMode = "recommended" | "title" | "author";
+export type ExploreSortMode = "relevance" | "newest" | "highest" | "reviews" | "az";
 
 export interface ActiveExploreFilter {
   id: string;
@@ -22,9 +22,11 @@ export interface ExploreControlsProps {
 }
 
 const sortOptions: Array<{ value: ExploreSortMode; label: string; ariaLabel: string }> = [
-  { value: "recommended", label: "Recommended", ariaLabel: "Sort by recommended order" },
-  { value: "title", label: "Title A-Z", ariaLabel: "Sort by title A to Z" },
-  { value: "author", label: "Author A-Z", ariaLabel: "Sort by author A to Z" },
+  { value: "relevance", label: "Relevance", ariaLabel: "Sort by relevance" },
+  { value: "newest", label: "Newest", ariaLabel: "Sort by newest publication" },
+  { value: "highest", label: "Highest Rated", ariaLabel: "Sort by highest rated" },
+  { value: "reviews", label: "Most Reviews", ariaLabel: "Sort by most reviews" },
+  { value: "az", label: "A-Z", ariaLabel: "Sort alphabetically from A to Z" },
 ];
 
 export function ExploreControls({
@@ -74,27 +76,22 @@ export function ExploreControls({
           </div>
         </div>
 
-        <fieldset className="min-w-0">
-          <legend className="mb-2 text-sm font-medium text-primary-white">Sort books</legend>
-          <div className="flex flex-wrap rounded-xl bg-primary-black p-1">
+        <label htmlFor="explore-sort" className="flex min-w-48 flex-col gap-2 text-sm font-medium text-primary-white">
+          Sort
+          <select
+            id="explore-sort"
+            value={sortMode}
+            onChange={(event) => onSortChange(event.target.value as ExploreSortMode)}
+            className="field min-h-[44px] text-primary-white"
+            aria-label={sortOptions.find((option) => option.value === sortMode)?.ariaLabel ?? "Sort books"}
+          >
             {sortOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onSortChange(option.value)}
-                className={`min-h-[44px] rounded-lg px-3 py-2 text-sm font-medium sm:px-4 ${
-                  sortMode === option.value
-                    ? "btn-accent-v text-primary-white shadow-md"
-                    : "text-primary-gray hover:bg-secondary-black hover:text-primary-white"
-                }`}
-                aria-pressed={sortMode === option.value}
-                aria-label={option.ariaLabel}
-              >
+              <option key={option.value} value={option.value}>
                 {option.label}
-              </button>
+              </option>
             ))}
-          </div>
-        </fieldset>
+          </select>
+        </label>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">

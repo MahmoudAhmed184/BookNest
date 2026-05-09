@@ -19,6 +19,7 @@ export function SearchResultsGrid({
       {books.map((book, position) => (
         <BookCard
           key={book.id}
+          book={book}
           to={routeBuilders.book(book.id)}
           title={book.title}
           author={getAuthorNames(book)}

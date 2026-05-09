@@ -1,6 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-import { listRecommendationModels } from "../services/bookService";
+import {
+  listRecommendationModels,
+  triggerRecommendationRefresh,
+} from "../services/bookService";
 import type { RecommendationModel } from "../types/book";
 import { catalogKeys } from "./catalog.keys";
 
@@ -17,10 +24,19 @@ interface UseRecommendationModelsResult {
 export function useRecommendationModels(
   token: string | null | undefined
 ): UseRecommendationModelsResult {
+  const queryClient = useQueryClient();
   const modelsQuery = useQuery({
     queryKey: catalogKeys.recommendationModels(),
     queryFn: () => listRecommendationModels(token),
     enabled: Boolean(token),
+  });
+  const refreshMutation = useMutation({
+    mutationFn: (modelId: number) => triggerRecommendationRefresh(modelId, token),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: catalogKeys.recommendationModels(),
+      });
+    },
   });
 
   return {
@@ -28,8 +44,8 @@ export function useRecommendationModels(
     isLoading: modelsQuery.isLoading,
     isFetching: modelsQuery.isFetching,
     isError: modelsQuery.isError,
-    isRefreshing: false,
-    triggerRefresh: () => undefined,
+    isRefreshing: refreshMutation.isPending,
+    triggerRefresh: (modelId) => refreshMutation.mutate(modelId),
     refetch: () => void modelsQuery.refetch(),
   };
 }

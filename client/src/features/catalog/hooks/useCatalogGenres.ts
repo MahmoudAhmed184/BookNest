@@ -39,37 +39,60 @@ function createEmptyPagination(
   };
 }
 
-export function useCatalogGenres(page = 1): UseCatalogGenresResult {
+export function useCatalogGenres(
+  page = 1,
+  query = ""
+): UseCatalogGenresResult {
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: catalogKeys.genresPage(page, categoriesPageSize),
-    queryFn: () => getGenresPage({ page, pageSize: categoriesPageSize }),
+  const trimmedQuery = query.trim();
+  const genresQuery = useQuery({
+    queryKey: catalogKeys.genresPage(page, categoriesPageSize, trimmedQuery),
+    queryFn: () =>
+      getGenresPage({
+        page,
+        pageSize: categoriesPageSize,
+        query: trimmedQuery,
+      }),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 
   useEffect(() => {
-    if (query.isPlaceholderData || !query.data?.hasNext) return;
+    if (genresQuery.isPlaceholderData || !genresQuery.data?.hasNext) return;
 
     const nextPage = page + 1;
     void queryClient.prefetchQuery({
-      queryKey: catalogKeys.genresPage(nextPage, categoriesPageSize),
+      queryKey: catalogKeys.genresPage(
+        nextPage,
+        categoriesPageSize,
+        trimmedQuery
+      ),
       queryFn: () =>
-        getGenresPage({ page: nextPage, pageSize: categoriesPageSize }),
+        getGenresPage({
+          page: nextPage,
+          pageSize: categoriesPageSize,
+          query: trimmedQuery,
+        }),
       staleTime: 60_000,
     });
-  }, [page, query.data?.hasNext, query.isPlaceholderData, queryClient]);
+  }, [
+    page,
+    genresQuery.data?.hasNext,
+    genresQuery.isPlaceholderData,
+    queryClient,
+    trimmedQuery,
+  ]);
 
   const pagination =
-    query.data ?? createEmptyPagination(page, categoriesPageSize);
+    genresQuery.data ?? createEmptyPagination(page, categoriesPageSize);
 
   return {
     genres: pagination.results,
     pagination,
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    isError: query.isError,
-    isPlaceholderData: query.isPlaceholderData,
-    refetch: () => void query.refetch(),
+    isLoading: genresQuery.isLoading,
+    isFetching: genresQuery.isFetching,
+    isError: genresQuery.isError,
+    isPlaceholderData: genresQuery.isPlaceholderData,
+    refetch: () => void genresQuery.refetch(),
   };
 }

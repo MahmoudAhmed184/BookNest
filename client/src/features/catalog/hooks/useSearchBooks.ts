@@ -5,7 +5,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { searchBooks } from "../services/bookService";
+import {
+  searchBooks,
+  type SearchBooksOrdering,
+} from "../services/bookService";
 import type { Book } from "../types/book";
 import type { OffsetPaginatedResponse } from "../../../types/api";
 import { catalogKeys } from "./catalog.keys";
@@ -44,7 +47,8 @@ function createEmptyPagination(
 export function useSearchBooks(
   searchTerm: string,
   page = 1,
-  includeExternal = false
+  includeExternal = false,
+  ordering: SearchBooksOrdering = "relevance"
 ): UseSearchBooksResult {
   const queryClient = useQueryClient();
   const trimmedSearch = searchTerm.trim();
@@ -53,7 +57,8 @@ export function useSearchBooks(
       trimmedSearch,
       page,
       searchPageSize,
-      includeExternal
+      includeExternal,
+      ordering
     ),
     queryFn: () =>
       searchBooks({
@@ -61,6 +66,7 @@ export function useSearchBooks(
         page,
         pageSize: searchPageSize,
         includeExternal,
+        ordering,
       }),
     enabled: trimmedSearch.length > 0,
     placeholderData: keepPreviousData,
@@ -82,7 +88,8 @@ export function useSearchBooks(
         trimmedSearch,
         nextPage,
         searchPageSize,
-        includeExternal
+        includeExternal,
+        ordering
       ),
       queryFn: () =>
         searchBooks({
@@ -90,6 +97,7 @@ export function useSearchBooks(
           page: nextPage,
           pageSize: searchPageSize,
           includeExternal,
+          ordering,
         }),
       staleTime: 60_000,
     });
@@ -99,6 +107,7 @@ export function useSearchBooks(
     query.isPlaceholderData,
     queryClient,
     includeExternal,
+    ordering,
     trimmedSearch,
   ]);
 

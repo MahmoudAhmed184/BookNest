@@ -7,7 +7,7 @@ export type FooterProps = ComponentProps<"footer">;
 
 const footerLinks = [
   { to: routePaths.explore, label: "Explore" },
-  { to: routePaths.categories, label: "Categories" },
+  { to: routePaths.genres, label: "Genres" },
   { to: routePaths.search, label: "Search" },
 ] as const;
 
