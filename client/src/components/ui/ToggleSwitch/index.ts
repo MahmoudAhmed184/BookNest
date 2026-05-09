@@ -1,2 +1,1 @@
-export { ToggleSwitch, default } from "./ToggleSwitch";
-export type { ToggleSwitchProps } from "./ToggleSwitch";
+export { ToggleSwitch } from "./ToggleSwitch";

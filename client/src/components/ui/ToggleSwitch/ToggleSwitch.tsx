@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export interface ToggleSwitchProps {
+interface ToggleSwitchProps {
   checked: boolean;
   label: string;
   description?: string | undefined;
@@ -51,5 +51,3 @@ export function ToggleSwitch({
     </button>
   );
 }
-
-export default ToggleSwitch;

@@ -3,11 +3,11 @@ export type ThemeMode = "dark" | "light";
 const THEME_STORAGE_KEY = "booknest.theme";
 const LIGHT_MODE_QUERY = "(prefers-color-scheme: light)";
 
-export function isThemeMode(value: string | null): value is ThemeMode {
+function isThemeMode(value: string | null): value is ThemeMode {
   return value === "dark" || value === "light";
 }
 
-export function getSystemTheme(): ThemeMode {
+function getSystemTheme(): ThemeMode {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "dark";
   }

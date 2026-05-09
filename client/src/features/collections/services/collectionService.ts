@@ -21,7 +21,6 @@ import type {
   CreateCollectionPayload,
   ReadingCollection,
   ReadingProgress,
-  UpdateCollectionBookPayload,
   UpdateCollectionPayload,
   UpdateReadingProgressPayload,
 } from "../types/collection";
@@ -131,22 +130,6 @@ export async function getCollectionBooks(
   }
 }
 
-export async function updateCollectionBook(
-  id: number,
-  data: UpdateCollectionBookPayload,
-  token?: string | null
-): Promise<CollectionBook> {
-  try {
-    return await patchData<CollectionBook, UpdateCollectionBookPayload>(
-      `/api/v1/collection-books/${id}/`,
-      data,
-      { headers: authHeaders(token) }
-    );
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
 export async function removeFromCollection(
   collectionBookId: number,
   token?: string | null
@@ -161,21 +144,6 @@ export async function removeFromCollection(
   }
 }
 
-export async function getReadingProgress(
-  token?: string | null
-): Promise<ReadingProgress[]> {
-  try {
-    const response = await getData<
-      LimitOffsetApiResponse<ReadingProgress> | ReadingProgress[]
-    >("/api/v1/reading-progress/?page_size=100", {
-      headers: authHeaders(token),
-    });
-    return normalizeListResponse(response);
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
 export async function saveReadingProgress(
   data: UpdateReadingProgressPayload,
   token?: string | null
@@ -183,22 +151,6 @@ export async function saveReadingProgress(
   try {
     return await postData<ReadingProgress, UpdateReadingProgressPayload>(
       "/api/v1/reading-progress/",
-      data,
-      { headers: authHeaders(token) }
-    );
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
-export async function updateReadingProgress(
-  id: number,
-  data: Partial<UpdateReadingProgressPayload>,
-  token?: string | null
-): Promise<ReadingProgress> {
-  try {
-    return await patchData<ReadingProgress, Partial<UpdateReadingProgressPayload>>(
-      `/api/v1/reading-progress/${id}/`,
       data,
       { headers: authHeaders(token) }
     );

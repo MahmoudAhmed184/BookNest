@@ -12,7 +12,7 @@ export interface AuthEnvelopeMeta {
   [key: string]: unknown;
 }
 
-export interface AuthEnvelopeData<TUser> {
+interface AuthEnvelopeData<TUser> {
   user: TUser;
   access: string;
   refresh: string;

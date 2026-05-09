@@ -4,7 +4,7 @@ interface FallbackHueStyle extends CSSProperties {
   "--fallback-hue": string;
 }
 
-export function colorFromString(value: string): number {
+function colorFromString(value: string): number {
   const source = value.trim() || "BookNest";
   let hash = 0;
 

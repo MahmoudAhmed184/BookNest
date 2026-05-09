@@ -34,7 +34,7 @@ function StarIcon({
   );
 }
 
-export interface StarRatingProps {
+interface StarRatingProps {
   value: number;
   max?: number | undefined;
   size?: "sm" | "md" | "lg" | undefined;
@@ -108,5 +108,3 @@ export function StarRating({
     </div>
   );
 }
-
-export default StarRating;

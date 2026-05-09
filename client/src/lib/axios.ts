@@ -333,7 +333,7 @@ export async function deleteData<T, D = unknown>(
   return response.data;
 }
 
-export function getApiError(error: unknown): ApiErrorResponse {
+function getApiError(error: unknown): ApiErrorResponse {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
     const data = error.response?.data;
 
@@ -351,7 +351,7 @@ export function getApiError(error: unknown): ApiErrorResponse {
   return { detail: "Unknown API error" };
 }
 
-export function getApiErrorMessage(error: unknown): string {
+function getApiErrorMessage(error: unknown): string {
   const apiError = getApiError(error);
 
   if (typeof apiError.detail === "string") {
@@ -396,7 +396,7 @@ function getHeaderValue(headers: unknown, name: string): unknown {
   return headers[name] ?? headers[name.toLowerCase()];
 }
 
-export function toApiRequestError(error: unknown): ApiRequestError {
+function toApiRequestError(error: unknown): ApiRequestError {
   const data = getApiError(error);
   const message = getApiErrorMessage(error);
 

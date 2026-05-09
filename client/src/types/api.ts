@@ -6,17 +6,9 @@ export interface ApiErrorResponse {
   [key: string]: unknown;
 }
 
-export interface ApiEnvelope<T> {
-  data: T;
-  message?: string;
-  status?: string;
-}
-
 export interface ApiDetailResponse {
   detail?: string;
 }
-
-export type ApiResult<T> = T | ApiErrorResponse;
 
 export interface OffsetPageParams {
   page: number;
@@ -40,28 +32,6 @@ export interface LimitOffsetApiResponse<T> {
   next?: string | null;
   previous?: string | null;
   results: T[];
-}
-
-export interface PageNumberPaginationApiMeta {
-  current_page?: number;
-  page_size?: number;
-  total_count?: number;
-  total_pages?: number;
-  has_next?: boolean;
-  has_previous?: boolean;
-}
-
-export interface PageNumberApiResponse<T> {
-  query?: string;
-  results: T[];
-  pagination?: PageNumberPaginationApiMeta;
-  filters_applied?: Record<string, unknown>;
-  include_external?: boolean;
-}
-
-export interface CursorPageParams {
-  pageSize: number;
-  cursor?: string;
 }
 
 export interface CursorApiResponse<T> {

@@ -70,14 +70,6 @@ export interface AddToCollectionPayload {
   notes?: string;
 }
 
-export interface UpdateCollectionBookPayload {
-  status?: ReadingCollectionStatus;
-  position?: number;
-  notes?: string;
-  started_at?: string | null;
-  finished_at?: string | null;
-}
-
 export interface UpdateReadingProgressPayload {
   book: number;
   status: ReadingCollectionStatus;

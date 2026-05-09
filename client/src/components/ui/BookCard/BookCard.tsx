@@ -8,8 +8,8 @@ import {
   getInitials,
 } from "../../../utils/colorFromString";
 
-export type BookCardVariant = "featured" | "new" | "trending";
-export type BookCardSize = "standard" | "large" | "small" | "compact";
+type BookCardVariant = "featured" | "new" | "trending";
+type BookCardSize = "standard" | "large" | "small" | "compact";
 
 interface BookCardProps extends Omit<ComponentProps<typeof Link>, "children"> {
   book?: Book | undefined;
@@ -310,5 +310,3 @@ export function BookCard({
     </article>
   );
 }
-
-export type { BookCardProps };
