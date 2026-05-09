@@ -3,6 +3,7 @@ import type { OffsetPaginatedResponse } from "../../../types/api";
 
 export interface FollowProfileSummary {
   id: number;
+  name?: string;
   handle: string;
   bio?: string;
   profile_type?: "reader" | "creator" | "librarian" | "staff";
@@ -28,5 +29,4 @@ export interface FollowRelationship {
   updated_at?: string;
 }
 
-export type Follow = FollowRelationship;
 export type FollowRelationshipPage = OffsetPaginatedResponse<FollowRelationship>;

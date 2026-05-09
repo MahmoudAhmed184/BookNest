@@ -18,7 +18,7 @@ export interface Author {
   updated_at?: string;
 }
 
-export interface Genre {
+interface Genre {
   id: number;
   name: string;
   normalized_name?: string;
@@ -83,29 +83,6 @@ export interface Book {
   updated_at?: string;
 }
 
-export interface BookAuthor {
-  id: number;
-  book: number;
-  author: number;
-  author_detail?: Author;
-  role: string;
-  position: number;
-  contribution_note?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface BookGenre {
-  id: number;
-  book: number;
-  genre: number;
-  genre_detail?: Genre;
-  is_primary: boolean;
-  position: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
 export interface RelatedBook {
   id: number;
   from_book: number;
@@ -113,21 +90,6 @@ export interface RelatedBook {
   relation_type: string;
   score: number | string;
   source?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface BookTrendSnapshot {
-  id: number;
-  book: number;
-  period: string;
-  metric_date: string;
-  view_count: number;
-  rating_count: number;
-  review_count: number;
-  collection_add_count: number;
-  search_click_count: number;
-  score: number | string;
   created_at?: string;
   updated_at?: string;
 }
@@ -161,6 +123,16 @@ export interface SearchAutocompleteTerm {
 export interface BookReview {
   id: number;
   user: number;
+  user_detail?: {
+    id: number;
+    name?: string;
+    email?: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
+    profile_picture?: string | null;
+    profile_picture_fallback_url?: string | null;
+  };
   book: number;
   book_detail?: Book;
   rating?: number | null;
@@ -176,6 +148,7 @@ export interface BookReview {
   is_archived?: boolean;
   created_at?: string;
   updated_at?: string;
+  can_edit?: boolean;
 }
 
 export interface BookRating {
@@ -283,10 +256,13 @@ export interface FeedEvent {
   actor: number;
   actor_detail?: {
     id: number;
-    email: string;
+    name?: string;
+    email?: string;
     display_name?: string;
     first_name?: string;
     last_name?: string;
+    profile_picture?: string | null;
+    profile_picture_fallback_url?: string | null;
   };
   event_type: string;
   book?: number | null;

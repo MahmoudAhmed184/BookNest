@@ -19,7 +19,10 @@ import {
 } from "../components/ProfileSections";
 import { useProfileActions } from "../hooks/useProfileActions";
 import { useProfilePageData } from "../hooks/useProfilePageData";
-import { favoriteGenreFromCollections } from "../utils/profileDisplay";
+import {
+  favoriteGenreFromCollections,
+  getProfileDisplayName,
+} from "../utils/profileDisplay";
 
 interface PendingBookDelete {
   item: CollectionBook;
@@ -92,6 +95,7 @@ export default function Profile(): ReactElement {
   const items = primaryCollection?.items || [];
   const bookCount = items.length || primaryCollection?.item_count || 0;
   const favoriteGenre = favoriteGenreFromCollections(collections, user.interest_links);
+  const displayName = getProfileDisplayName(user);
 
   return (
     <>
@@ -106,7 +110,7 @@ export default function Profile(): ReactElement {
             <Link
               to={routePaths.settings}
               className="btn btn-accent-v inline-flex min-h-[44px] items-center justify-center gap-2 px-5 py-2 text-sm font-medium shadow-md hover:-translate-y-0.5 hover:shadow-lg"
-              aria-label={`Edit ${user.handle}'s profile`}
+              aria-label={`Edit ${displayName}'s profile`}
             >
               <EditProfileIcon />
               Edit Profile

@@ -1,4 +1,4 @@
-import type { ChangeEvent, ReactElement } from "react";
+import { useEffect, useState, type ChangeEvent, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import { routeBuilders } from "../../../../routes/paths";
@@ -7,6 +7,7 @@ import {
   formatCompactNumber,
   getFallbackHueStyle,
   getInitials,
+  getProfileDisplayName,
   resolveProfileImage,
 } from "../../../profile/utils/profileDisplay";
 
@@ -25,10 +26,16 @@ export function SettingsProfileOverview({
   isUploading,
   onFileChange,
 }: SettingsProfileOverviewProps): ReactElement {
+  const [hasImageError, setHasImageError] = useState(false);
   const profileImage = resolveProfileImage(user.picture || user.picture_fallback_url);
-  const displayName = user.user.display_name?.trim() || user.handle;
+  const displayName = getProfileDisplayName(user);
   const completion = Math.max(0, Math.min(user.completion_percent ?? 0, 100));
   const profileVisibility = preferences?.profile_public ? "Public profile" : "Private profile";
+  const canShowImage = Boolean(profileImage) && !hasImageError;
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [profileImage]);
 
   return (
     <section
@@ -42,7 +49,7 @@ export function SettingsProfileOverview({
               htmlFor="profile-picture"
               className="group relative block h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-lg bg-secondary-black shadow-lg focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-2"
             >
-              {profileImage ? (
+              {canShowImage ? (
                 <img
                   src={profileImage}
                   alt={`${displayName}'s profile`}
@@ -51,6 +58,7 @@ export function SettingsProfileOverview({
                   height="96"
                   loading="lazy"
                   decoding="async"
+                  onError={() => setHasImageError(true)}
                 />
               ) : (
                 <div
@@ -120,7 +128,7 @@ export function SettingsProfileOverview({
             <ProfileStat label="Books read" value={formatCompactNumber(user.books_read_count)} />
           </dl>
           <Link
-            to={routeBuilders.userProfile(user.user.id)}
+            to={routeBuilders.userProfile(user.handle || user.user.id)}
             className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-[var(--surface-glass-border)] px-4 text-sm font-semibold text-primary-white hover:border-accent hover:text-accent"
           >
             View public profile

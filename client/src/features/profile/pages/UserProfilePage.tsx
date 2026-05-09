@@ -18,7 +18,10 @@ import {
 } from "../components/ProfileSections";
 import { useUserProfilePageData } from "../hooks/useUserProfilePageData";
 import { routeBuilders, routePaths, type UserProfileRouteParams } from "../../../routes/paths";
-import { favoriteGenreFromCollections } from "../utils/profileDisplay";
+import {
+  favoriteGenreFromCollections,
+  getProfileDisplayName,
+} from "../utils/profileDisplay";
 
 interface FollowIconProps {
   isFollowed?: boolean | undefined;
@@ -44,7 +47,7 @@ function FollowIcon({ isFollowed = false }: FollowIconProps): ReactElement {
 }
 
 export default function UserProfile(): ReactElement {
-  const { id } = useParams<UserProfileRouteParams>();
+  const { handle } = useParams<UserProfileRouteParams>();
   const { authUser, token, user: isAuthenticated } = useOptionalAuth();
   const {
     user,
@@ -67,8 +70,9 @@ export default function UserProfile(): ReactElement {
     refetchReviews,
     refetchRatings,
     refetchCollections,
-  } = useUserProfilePageData(id, token);
-  const { data: existingFollow = null } = useFollowStatus(id, token);
+  } = useUserProfilePageData(handle, token);
+  const targetUserId = user?.user.id;
+  const { data: existingFollow = null } = useFollowStatus(targetUserId, token);
   const {
     followUser,
     unfollowById,
@@ -97,7 +101,9 @@ export default function UserProfile(): ReactElement {
   const primaryCollection = collections?.[0];
   const items = primaryCollection?.items || [];
   const favoriteGenre = favoriteGenreFromCollections(collections, user.interest_links);
+  const displayName = getProfileDisplayName(user);
   const userId = user.user.id;
+  const profileRouteParam = user.handle || userId;
   const canUseFollowButton =
     isAuthenticated &&
     Number.isFinite(userId) &&
@@ -128,7 +134,7 @@ export default function UserProfile(): ReactElement {
               isFollowed ? "btn-primary-v" : "btn-accent-v"
             }`}
             aria-pressed={isFollowed}
-            aria-label={`${isFollowed ? "Unfollow" : "Follow"} ${user.handle}`}
+            aria-label={`${isFollowed ? "Unfollow" : "Follow"} ${displayName}`}
             aria-busy={isFollowBusy}
           >
             <FollowIcon isFollowed={isFollowed} />
@@ -144,13 +150,13 @@ export default function UserProfile(): ReactElement {
           </Link>
         )}
         <Link
-          to={routeBuilders.profileFollowers(user.user.id)}
+          to={routeBuilders.profileFollowers(profileRouteParam)}
           className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
         >
           {followerCount} followers
         </Link>
         <Link
-          to={routeBuilders.profileFollowing(user.user.id)}
+          to={routeBuilders.profileFollowing(profileRouteParam)}
           className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-[var(--surface-glass-border)] px-4 py-2 text-sm font-semibold text-primary-white transition hover:border-accent hover:text-accent"
         >
           {followingCount} following

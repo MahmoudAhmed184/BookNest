@@ -50,25 +50,25 @@ export function ProfileReviewCard({
   );
 
   return (
-    <article className="rounded-lg border border-[var(--surface-glass-border)] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--surface-panel)_90%,transparent),color-mix(in_srgb,var(--surface-panel-strong)_76%,transparent))] p-4 text-primary-white shadow-md transition duration-200 ease-out hover:-translate-y-1 hover:shadow-lg">
-      <div className="grid gap-4 sm:grid-cols-[7rem_minmax(0,1fr)]">
+    <article className="rounded-lg border border-[var(--surface-glass-border)] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--surface-panel)_90%,transparent),color-mix(in_srgb,var(--surface-panel-strong)_76%,transparent))] p-3 text-primary-white shadow-md transition duration-200 ease-out hover:-translate-y-1 hover:shadow-lg sm:p-4">
+      <div className="flex min-w-0 gap-4">
         {review.book ? (
           <Link
             to={routeBuilders.book(review.book)}
-            className="w-fit rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-28 shrink-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {cover}
           </Link>
         ) : (
-          <div className="w-fit">{cover}</div>
+          <div className="w-28 shrink-0">{cover}</div>
         )}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase text-accent">
                 {reviewDate ? `Reviewed ${reviewDate}` : "Review"}
               </p>
-              <strong className="mt-1 line-clamp-2 block text-xl leading-tight text-primary-white" title={book?.title}>
+              <strong className="mt-1 line-clamp-2 block text-lg leading-tight text-primary-white sm:text-xl" title={book?.title}>
                 {book?.title || "Untitled book"}
               </strong>
               {review.title ? (
@@ -77,12 +77,19 @@ export function ProfileReviewCard({
                 </p>
               ) : null}
             </div>
-            <StarRating value={rating} size="sm" label={`Reader rating ${rating} out of 5`} />
+            <StarRating
+              value={rating}
+              size="sm"
+              className="shrink-0"
+              label={`Reader rating ${rating} out of 5`}
+            />
           </div>
-          <p className="line-clamp-4 text-sm leading-7 text-primary-white/90">
-            {review.body}
-          </p>
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
+          {review.body ? (
+            <p className="mt-3 line-clamp-3 text-sm leading-6 text-primary-white/90">
+              {review.body}
+            </p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-primary-gray">
             <span>
               {review.upvote_count ?? 0} helpful
             </span>

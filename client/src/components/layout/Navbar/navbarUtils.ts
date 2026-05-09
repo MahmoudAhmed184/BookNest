@@ -1,21 +1,26 @@
 import { routePaths } from "../../../routes/paths";
+import { resolveImageUrl } from "../../../lib/imageUrls";
 
 export interface NavbarProfile {
   picture?: string | null;
   picture_fallback_url?: string | null;
   handle?: string | null;
   user?: {
+    id?: number | null;
+    name?: string | null;
     display_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
   };
 }
 
-export interface NavItem {
+interface NavItem {
   to: string;
   label: string;
   authRequired?: boolean;
 }
 
-export const primaryLinks = [
+const primaryLinks = [
   { to: routePaths.explore, label: "Explore" },
   { to: routePaths.feed, label: "Feed", authRequired: true },
 ] satisfies NavItem[];
@@ -25,8 +30,7 @@ export function getPrimaryLinks(isAuthenticated: boolean): NavItem[] {
 }
 
 export function resolveProfileImage(src?: string | null): string | undefined {
-  if (!src) return undefined;
-  return src.endsWith("image") ? `${src}.svg` : src;
+  return resolveImageUrl(src);
 }
 
 export function navLinkClass(isActive: boolean): string {

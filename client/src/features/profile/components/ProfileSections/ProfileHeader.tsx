@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import type { ReadingCollection } from "../../../collections/types/collection";
 import type { ProfileOverviewStats, UserProfile } from "../../types/user";
@@ -170,6 +170,7 @@ export function ProfileHeader({
   favoriteGenre,
   isOwnProfile = false,
 }: ProfileHeaderProps): ReactElement {
+  const [hasImageError, setHasImageError] = useState(false);
   const profileImage = resolveProfileImage(user.picture || user.picture_fallback_url);
   const displayName = getProfileDisplayName(user);
   const joinedDate = formatProfileDate(user.created_at ?? user.user.date_joined);
@@ -198,6 +199,11 @@ export function ProfileHeader({
       label: "Lists",
     },
   ];
+  const canShowImage = Boolean(profileImage) && !hasImageError;
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [profileImage]);
 
   return (
     <section
@@ -211,7 +217,7 @@ export function ProfileHeader({
         <div className="flex min-w-0 flex-col gap-6">
           <div className={`flex flex-col gap-5 sm:flex-row sm:items-end ${center ? "items-center" : "items-start"}`}>
             <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-lg border border-[var(--surface-glass-border)] bg-secondary-black shadow-xl sm:h-36 sm:w-36">
-              {profileImage ? (
+              {canShowImage ? (
                 <img
                   src={profileImage}
                   alt={`${displayName}'s profile image`}
@@ -220,6 +226,7 @@ export function ProfileHeader({
                   height="144"
                   loading="lazy"
                   decoding="async"
+                  onError={() => setHasImageError(true)}
                 />
               ) : (
                 <div

@@ -95,27 +95,6 @@ export async function unfollowById(
   }
 }
 
-export async function getMyFollowers(
-  token?: string | null
-): Promise<FollowRelationship[]> {
-  try {
-    const page = await getFollowPage(
-      "/api/v1/followers/?page=1&page_size=100",
-      { page: 1, pageSize: 100 },
-      token
-    );
-    return page.results;
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
-export async function getMyFollowing(
-  token?: string | null
-): Promise<FollowRelationship[]> {
-  return listFollows(token);
-}
-
 export async function getProfileFollowers(
   userId: string | number | undefined,
   params: OffsetPageParams = defaultFollowPage,

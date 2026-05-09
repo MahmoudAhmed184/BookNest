@@ -1,8 +1,9 @@
-import type { ReactElement, RefObject } from "react";
+import { useEffect, useState, type ReactElement, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
+import { getUserDisplayName } from "../../../features/profile/utils/profileDisplay";
 import { resolveProfileImage, type NavbarProfile } from "./navbarUtils";
 
 export interface NavbarProfileMenuProps {
@@ -22,10 +23,16 @@ export function NavbarProfileMenu({
   onCloseMenus,
   onLogout,
 }: NavbarProfileMenuProps): ReactElement {
+  const [hasImageError, setHasImageError] = useState(false);
   const profileImage = resolveProfileImage(
     profile?.picture || profile?.picture_fallback_url
   );
-  const profileLabel = profile?.user?.display_name || profile?.handle || "Profile";
+  const profileLabel = getUserDisplayName(profile?.user, "Profile");
+  const canShowImage = Boolean(profileImage) && !hasImageError;
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [profileImage]);
 
   return (
     <div className="relative" ref={menuRef}>
@@ -39,13 +46,14 @@ export function NavbarProfileMenu({
         aria-controls="profile-menu"
       >
         <span className="h-10 w-10 overflow-hidden rounded-full bg-secondary-gray">
-          {profileImage ? (
+          {canShowImage ? (
             <img
               src={profileImage}
               alt={`${profileLabel} avatar`}
               className="h-full w-full object-cover"
               loading="lazy"
               decoding="async"
+              onError={() => setHasImageError(true)}
             />
           ) : (
             <span

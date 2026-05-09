@@ -245,7 +245,7 @@ function exploreState(
     isBooksLoading: false,
     isBooksFetching: false,
     isBooksError: false,
-    isBooksPlaceholderData: false,
+    isBooksLoadingMore: false,
     isCategoriesLoading: false,
     isCategoriesFetching: false,
     isCategoriesError: false,
@@ -267,7 +267,7 @@ function searchState(
     isFetching: false,
     isError: false,
     error: null,
-    isPlaceholderData: false,
+    isLoadingMore: false,
     hasData: books.length > 0,
     refetch,
   };
@@ -285,7 +285,7 @@ function authorsState(
     isLoading: false,
     isFetching: false,
     isError: false,
-    isPlaceholderData: false,
+    isLoadingMore: false,
     refetch,
   };
 
@@ -302,7 +302,7 @@ function genreBooksState(
     isLoading: false,
     isFetching: false,
     isError: false,
-    isPlaceholderData: false,
+    isLoadingMore: false,
     refetch,
   };
 
@@ -353,6 +353,7 @@ function followRowsState(
     isLoading: false,
     isFetching: false,
     isError: false,
+    isLoadingMore: false,
     refetch,
   };
 
@@ -404,6 +405,7 @@ describe("query-backed pages", () => {
       deleteBookFromShelf: vi.fn(),
       deleteProfileReview: vi.fn(),
     });
+    vi.mocked(useUserProfilePageData).mockReturnValue(profileState());
     vi.mocked(useFollows).mockReturnValue(
       {
         data: [],
@@ -544,6 +546,16 @@ describe("query-backed pages", () => {
         completedListId: 3,
       })
     );
+
+    vi.mocked(useRelatedBooks).mockReturnValue({
+      relatedBooks: [book(9, "Related Match")],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      refetch,
+    });
+    renderPage(<BookPage />);
+    expect(screen.getByText("Related Match")).toBeTruthy();
   });
 
   it("renders collection management pages", () => {

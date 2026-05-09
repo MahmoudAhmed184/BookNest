@@ -12,8 +12,8 @@ import type {
   LimitOffsetApiResponse,
   OffsetPageParams,
 } from "../../../types/api";
+import { isNumericRouteParam } from "../../../routes/paths";
 import type { BookRating, BookReview } from "../../catalog/types/book";
-import type { ReadingCollection } from "../../collections/types/collection";
 import type {
   CreateProfileInterestPayload,
   CreateUserSocialLinkPayload,
@@ -26,7 +26,6 @@ import type {
   UpdateUserSocialLinkPayload,
   UploadProfilePictureResponse,
   User,
-  UserCollectionsPage,
   UserDataAggregate,
   UserPreference,
   UserRatingsPage,
@@ -48,6 +47,10 @@ function buildQuery(params: Record<string, string | undefined>): string {
   });
 
   return searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+}
+
+function apiPathSegment(value: number | string | undefined): string {
+  return encodeURIComponent(String(value));
 }
 
 export async function getMyProfile(token?: string | null): Promise<Profile> {
@@ -73,25 +76,12 @@ export async function getProfile(
   }
 }
 
-export async function getUserProfile(
-  id: number | string | undefined,
-  token?: string | null
-): Promise<Profile> {
-  try {
-    return await getData<Profile>(`/api/v1/users/${id}/profile/`, {
-      headers: authHeaders(token),
-    });
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
 export async function getUserDataAggregate(
-  id: number | string | undefined,
+  profileParam: number | string | undefined,
   token?: string | null
 ): Promise<UserDataAggregate> {
   try {
-    const overview = await getUserProfileOverview(id, token);
+    const overview = await getProfileOverviewForProfileParam(profileParam, token);
 
     return {
       profile: overview.profile,
@@ -106,18 +96,43 @@ export async function getUserDataAggregate(
   }
 }
 
-export async function getUserProfileOverview(
+async function getUserProfileOverview(
   id: number | string | undefined,
   token?: string | null
 ): Promise<ProfileOverview> {
   try {
     return await getData<ProfileOverview>(
-      `/api/v1/users/${id}/profile-overview/`,
+      `/api/v1/users/${apiPathSegment(id)}/profile-overview/`,
       { headers: authHeaders(token) }
     );
   } catch (error: unknown) {
     throwApiError(error);
   }
+}
+
+export async function getProfileOverviewByHandle(
+  handle: number | string | undefined,
+  token?: string | null
+): Promise<ProfileOverview> {
+  try {
+    return await getData<ProfileOverview>(
+      `/api/v1/profiles/by-handle/${apiPathSegment(handle)}/overview/`,
+      { headers: authHeaders(token) }
+    );
+  } catch (error: unknown) {
+    throwApiError(error);
+  }
+}
+
+async function getProfileOverviewForProfileParam(
+  profileParam: number | string | undefined,
+  token?: string | null
+): Promise<ProfileOverview> {
+  if (isNumericRouteParam(profileParam)) {
+    return getUserProfileOverview(profileParam, token);
+  }
+
+  return getProfileOverviewByHandle(profileParam, token);
 }
 
 export async function updateUser(
@@ -289,7 +304,7 @@ export async function getUserReviews(
   return response.results;
 }
 
-export async function getUserReviewsPage(
+async function getUserReviewsPage(
   id: number | string | undefined,
   params: OffsetPageParams = defaultUserActivityPage,
   token?: string | null
@@ -320,7 +335,7 @@ export async function getUserRatings(
   return response.results;
 }
 
-export async function getUserRatingsPage(
+async function getUserRatingsPage(
   id: number | string | undefined,
   params: OffsetPageParams = defaultUserActivityPage,
   token?: string | null
@@ -338,29 +353,6 @@ export async function getUserRatingsPage(
       { headers: authHeaders(token) }
     );
     return normalizePaginatedList(ratings, params);
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
-export async function getUserCollectionsPage(
-  id: number | string | undefined,
-  params: OffsetPageParams = defaultUserActivityPage,
-  token?: string | null
-): Promise<UserCollectionsPage> {
-  const query = buildQuery({
-    page: String(params.page),
-    page_size: String(params.pageSize),
-  });
-
-  try {
-    const collections = await getData<
-      LimitOffsetApiResponse<ReadingCollection> | ReadingCollection[]
-    >(
-      `/api/v1/users/${id}/reading-collections/${query}`,
-      { headers: authHeaders(token) }
-    );
-    return normalizePaginatedList(collections, params);
   } catch (error: unknown) {
     throwApiError(error);
   }

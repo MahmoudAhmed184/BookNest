@@ -165,12 +165,13 @@ describe("profile hooks", () => {
     vi.mocked(getUserRatings).mockResolvedValue([rating(2, 4)]);
     vi.mocked(getUserCollections).mockResolvedValue([collection(2, "Public")]);
 
-    const { result } = renderHook(() => useUserProfilePageData("1"), {
+    const { result } = renderHook(() => useUserProfilePageData("mahmoud", "token"), {
       wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.user?.handle).toBe("reader"));
     expect(result.current.collections?.[0]?.name).toBe("Public");
+    expect(getUserDataAggregate).toHaveBeenCalledWith("mahmoud", "token");
   });
 
   it("loads notifications", async () => {

@@ -15,7 +15,7 @@ export function ReviewCover({ src, title }: ReviewCoverProps): ReactElement {
   if (!canShowImage) {
     return (
       <div
-        className="fallback-gradient flex h-52 min-w-36 items-center justify-center rounded-xl px-3 text-center text-2xl font-bold text-primary-white"
+        className="fallback-gradient flex h-40 w-28 items-center justify-center rounded-lg px-3 text-center text-xl font-bold text-primary-white"
         style={getFallbackHueStyle(safeTitle)}
       >
         <span aria-hidden="true">{getInitials(safeTitle)}</span>
@@ -27,10 +27,10 @@ export function ReviewCover({ src, title }: ReviewCoverProps): ReactElement {
   return (
     <img
       src={src ?? undefined}
-      className="h-52 min-w-36 rounded-xl object-cover transition-transform duration-200 ease-out hover:scale-[1.03]"
+      className="h-40 w-28 rounded-lg object-cover shadow-md transition-transform duration-200 ease-out hover:scale-[1.03]"
       alt={`Cover of ${safeTitle}`}
-      width="144"
-      height="208"
+      width="112"
+      height="160"
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}

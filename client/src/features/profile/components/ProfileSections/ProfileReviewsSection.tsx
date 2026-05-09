@@ -87,7 +87,7 @@ function ReviewSkeleton(): ReactElement {
   return (
     <div className="flex flex-col gap-4" role="status" aria-live="polite">
       {skeletonKeys.map((key) => (
-        <div key={key} className="h-44 rounded-lg animate-shimmer" />
+        <div key={key} className="h-40 rounded-lg animate-shimmer" />
       ))}
     </div>
   );

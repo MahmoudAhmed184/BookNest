@@ -49,7 +49,7 @@ export function AccountSettings({
               htmlFor="settings-display-name"
               className="mb-2 block text-sm font-semibold text-primary-gray"
             >
-              Display name
+              Name
             </label>
             <input
               id="settings-display-name"

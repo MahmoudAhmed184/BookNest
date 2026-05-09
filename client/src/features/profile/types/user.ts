@@ -4,10 +4,13 @@ import type { OffsetPaginatedResponse } from "../../../types/api";
 
 export interface User {
   id: number;
-  email: string;
+  name?: string;
+  email?: string;
   first_name?: string;
   last_name?: string;
   display_name?: string;
+  profile_picture?: string | null;
+  profile_picture_fallback_url?: string | null;
   is_active?: boolean;
   is_staff?: boolean;
   date_joined?: string;
@@ -66,6 +69,7 @@ export interface UserSocialLink {
 export interface Profile {
   id: number;
   user: User;
+  name?: string;
   handle: string;
   bio?: string;
   profile_type?: "reader" | "creator" | "librarian" | "staff";
@@ -160,7 +164,6 @@ export interface ProfileOverview {
 
 export type UserReviewsPage = OffsetPaginatedResponse<BookReview>;
 export type UserRatingsPage = OffsetPaginatedResponse<BookRating>;
-export type UserCollectionsPage = OffsetPaginatedResponse<ReadingCollection>;
 
 export interface UserDataAggregate {
   profile: Profile;

@@ -11,9 +11,9 @@ export const routePaths = {
   genres: "/genres",
   genreBooks: "/genres/:id/books",
   myProfile: "/profile/me",
-  userProfile: "/profile/:id",
-  profileFollowers: "/profile/:id/followers",
-  profileFollowing: "/profile/:id/following",
+  userProfile: "/profile/:handle",
+  profileFollowers: "/profile/:handle/followers",
+  profileFollowing: "/profile/:handle/following",
   categories: "/categories",
   collections: "/collections",
   collection: "/collections/:id",
@@ -26,7 +26,6 @@ export const routePaths = {
   notFound: "*",
 } as const;
 
-export type AppRoutePath = (typeof routePaths)[keyof typeof routePaths];
 export type SearchRoute = `/search/${string}`;
 export type BookRoute = `/book/${string}`;
 export type AuthorRoute = `/author/${string}`;
@@ -48,7 +47,7 @@ export interface SearchRouteParams {
 
 export interface UserProfileRouteParams {
   [key: string]: string | undefined;
-  id: string;
+  handle: string;
 }
 
 export interface GenreBooksRouteParams {
@@ -67,6 +66,10 @@ function routeParam(value: RouteParam): string {
   return encodeURIComponent(String(value));
 }
 
+export function isNumericRouteParam(value: RouteParam | undefined): boolean {
+  return value !== undefined && /^\d+$/.test(String(value));
+}
+
 export const routeBuilders = {
   searchQuery: (query: string): SearchRoute =>
     `/search/${encodeURIComponent(query)}`,
@@ -74,10 +77,11 @@ export const routeBuilders = {
   author: (id: RouteParam): AuthorRoute => `/author/${routeParam(id)}`,
   genreBooks: (id: RouteParam): GenreBooksRoute =>
     `/genres/${routeParam(id)}/books`,
-  userProfile: (id: RouteParam): UserProfileRoute => `/profile/${routeParam(id)}`,
-  profileFollowers: (id: RouteParam): ProfileFollowersRoute =>
-    `/profile/${routeParam(id)}/followers`,
-  profileFollowing: (id: RouteParam): ProfileFollowingRoute =>
-    `/profile/${routeParam(id)}/following`,
+  userProfile: (handle: RouteParam): UserProfileRoute =>
+    `/profile/${routeParam(handle)}`,
+  profileFollowers: (handle: RouteParam): ProfileFollowersRoute =>
+    `/profile/${routeParam(handle)}/followers`,
+  profileFollowing: (handle: RouteParam): ProfileFollowingRoute =>
+    `/profile/${routeParam(handle)}/following`,
   collection: (id: RouteParam): CollectionRoute => `/collections/${routeParam(id)}`,
 } as const;

@@ -33,14 +33,19 @@ interface UseUserProfilePageDataResult {
   refetchCollections: () => void;
 }
 
+interface UseUserProfilePageDataOptions {
+  enabled?: boolean;
+}
+
 export function useUserProfilePageData(
-  id: string | undefined,
-  token?: string | null
+  profileParam: string | undefined,
+  token?: string | null,
+  options: UseUserProfilePageDataOptions = {}
 ): UseUserProfilePageDataResult {
   const userQuery = useQuery({
-    queryKey: profileKeys.overview(id),
-    queryFn: () => getUserDataAggregate(id, token),
-    enabled: !!id,
+    queryKey: profileKeys.overview(profileParam),
+    queryFn: () => getUserDataAggregate(profileParam, token),
+    enabled: Boolean(profileParam && (options.enabled ?? true)),
   });
   const aggregate = userQuery.data;
 

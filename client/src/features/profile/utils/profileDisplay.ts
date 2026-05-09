@@ -1,14 +1,41 @@
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
+import { resolveImageUrl } from "../../../lib/imageUrls";
 import type { ReadingCollection } from "../../collections/types/collection";
 import type { Profile, ProfileInterest, UserSocialLink } from "../types/user";
 
+export interface UserDisplaySource {
+  id?: number | string | null;
+  name?: string | null;
+  display_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+}
+
 export function resolveProfileImage(src?: string | null): string | undefined {
-  if (!src) return undefined;
-  return src.endsWith("image") ? `${src}.svg` : src;
+  return resolveImageUrl(src);
+}
+
+export function getUserDisplayName(
+  user?: UserDisplaySource | null,
+  fallback = "Reader"
+): string {
+  const name = user?.name?.trim();
+  if (name) return name;
+
+  const displayName = user?.display_name?.trim();
+  if (displayName) return displayName;
+
+  const fullName = [user?.first_name, user?.last_name]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  if (fullName) return fullName;
+
+  return user?.id && fallback === "Reader" ? `${fallback} ${user.id}` : fallback;
 }
 
 export function getProfileDisplayName(profile: Profile): string {
-  return profile.user.display_name?.trim() || profile.handle;
+  return profile.name?.trim() || getUserDisplayName(profile.user);
 }
 
 export function formatCompactNumber(value?: number | null): string {

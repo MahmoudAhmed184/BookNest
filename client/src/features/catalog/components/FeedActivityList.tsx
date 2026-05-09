@@ -4,6 +4,10 @@ import { Link } from "react-router-dom";
 import { StarRating } from "../../../components/ui";
 import { routeBuilders } from "../../../routes/paths";
 import { getFallbackHueStyle, getInitials } from "../../../utils/colorFromString";
+import {
+  getUserDisplayName,
+  resolveProfileImage,
+} from "../../profile/utils/profileDisplay";
 import type { Book, FeedEvent } from "../types/book";
 import { getAuthorNames, getBookGenres } from "../utils/bookFacets";
 
@@ -125,13 +129,7 @@ function presentationFor(activity: FeedEvent): EventPresentation {
 }
 
 function actorName(activity: FeedEvent): string {
-  const actor = activity.actor_detail;
-  const fullName = [actor?.first_name, actor?.last_name]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return actor?.display_name || fullName || actor?.email || `Reader ${activity.actor}`;
+  return getUserDisplayName(activity.actor_detail ?? { id: activity.actor });
 }
 
 function readableLabel(value: string | null | undefined): string | null {
@@ -234,7 +232,31 @@ function ActivityCover({ priority = false, src, title }: ActivityCoverProps): Re
   );
 }
 
-function ActivityAvatar({ name }: { name: string }): ReactElement {
+function ActivityAvatar({
+  imageSrc,
+  name,
+}: {
+  imageSrc?: string | null | undefined;
+  name: string;
+}): ReactElement {
+  const [failed, setFailed] = useState(false);
+  const resolvedImage = resolveProfileImage(imageSrc);
+
+  if (resolvedImage && !failed) {
+    return (
+      <img
+        src={resolvedImage}
+        alt=""
+        className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-md"
+        width="48"
+        height="48"
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
   return (
     <div
       className="fallback-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-primary-white shadow-md"
@@ -355,6 +377,9 @@ function FeedActivityCard({
   const occurredAt = relativeTime(activity.occurred_at ?? activity.created_at);
   const visibility = activity.visibility?.replaceAll("_", " ");
   const showVisibility = visibility && visibility !== "public";
+  const actorImage =
+    activity.actor_detail?.profile_picture ||
+    activity.actor_detail?.profile_picture_fallback_url;
 
   return (
     <article className="glass-card card-lift group/card overflow-hidden p-4 text-primary-white sm:p-5">
@@ -364,7 +389,7 @@ function FeedActivityCard({
           className="h-12 w-12 rounded-xl"
           aria-label={`Open ${actor}'s profile`}
         >
-          <ActivityAvatar name={actor} />
+          <ActivityAvatar imageSrc={actorImage} name={actor} />
         </Link>
         <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
