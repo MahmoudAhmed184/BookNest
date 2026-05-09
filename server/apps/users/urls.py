@@ -25,6 +25,11 @@ urlpatterns = [
     path("profiles/me/", views.CurrentProfileAPIView.as_view(), name="current-profile"),
     path("profiles/me/picture/", views.CurrentProfilePictureAPIView.as_view(), name="current-profile-picture"),
     path(
+        "profiles/by-handle/<slug:handle>/overview/",
+        views.ProfileOverviewByHandleAPIView.as_view(),
+        name="profile-overview-by-handle",
+    ),
+    path(
         "profiles/me/interests/",
         views.ProfileInterestCollectionAPIView.as_view(),
         name="profile-interest-collection",

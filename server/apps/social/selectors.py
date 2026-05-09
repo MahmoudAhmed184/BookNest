@@ -41,7 +41,7 @@ def following_for_target_user(*, target_user: Any, viewer: Any) -> QuerySet[Foll
 def feed_for_user(*, user: Any) -> QuerySet[FeedEvent]:
     followed_ids = following_for_user(user=user).values_list("following_id", flat=True)
     return (
-        FeedEvent.objects.select_related("actor", "book")
+        FeedEvent.objects.select_related("actor", "actor__profile", "book")
         .filter(Q(visibility=FeedEvent.Visibility.PUBLIC) | Q(actor=user) | Q(actor_id__in=followed_ids))
         .order_by("-occurred_at", "-id")
     )

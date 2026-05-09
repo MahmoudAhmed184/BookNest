@@ -11,8 +11,10 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         reset_url = f"http://localhost:3000/password-reset-confirm/{uid}/{token}/"
 
         subject = "[BookNest] Reset your password"
+        user = context.get("user")
+        recipient_name = getattr(user, "name", "") or "Reader"
         body = (
-            f"Hello {context.get('user').email},\n\n"
+            f"Hello {recipient_name},\n\n"
             f"We received a request to reset your password on BookNest.\n\n"
             f"Reset your password here: {reset_url}\n\n"
             f"If you didn't request this, please ignore this email.\n\n"

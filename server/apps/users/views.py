@@ -201,33 +201,22 @@ class UserProfileOverviewAPIView(generics.GenericAPIView):
 
     def get(self, request, user_id: int):
         target_user = selectors.get_user(pk=user_id)
-        selectors.ensure_can_view_profile(target_user=target_user, viewer=request.user)
-        profile = selectors.get_profile_for_user(user=target_user)
-        reviews = review_selectors.reviews_for_target_user(target_user=target_user, viewer=request.user)
-        ratings = review_selectors.visible_ratings_for_profile_overview(
-            target_user=target_user,
+        overview = selectors.profile_overview_for_user(target_user=target_user, viewer=request.user)
+        serializer = self.get_serializer(overview)
+        return Response(serializer.data)
+
+
+class ProfileOverviewByHandleAPIView(generics.GenericAPIView):
+    serializer_class = ProfileOverviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, handle: str):
+        profile = selectors.get_profile_by_handle(handle=handle)
+        overview = selectors.profile_overview_for_user(
+            target_user=profile.user,
             viewer=request.user,
+            profile=profile,
         )
-        collections = collection_selectors.collections_for_target_user(
-            target_user=target_user,
-            viewer=request.user,
-        )
-        overview = {
-            "user": target_user,
-            "profile": profile,
-            "viewer_context": selectors.profile_viewer_context(target_user=target_user, viewer=request.user),
-            "stats": {
-                "followers_count": target_user.follower_relationships.count(),
-                "following_count": target_user.following_relationships.count(),
-                "reviews_count": reviews.count(),
-                "ratings_count": ratings.count(),
-                "collections_count": collections.count(),
-                "books_read_count": profile.books_read_count,
-            },
-            "recent_reviews": list(reviews[:5]),
-            "recent_ratings": list(ratings[:5]),
-            "recent_collections": list(collections[:5]),
-        }
         serializer = self.get_serializer(overview)
         return Response(serializer.data)
 

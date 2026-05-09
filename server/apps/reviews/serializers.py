@@ -30,13 +30,27 @@ class RatingSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     book_detail = BookSerializer(source="book", read_only=True)
+    user_detail = serializers.SerializerMethodField()
     book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.visible(), required=False)
+    can_edit = serializers.SerializerMethodField()
+
+    def get_user_detail(self, obj: Review) -> dict:
+        from apps.users.serializers import UserSerializer
+
+        return UserSerializer(obj.user, context=self.context).data
+
+    def get_can_edit(self, obj: Review) -> bool:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        return bool(user and user.is_authenticated and obj.user_id == user.id)
 
     class Meta:
         model = Review
         fields = [
             "id",
             "user",
+            "user_detail",
             "book",
             "book_detail",
             "rating",
@@ -52,6 +66,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "is_archived",
             "created_at",
             "updated_at",
+            "can_edit",
         ]
         read_only_fields = (
             "id",

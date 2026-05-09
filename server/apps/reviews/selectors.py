@@ -33,7 +33,7 @@ def ratings_for_book(*, book_id: int) -> QuerySet[Rating]:
 
 
 def review_queryset() -> QuerySet[Review]:
-    return Review.objects.select_related("user", "book", "rating").filter(is_archived=False)
+    return Review.objects.select_related("user", "user__profile", "book", "rating").filter(is_archived=False)
 
 
 def reviews_for_user(*, user: Any) -> QuerySet[Review]:
@@ -47,3 +47,4 @@ def reviews_for_target_user(*, target_user: Any, viewer: Any) -> QuerySet[Review
 
 def reviews_for_book(*, book_id: int) -> QuerySet[Review]:
     return review_queryset().filter(book_id=book_id)
+

@@ -61,8 +61,28 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         verbose_name = "user"
         verbose_name_plural = "users"
 
+    @property
+    def name(self) -> str:
+        display_name = self.display_name.strip()
+        if display_name:
+            return display_name
+
+        full_name = self.get_full_name()
+        if full_name:
+            return full_name
+
+        if self.pk:
+            return f"Reader {self.pk}"
+        return "Reader"
+
+    def get_full_name(self) -> str:
+        return " ".join(part for part in [self.first_name.strip(), self.last_name.strip()] if part)
+
+    def get_short_name(self) -> str:
+        return self.name
+
     def __str__(self) -> str:
-        return self.email
+        return self.name
 
 
 class Profile(TimeStampedModel):
@@ -122,8 +142,12 @@ class Profile(TimeStampedModel):
         verbose_name = "profile"
         verbose_name_plural = "profiles"
 
+    @property
+    def name(self) -> str:
+        return self.user.name
+
     def __str__(self) -> str:
-        return self.handle
+        return self.name
 
 
 class UserPreference(TimeStampedModel):

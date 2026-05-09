@@ -10,6 +10,15 @@ from apps.users.serializers import ProfileSummarySerializer, UserSerializer
 User = get_user_model()
 
 
+def display_label(value: object | None) -> str | None:
+    if value is None:
+        return None
+    name = getattr(value, "name", None)
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return str(value)
+
+
 class FollowRelationshipSerializer(serializers.ModelSerializer):
     follower_detail = UserSerializer(source="follower", read_only=True)
     follower_profile = ProfileSummarySerializer(source="follower.profile", read_only=True)
@@ -59,7 +68,7 @@ class FeedEventSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "actor", "occurred_at", "created_at", "updated_at")
 
     def get_target_label(self, obj: FeedEvent) -> str | None:
-        return str(obj.target) if obj.target else None
+        return display_label(obj.target)
 
     def get_action_object_label(self, obj: FeedEvent) -> str | None:
-        return str(obj.action_object) if obj.action_object else None
+        return display_label(obj.action_object)
