@@ -6,6 +6,7 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
+  name: string;
   handle: string;
   email: string;
   password1: string;
@@ -14,7 +15,8 @@ export interface RegisterPayload {
 
 export interface AuthenticatedUser {
   id: number;
-  email: string;
+  name?: string;
+  email?: string;
   first_name?: string;
   last_name?: string;
   display_name?: string;

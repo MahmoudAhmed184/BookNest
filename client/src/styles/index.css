@@ -365,17 +365,6 @@
   }
 }
 
-@utility guest-hero-books-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: 1rem;
-
-  @media (width >= 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @utility catalog-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -446,14 +435,41 @@
   animation: gradientDrift 18s ease-in-out infinite alternate;
 }
 
-@utility unread-surface {
+@utility login-page-surface {
+  background: var(--bn-page-background);
+}
+
+@utility login-mobile-shade {
+  background: color-mix(in srgb, var(--color-background) 90%, var(--color-accent));
+}
+
+@utility login-card {
+  border: 1px solid color-mix(in srgb, var(--color-primary-white) 14%, transparent);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-elevated) 94%, transparent),
+      color-mix(in srgb, var(--color-surface) 88%, transparent)
+    ),
+    var(--color-surface);
+  backdrop-filter: blur(24px) saturate(132%);
+  box-shadow: var(--shadow-lg);
+}
+
+@utility login-artwork-shade {
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--color-accent) 14%, transparent),
-      color-mix(in srgb, var(--color-secondary-black) 88%, transparent)
+      oklch(0.14 0.012 70 / 0.84),
+      oklch(0.14 0.012 70 / 0.34) 52%,
+      oklch(0.14 0.012 70 / 0.18)
     ),
-    var(--color-secondary-black);
+    linear-gradient(
+      0deg,
+      oklch(0.12 0.014 70 / 0.9),
+      oklch(0.12 0.014 70 / 0.16) 62%
+    );
 }
 
 @keyframes fadeUp {
@@ -480,17 +496,6 @@
   }
 }
 
-@keyframes coverFade {
-  from {
-    opacity: 0;
-    transform: scale(1.015);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes softPulse {
   0%,
   100% {
@@ -510,10 +515,6 @@
   to {
     background-position: 100% 100%;
   }
-}
-
-@utility animate-cover-fade {
-  animation: coverFade 300ms ease-out both;
 }
 
 @utility animate-soft-pulse {
@@ -642,14 +643,20 @@
   .field {
     border-radius: var(--radius-lg);
     border-width: 1px;
-    border-color: transparent;
-    background-color: var(--color-secondary-black);
+    border-color: color-mix(in srgb, var(--color-primary-gray) 34%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-primary-black) 72%,
+      var(--color-secondary-black)
+    );
     min-height: 44px;
     padding-block: 8px;
     padding-inline: 16px;
-    color: var(--color-primary-gray);
+    color: var(--color-primary-white);
+    caret-color: var(--color-accent);
     --tw-outline-style: none;
     outline-style: none;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-primary-white) 5%, transparent);
     transition:
       border-color 200ms ease-out,
       box-shadow 200ms ease-out,
@@ -658,7 +665,28 @@
   }
 
   .field::placeholder {
-    color: var(--color-primary-gray);
+    color: color-mix(in srgb, var(--color-primary-gray) 82%, transparent);
+  }
+
+  .field:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 52%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-primary-black) 82%,
+      var(--color-secondary-black)
+    );
+  }
+
+  .field:focus {
+    border-color: var(--color-accent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-primary-black) 88%,
+      var(--color-secondary-black)
+    );
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--color-primary-white) 8%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
   }
 
   @media (forced-colors: active) {

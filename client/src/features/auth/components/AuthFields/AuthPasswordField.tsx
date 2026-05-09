@@ -16,8 +16,17 @@ export function AuthPasswordField({
   label,
   value,
   autoComplete,
+  description,
   error,
   touched = false,
+  maxLength,
+  placeholder,
+  className = "",
+  inputClassName = "",
+  labelClassName = "",
+  autoCapitalize,
+  spellCheck,
+  showRequiredIndicator = true,
   isVisible,
   onToggleVisibility,
   toggleLabel,
@@ -25,12 +34,24 @@ export function AuthPasswordField({
   onBlur,
 }: AuthPasswordFieldProps): ReactElement {
   const errorId = `${id}-error`;
+  const descriptionId = description ? `${id}-description` : undefined;
   const hasError = Boolean(touched && error);
+  const describedBy = [descriptionId, hasError ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-sm font-medium text-primary-white">
-        {label} <span aria-hidden="true" className="text-accent">*</span>
+    <div className={className}>
+      <label
+        htmlFor={id}
+        className={`mb-2 block text-sm font-medium text-primary-white ${labelClassName}`}
+      >
+        {label}{" "}
+        {showRequiredIndicator ? (
+          <span aria-hidden="true" className="ml-0.5 text-accent">
+            *
+          </span>
+        ) : null}
       </label>
       <div className="relative">
         <input
@@ -38,12 +59,16 @@ export function AuthPasswordField({
           name={name}
           type={isVisible ? "text" : "password"}
           autoComplete={autoComplete}
-          className={`field w-full pr-12 text-primary-white focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary-black ${hasError ? "border-accent" : ""}`}
+          autoCapitalize={autoCapitalize}
+          spellCheck={spellCheck}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          className={`field w-full pr-12 text-primary-white focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary-black ${inputClassName} ${hasError ? "border-accent" : ""}`}
           onChange={onChange}
           onBlur={onBlur}
           value={value}
           aria-invalid={hasError}
-          aria-describedby={errorId}
+          aria-describedby={describedBy || undefined}
         />
         <button
           type="button"
@@ -54,6 +79,11 @@ export function AuthPasswordField({
           <PasswordToggleIcon isVisible={isVisible} />
         </button>
       </div>
+      {description ? (
+        <p id={descriptionId} className="mt-2 text-xs leading-relaxed text-primary-gray">
+          {description}
+        </p>
+      ) : null}
       <div id={errorId}>
         <FieldError message={touched ? error : undefined} />
       </div>

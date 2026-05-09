@@ -11,7 +11,18 @@ import { authKeys } from "./auth.keys";
 interface UseRegisterMutationResult {
   isPending: boolean;
   isError: boolean;
+  errorMessage: string | null;
   submitRegister: (values: RegisterPayload) => Promise<void>;
+}
+
+const registerErrorFallback = "We couldn't create your account. Check your details.";
+
+function getRegisterErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return registerErrorFallback;
 }
 
 export function useRegisterMutation(): UseRegisterMutationResult {
@@ -19,25 +30,35 @@ export function useRegisterMutation(): UseRegisterMutationResult {
   const navigate = useNavigate();
   const mutation = useMutation({
     mutationKey: authKeys.register(),
-    mutationFn: register,
-    onSuccess: async (data, variables) => {
+    mutationFn: async (values: RegisterPayload) => {
+      const data = await register(values);
+
+      if (data.access) {
+        await createProfile({ handle: values.handle.trim() }, data.access);
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
       if (data.access) {
         toast.success("Account created. Welcome to BookNest.");
         userLogin(data.user, data.access, data.refresh);
-        await createProfile({ handle: variables.handle }, data.access);
         navigate(routePaths.explore);
       } else {
         toast.error("Couldn't create your account. Try again.");
       }
     },
-    onError: () => {
-      toast.error("Couldn't create your account. Check your details.");
+    onError: (error) => {
+      toast.error(getRegisterErrorMessage(error));
     },
   });
 
   return {
     isPending: mutation.isPending,
     isError: mutation.isError,
+    errorMessage: mutation.isError
+      ? getRegisterErrorMessage(mutation.error)
+      : null,
     submitRegister: async (values) => {
       await mutation.mutateAsync(values);
     },

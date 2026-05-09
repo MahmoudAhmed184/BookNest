@@ -1,2 +1,1 @@
-export { AuthShell, default } from "./AuthShell";
-export type { AuthShellProps } from "./AuthShell";
+export { AuthShell } from "./AuthShell";

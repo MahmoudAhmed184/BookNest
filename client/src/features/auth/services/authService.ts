@@ -24,6 +24,7 @@ interface AuthApiResponse {
 }
 
 interface RegistrationApiPayload {
+  name: string;
   email: string;
   password1: string;
   password2: string;
@@ -83,6 +84,7 @@ export async function register(
   formData: RegisterPayload
 ): Promise<AuthTokens> {
   const payload: RegistrationApiPayload = {
+    name: formData.name,
     email: formData.email,
     password1: formData.password1,
     password2: formData.password2,

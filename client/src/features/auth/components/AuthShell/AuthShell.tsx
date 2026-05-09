@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import Logo from "/logo.svg";
 
-export interface AuthShellProps {
+interface AuthShellProps {
   title: string;
   description: string;
   children: ReactNode;
@@ -36,5 +36,3 @@ export function AuthShell({
     </section>
   );
 }
-
-export default AuthShell;
