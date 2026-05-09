@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import {
@@ -18,6 +19,7 @@ import { notificationKeys } from "./notifications.keys";
 interface UseNotificationsResult {
   notifications: Notification[];
   notificationTypes: string[];
+  unreadCount?: number;
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
@@ -69,42 +71,84 @@ export function useNotifications(
 ): UseNotificationsResult {
   const queryClient = useQueryClient();
   const invalidateNotifications = (): void => {
-    queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
   };
   const notificationsQuery = useQuery({
     queryKey: notificationKeys.list(filters),
     queryFn: () => getNotifications(token, filters),
     enabled,
   });
+  const unreadCountQuery = useQuery({
+    queryKey: notificationKeys.unreadCount(),
+    queryFn: () => getUnreadNotificationCount(token),
+    enabled,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllNotificationsRead(token),
+    onMutate: () => {
+      setUnreadCountCache(queryClient, 0);
+      updateNotificationListCaches(queryClient, (notifications) =>
+        notifications.map((notification) => ({ ...notification, is_read: true }))
+      );
+    },
     onSuccess: () => {
       toast.success("Notifications marked as read.");
       invalidateNotifications();
     },
     onError: () => {
       toast.error("Couldn't mark notifications as read. Try again.");
+      invalidateNotifications();
     },
   });
   const markReadMutation = useMutation({
     mutationFn: (id: number) => markOneRead(id, token),
+    onMutate: (id) => {
+      const wasUnread = getCachedNotification(queryClient, id)?.is_read === false;
+      updateNotificationListCaches(queryClient, (notifications) =>
+        notifications.map((notification) =>
+          notification.id === id ? { ...notification, is_read: true } : notification
+        )
+      );
+      if (wasUnread) adjustUnreadCountCache(queryClient, -1);
+    },
     onSuccess: invalidateNotifications,
     onError: () => {
       toast.error("Couldn't update that notification. Try again.");
+      invalidateNotifications();
     },
   });
   const markUnreadMutation = useMutation({
     mutationFn: (id: number) => markOneUnread(id, token),
+    onMutate: (id) => {
+      const wasRead = getCachedNotification(queryClient, id)?.is_read === true;
+      updateNotificationListCaches(queryClient, (notifications) =>
+        notifications.map((notification) =>
+          notification.id === id ? { ...notification, is_read: false } : notification
+        )
+      );
+      if (wasRead) adjustUnreadCountCache(queryClient, 1);
+    },
     onSuccess: invalidateNotifications,
     onError: () => {
       toast.error("Couldn't update that notification. Try again.");
+      invalidateNotifications();
     },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteNotification(id, token),
+    onMutate: (id) => {
+      const wasUnread = getCachedNotification(queryClient, id)?.is_read === false;
+      updateNotificationListCaches(queryClient, (notifications) =>
+        notifications.filter((notification) => notification.id !== id)
+      );
+      if (wasUnread) adjustUnreadCountCache(queryClient, -1);
+    },
     onSuccess: invalidateNotifications,
     onError: () => {
       toast.error("Couldn't delete that notification. Try again.");
+      invalidateNotifications();
     },
   });
 
@@ -112,10 +156,17 @@ export function useNotifications(
   const notificationTypes = Array.from(
     new Set(notifications.map((notification) => notification.notification_type))
   );
+  const refetchNotifications = notificationsQuery.refetch;
+  const refetchUnreadCount = unreadCountQuery.refetch;
+  const refetch = useCallback(() => {
+    void refetchNotifications();
+    void refetchUnreadCount();
+  }, [refetchNotifications, refetchUnreadCount]);
 
   return {
     notifications,
     notificationTypes,
+    unreadCount: unreadCountQuery.data ?? 0,
     isLoading: notificationsQuery.isLoading,
     isFetching: notificationsQuery.isFetching,
     isError: notificationsQuery.isError,
@@ -129,6 +180,43 @@ export function useNotifications(
     markRead: (id: number) => markReadMutation.mutate(id),
     markUnread: (id: number) => markUnreadMutation.mutate(id),
     deleteNotification: (id: number) => deleteMutation.mutate(id),
-    refetch: () => void notificationsQuery.refetch(),
+    refetch,
   };
+}
+
+function updateNotificationListCaches(
+  queryClient: QueryClient,
+  updater: (notifications: Notification[]) => Notification[]
+): void {
+  queryClient.setQueriesData<unknown>({ queryKey: notificationKeys.all }, (cached) => {
+    if (!Array.isArray(cached)) return cached;
+    return updater(cached as Notification[]);
+  });
+}
+
+function getCachedNotification(
+  queryClient: QueryClient,
+  id: number
+): Notification | undefined {
+  const notificationCaches = queryClient.getQueriesData<unknown>({
+    queryKey: notificationKeys.all,
+  });
+
+  for (const [, cached] of notificationCaches) {
+    if (!Array.isArray(cached)) continue;
+    const match = (cached as Notification[]).find((notification) => notification.id === id);
+    if (match) return match;
+  }
+
+  return undefined;
+}
+
+function setUnreadCountCache(queryClient: QueryClient, count: number): void {
+  queryClient.setQueryData<number>(notificationKeys.unreadCount(), Math.max(0, count));
+}
+
+function adjustUnreadCountCache(queryClient: QueryClient, delta: number): void {
+  queryClient.setQueryData<number>(notificationKeys.unreadCount(), (current) =>
+    Math.max(0, (current ?? 0) + delta)
+  );
 }

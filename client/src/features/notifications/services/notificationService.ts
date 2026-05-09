@@ -5,7 +5,11 @@ import {
   postData,
   throwApiError,
 } from "../../../lib/axios";
-import { normalizeEmptyResponse } from "../../../lib/normalizers";
+import {
+  normalizeEmptyResponse,
+  normalizeListResponse,
+} from "../../../lib/normalizers";
+import type { LimitOffsetApiResponse } from "../../../types/api";
 import type {
   MarkNotificationsReadResponse,
   Notification,
@@ -38,12 +42,19 @@ export async function getNotifications(
   if (filters.type) {
     params.set("type", filters.type);
   }
+  if (filters.page) {
+    params.set("page", String(filters.page));
+  }
+  params.set("page_size", String(filters.page_size ?? 100));
   const query = params.size > 0 ? `?${params.toString()}` : "";
 
   try {
-    return await getData<Notification[]>(`/api/v1/notifications/${query}`, {
+    const response = await getData<
+      LimitOffsetApiResponse<Notification> | Notification[]
+    >(`/api/v1/notifications/${query}`, {
       headers: authHeaders(token),
     });
+    return normalizeListResponse(response);
   } catch (error: unknown) {
     throwApiError(error);
   }

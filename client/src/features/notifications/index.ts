@@ -2,6 +2,9 @@ export {
   useNotifications,
   useUnreadNotificationCount,
 } from "./hooks/useNotifications";
+export { NotificationBellMenu } from "./components/NotificationBellMenu";
+export { NotificationCard } from "./components/NotificationCard";
+export { NotificationIcon } from "./components/NotificationIcon";
 export {
   deleteNotification,
   getNotifications,

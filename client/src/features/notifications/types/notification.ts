@@ -26,6 +26,8 @@ export interface Notification {
 export interface NotificationFilters {
   is_read?: boolean | undefined;
   type?: NotificationType | "" | undefined;
+  page?: number | undefined;
+  page_size?: number | undefined;
 }
 
 export interface UnreadNotificationCountResponse {
