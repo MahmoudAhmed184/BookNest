@@ -115,7 +115,6 @@ class BookSerializer(serializers.ModelSerializer):
             "page_count",
             "language",
             "source",
-            "source_updated_at",
             "external_last_synced_at",
             "average_rating",
             "rating_count",

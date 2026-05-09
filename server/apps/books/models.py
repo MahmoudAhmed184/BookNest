@@ -171,7 +171,6 @@ class Book(SoftDeleteModel):
     page_count = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     language = models.CharField(max_length=12, blank=True, db_index=True)
     source = models.CharField(max_length=32, choices=Source.choices, default=Source.MANUAL, db_index=True)
-    source_updated_at = models.DateTimeField(null=True, blank=True)
     external_last_synced_at = models.DateTimeField(null=True, blank=True)
     average_rating = models.DecimalField(
         max_digits=3,
