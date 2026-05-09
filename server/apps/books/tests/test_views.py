@@ -5,7 +5,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.books.models import Author, AuthorLike, Book, Genre
+from apps.books.models import Author, AuthorLike, Book, Genre, RelatedBook
 from apps.books.services import set_book_authors, set_book_genres
 from apps.users.models import Profile
 
@@ -92,6 +92,20 @@ class BookListPaginationTests(APITestCase):
         response = self.client.post("/api/v1/books/", {"title": "Unmoderated"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class RelatedBookViewTests(APITestCase):
+    def test_related_book_list_returns_nested_book_payload(self):
+        source = Book.objects.create(title="Source Book", slug="source-book")
+        related = Book.objects.create(title="Related Book", slug="related-book")
+        RelatedBook.objects.create(from_book=source, to_book=related, score=1)
+
+        response = self.client.get(f"/api/v1/books/{source.id}/related-books/", {"page_size": 12})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["to_book"]["id"], related.id)
+        self.assertEqual(response.data["results"][0]["to_book"]["title"], "Related Book")
 
 
 class AuthorLikeCountTests(TestCase):

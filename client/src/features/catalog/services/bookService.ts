@@ -55,7 +55,7 @@ export type SearchBooksOrdering =
   | "newest"
   | "title";
 
-export interface SearchBooksParams extends OffsetPageParams {
+interface SearchBooksParams extends OffsetPageParams {
   query: string;
   includeExternal?: boolean | undefined;
   author?: string | undefined;
@@ -84,15 +84,15 @@ export interface CatalogBookFilters {
   ordering?: SearchBooksOrdering | undefined;
 }
 
-export interface CatalogBooksParams
+interface CatalogBooksParams
   extends OffsetPageParams,
     CatalogBookFilters {}
 
-export interface GenreListParams extends OffsetPageParams {
+interface GenreListParams extends OffsetPageParams {
   query?: string | undefined;
 }
 
-export interface AuthorListParams extends OffsetPageParams {
+interface AuthorListParams extends OffsetPageParams {
   name__icontains?: string | undefined;
 }
 
@@ -102,6 +102,10 @@ type FeedEventsResponse = CursorApiResponse<FeedEvent> | FeedEvent[];
 
 interface SearchSuggestionResponse {
   suggestions: SearchAutocompleteTerm[];
+}
+
+interface RelatedBookSuggestionResponse {
+  suggestions: Book[];
 }
 
 interface RecommendationRunResponse {
@@ -540,14 +544,26 @@ export async function unlikeAuthor(
 
 export async function getRelatedBooks(
   id: string | undefined
-): Promise<RelatedBook[]> {
+): Promise<Book[]> {
   const query = buildQuery({ page_size: 12 });
 
   try {
     const response = await getData<ListResponse<RelatedBook>>(
       `/api/v1/books/${id}/related-books/${query}`
     );
-    return normalizeListResponse(response);
+    const relatedBooks = normalizeListResponse(response)
+      .map((relatedBook) => relatedBook.to_book)
+      .filter(Boolean);
+
+    if (relatedBooks.length > 0) {
+      return relatedBooks;
+    }
+
+    const suggestionQuery = buildQuery({ book_id: id, limit: 12 });
+    const suggestions = await getData<RelatedBookSuggestionResponse>(
+      `/api/v1/search/related-books/${suggestionQuery}`
+    );
+    return suggestions.suggestions;
   } catch (error: unknown) {
     throwApiError(error);
   }
@@ -611,7 +627,7 @@ export async function searchBooks(input: SearchBooksInput): Promise<BookSearchRe
   }
 }
 
-export async function getSearchAutocomplete(
+async function getSearchAutocomplete(
   query: string,
   type: string | undefined = undefined,
   limit = 20
@@ -906,7 +922,7 @@ export async function clickRecommendation(
   }
 }
 
-export async function getCatalogRecommendations(
+async function getCatalogRecommendations(
   source?: string
 ): Promise<CatalogRecommendation[]> {
   const query = buildQuery({ source, page_size: 50 });
@@ -948,20 +964,6 @@ export async function listRecommendationModels(
       { headers: authHeaders(token) }
     );
     return normalizeListResponse(response);
-  } catch (error: unknown) {
-    throwApiError(error);
-  }
-}
-
-export async function getRecommendationModel(
-  id: string | number,
-  token?: string | null
-): Promise<RecommendationModel> {
-  try {
-    return await getData<RecommendationModel>(
-      `/api/v1/recommendation-models/${id}/`,
-      { headers: authHeaders(token) }
-    );
   } catch (error: unknown) {
     throwApiError(error);
   }

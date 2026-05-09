@@ -98,3 +98,13 @@ class SearchViewsTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["suggestions"][0]["id"], related.id)
+
+    def test_related_book_suggestions_fall_back_to_catalog_when_reference_has_no_links(self):
+        reference = Book.objects.create(title="Unlinked Reference", slug="unlinked-reference")
+        related = Book.objects.create(title="Visible Neighbor", slug="visible-neighbor", trending_score=5)
+
+        response = self.client.get("/api/v1/search/related-books/", {"book_id": reference.id, "limit": 1})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["suggestions"][0]["id"], related.id)

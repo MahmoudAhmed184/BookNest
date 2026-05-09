@@ -17,9 +17,6 @@ export function RelatedBooksCarousel({
   const { relatedBooks, isLoading, isFetching, isError, refetch } = useRelatedBooks(
     currentBookId === undefined ? undefined : String(currentBookId)
   );
-  const books = relatedBooks
-    .map((relatedBook) => relatedBook.to_book)
-    .filter(Boolean);
 
   return (
     <section className="flex flex-col gap-5" aria-labelledby="related-books-title">
@@ -46,7 +43,7 @@ export function RelatedBooksCarousel({
           isRetrying={isFetching}
         />
       ) : null}
-      {!isLoading && !isError && books.length > 0 ? (
+      {!isLoading && !isError && relatedBooks.length > 0 ? (
         <Swiper
           modules={[Pagination, A11y, Autoplay]}
           slidesPerView={1}
@@ -56,7 +53,7 @@ export function RelatedBooksCarousel({
           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }}
           className="book-carousel-swiper w-full"
         >
-          {books.map((book) => (
+          {relatedBooks.map((book) => (
             <SwiperSlide key={book.id}>
               <BookCard
                 book={book}

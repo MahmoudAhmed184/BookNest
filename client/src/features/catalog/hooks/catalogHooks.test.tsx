@@ -12,6 +12,7 @@ import {
   getGenres,
   getPopularBooks,
   getRecommendedBooks,
+  getRelatedBooks,
   getReviews,
   getSuggestions,
 } from "../services/bookService";
@@ -23,6 +24,7 @@ import { useBookActions } from "./useBookActions";
 import { useBookPageData } from "./useBookPageData";
 import { useBookSuggestions } from "./useBookSuggestions";
 import { useExploreCatalog } from "./useExploreCatalog";
+import { useRelatedBooks } from "./useRelatedBooks";
 import { useSearchBooks } from "./useSearchBooks";
 import type { OffsetPaginatedResponse } from "../../../types/api";
 import type { Book, BookRating, BookReview, SearchAutocompleteTerm } from "../types/book";
@@ -43,6 +45,7 @@ vi.mock("../services/bookService", () => ({
   getGenres: vi.fn(),
   getPopularBooks: vi.fn(),
   getRecommendedBooks: vi.fn(),
+  getRelatedBooks: vi.fn(),
   getReviews: vi.fn(),
   getSuggestions: vi.fn(),
   listReviewVotes: vi.fn(),
@@ -197,6 +200,18 @@ describe("catalog hooks", () => {
     await waitFor(() => expect(result.current.isBookLoading).toBe(false));
     expect(result.current.book?.title).toBe("Book");
     expect(result.current.reviews?.[0]?.body).toBe("Good");
+  });
+
+  it("loads related books", async () => {
+    vi.mocked(getRelatedBooks).mockResolvedValue([book(4, "Related Book")]);
+
+    const { result } = renderHook(() => useRelatedBooks("1"), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(getRelatedBooks).toHaveBeenCalledWith("1");
+    expect(result.current.relatedBooks[0]?.title).toBe("Related Book");
   });
 
   it("exposes book actions", () => {

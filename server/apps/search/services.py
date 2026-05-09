@@ -12,7 +12,7 @@ from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 
 from apps.books import selectors as book_selectors
-from apps.books.models import Author, Book, Genre
+from apps.books.models import Author, Book, BookAuthor, BookGenre, Genre
 from apps.books.services import sync_book_denormalized_labels
 from apps.search.models import SearchAutocompleteTerm, SearchIndexStatus, SearchQueryLog
 
@@ -392,25 +392,55 @@ def related_book_suggestions(*, book: Book, limit: int = 10):
     limit = min(max(int(limit), 1), 50)
     genre_ids = list(book.book_genres.values_list("genre_id", flat=True))
     author_ids = list(book.book_authors.values_list("author_id", flat=True))
+    author_match_books = BookAuthor.objects.none().values("book_id")
+    genre_match_books = BookGenre.objects.none().values("book_id")
     queryset = Book.objects.visible().exclude(pk=book.pk)
+
     if author_ids or genre_ids:
-        queryset = queryset.filter(Q(book_authors__author_id__in=author_ids) | Q(book_genres__genre_id__in=genre_ids))
-    return (
-        queryset.annotate(
-            same_author=Case(
-                When(book_authors__author_id__in=author_ids, then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField(),
-            ),
-            same_genre=Case(
-                When(book_genres__genre_id__in=genre_ids, then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField(),
-            ),
+        match_filter = Q()
+        if author_ids:
+            author_match_books = (
+                BookAuthor.objects.filter(author_id__in=author_ids)
+                .exclude(book_id=book.pk)
+                .values("book_id")
+            )
+            match_filter |= Q(id__in=author_match_books)
+        if genre_ids:
+            genre_match_books = (
+                BookGenre.objects.filter(genre_id__in=genre_ids)
+                .exclude(book_id=book.pk)
+                .values("book_id")
+            )
+            match_filter |= Q(id__in=genre_match_books)
+        queryset = queryset.filter(match_filter)
+
+    same_author = (
+        Case(
+            When(id__in=author_match_books, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
         )
-        .distinct()
-        .order_by("-same_author", "-same_genre", "-trending_score", "-average_rating", "title", "id")[:limit]
+        if author_ids
+        else Value(0, output_field=IntegerField())
     )
+    same_genre = (
+        Case(
+            When(id__in=genre_match_books, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        )
+        if genre_ids
+        else Value(0, output_field=IntegerField())
+    )
+
+    return queryset.annotate(same_author=same_author, same_genre=same_genre).order_by(
+        "-same_author",
+        "-same_genre",
+        "-trending_score",
+        "-average_rating",
+        "title",
+        "id",
+    )[:limit]
 
 
 @transaction.atomic
