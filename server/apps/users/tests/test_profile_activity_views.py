@@ -82,3 +82,46 @@ class UserProfileActivityViewsTests(APITestCase):
         response = self.client.get(f"/api/v1/users/{target.id}/profile-overview/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_private_profile_is_hidden_from_profile_endpoints_for_other_viewers(self):
+        target = self.create_reader("target@example.com", "target")
+        viewer = self.create_reader("viewer@example.com", "viewer")
+        target.preferences.profile_public = False
+        target.preferences.save(update_fields=["profile_public", "updated_at"])
+
+        self.client.force_authenticate(user=viewer)
+        list_response = self.client.get("/api/v1/profiles/")
+        detail_response = self.client.get(f"/api/v1/profiles/{target.profile.id}/")
+        user_profile_response = self.client.get(f"/api/v1/users/{target.id}/profile/")
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data["count"], 1)
+        self.assertEqual(list_response.data["results"][0]["handle"], "viewer")
+        self.assertEqual(detail_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(user_profile_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_profile_detail_update_is_limited_to_owner_or_staff(self):
+        target = self.create_reader("target@example.com", "target")
+        viewer = self.create_reader("viewer@example.com", "viewer")
+
+        self.client.force_authenticate(user=viewer)
+        forbidden_response = self.client.patch(
+            f"/api/v1/profiles/{target.profile.id}/",
+            {"bio": "Changed by someone else."},
+            format="json",
+        )
+        target.profile.refresh_from_db()
+
+        self.assertEqual(forbidden_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(target.profile.bio, "")
+
+        self.client.force_authenticate(user=target)
+        owner_response = self.client.patch(
+            f"/api/v1/profiles/{target.profile.id}/",
+            {"bio": "Changed by owner."},
+            format="json",
+        )
+        target.profile.refresh_from_db()
+
+        self.assertEqual(owner_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(target.profile.bio, "Changed by owner.")

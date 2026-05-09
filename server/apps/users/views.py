@@ -1,6 +1,12 @@
 from rest_framework import generics, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    SAFE_METHODS,
+    BasePermission,
+    IsAdminUser,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 
 from apps.collections import selectors as collection_selectors
@@ -19,6 +25,17 @@ from apps.users.serializers import (
     UserSerializer,
     UserSocialLinkSerializer,
 )
+
+
+class IsProfileOwnerOrStaffOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj: Profile) -> bool:
+        if request.method in SAFE_METHODS:
+            return selectors.can_view_profile(target_user=obj.user, viewer=request.user)
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (obj.user_id == request.user.id or request.user.is_staff or request.user.is_superuser)
+        )
 
 
 class UserCollectionAPIView(generics.ListAPIView):
@@ -49,7 +66,7 @@ class ProfileCollectionAPIView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        return selectors.profile_queryset()
+        return selectors.visible_profiles_for_viewer(viewer=self.request.user)
 
     def perform_create(self, serializer):
         serializer.instance = services.create_profile(user=self.request.user, validated_data=serializer.validated_data)
@@ -57,7 +74,7 @@ class ProfileCollectionAPIView(generics.ListCreateAPIView):
 
 class ProfileResourceAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsProfileOwnerOrStaffOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -171,6 +188,11 @@ class UserProfileAPIView(generics.RetrieveAPIView):
     queryset = Profile.objects.select_related("user")
     serializer_class = ProfileSerializer
     lookup_field = "user_id"
+
+    def get_object(self):
+        profile = super().get_object()
+        selectors.ensure_can_view_profile(target_user=profile.user, viewer=self.request.user)
+        return profile
 
 
 class UserProfileOverviewAPIView(generics.GenericAPIView):

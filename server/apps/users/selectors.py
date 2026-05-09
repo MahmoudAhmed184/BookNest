@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 
@@ -21,6 +22,17 @@ def get_user(*, pk: int) -> User:
 
 def profile_queryset() -> QuerySet[Profile]:
     return Profile.objects.select_related("user").prefetch_related("interest_links__genre", "social_links")
+
+
+def visible_profiles_for_viewer(*, viewer: Any) -> QuerySet[Profile]:
+    queryset = profile_queryset()
+    if is_staff_viewer(viewer=viewer):
+        return queryset
+
+    public_filter = Q(user__preferences__isnull=True) | Q(user__preferences__profile_public=True)
+    if viewer and viewer.is_authenticated:
+        return queryset.filter(public_filter | Q(user=viewer))
+    return queryset.filter(public_filter)
 
 
 def profile_for_user(*, user: Any) -> Profile | None:
