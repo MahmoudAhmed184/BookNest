@@ -3,7 +3,10 @@ import { createRoot } from "react-dom/client";
 import "./styles/index.css";
 import { App } from "./app/App";
 import { AppProviders } from "./app/providers";
+import { initializeTheme } from "./lib/theme";
 
+import "@fontsource/playfair-display/700.css";
+import "@fontsource/playfair-display/900.css";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/500.css";
 import "@fontsource/montserrat/600.css";
@@ -17,6 +20,8 @@ const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Root element not found");
 }
+
+initializeTheme();
 
 createRoot(rootElement).render(
   <StrictMode>
