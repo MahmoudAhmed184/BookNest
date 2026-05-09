@@ -175,7 +175,7 @@ def _apply_search_ordering(queryset, *, query: str, ordering: str):
 
 
 def user_allows_external_enrichment(*, user: Any | None) -> bool:
-    if not getattr(user, "is_authenticated", False):
+    if user is None or not getattr(user, "is_authenticated", False):
         return True
     try:
         return bool(user.preferences.external_enrichment_enabled)
@@ -271,6 +271,15 @@ def search_suggestions(*, query: str, limit: int = 10, term_type: str | None = N
     if term_type:
         queryset = queryset.filter(term_type=term_type)
     suggestions = list(queryset.order_by("-weight", "term")[:limit])
+    if len(suggestions) < limit:
+        suggestions.extend(
+            _live_autocomplete_suggestions(
+                query=query,
+                limit=limit - len(suggestions),
+                term_type=term_type,
+                exclude={(suggestion.term_type, suggestion.term) for suggestion in suggestions},
+            )
+        )
     if suggestions:
         SearchAutocompleteTerm.objects.filter(id__in=[term.id for term in suggestions]).update(
             use_count=models.F("use_count") + 1,
@@ -284,6 +293,99 @@ def search_suggestions(*, query: str, limit: int = 10, term_type: str | None = N
         page_size=limit,
         response_ms=0,
     )
+    return suggestions
+
+
+def _autocomplete_term(
+    *,
+    term: str,
+    term_type: str,
+    target: Book | Author | Genre,
+    weight: int,
+) -> SearchAutocompleteTerm:
+    autocomplete_term, _ = SearchAutocompleteTerm.objects.update_or_create(
+        term=term,
+        term_type=term_type,
+        defaults={
+            "target": target,
+            "is_active": True,
+            "last_seen_at": timezone.now(),
+            "weight": max(int(weight), 0),
+        },
+    )
+    autocomplete_term.refresh_from_db()
+    return autocomplete_term
+
+
+def _live_autocomplete_suggestions(
+    *,
+    query: str,
+    limit: int,
+    term_type: str | None,
+    exclude: set[tuple[str, str]],
+) -> list[SearchAutocompleteTerm]:
+    if limit <= 0:
+        return []
+
+    normalized_query = normalize_query(query)
+    isbn_query = normalized_query.replace("-", "").replace(" ", "")
+    suggestions: list[SearchAutocompleteTerm] = []
+    seen = set(exclude)
+
+    def can_add(candidate_type: str) -> bool:
+        return term_type in (None, candidate_type) and len(suggestions) < limit
+
+    def add(term: str, candidate_type: str, target: Book | Author | Genre, weight: int) -> None:
+        if not term or not can_add(candidate_type):
+            return
+        key = (candidate_type, term)
+        if key in seen:
+            return
+        suggestions.append(_autocomplete_term(term=term, term_type=candidate_type, target=target, weight=weight))
+        seen.add(key)
+
+    if can_add(SearchAutocompleteTerm.TermType.BOOK):
+        books = (
+            Book.objects.visible()
+            .filter(title__icontains=normalized_query)
+            .only("id", "title", "rating_count")
+            .order_by("-rating_count", "title", "id")[:limit]
+        )
+        for book in books:
+            add(book.title, SearchAutocompleteTerm.TermType.BOOK, book, book.rating_count)
+
+    if isbn_query and can_add(SearchAutocompleteTerm.TermType.ISBN):
+        books = (
+            Book.objects.visible()
+            .filter(Q(isbn_13__startswith=isbn_query) | Q(isbn_10__startswith=isbn_query))
+            .only("id", "isbn_13", "isbn_10", "rating_count")
+            .order_by("-rating_count", "title", "id")[:limit]
+        )
+        for book in books:
+            if book.isbn_13 and book.isbn_13.startswith(isbn_query):
+                add(book.isbn_13, SearchAutocompleteTerm.TermType.ISBN, book, book.rating_count)
+            if book.isbn_10 and book.isbn_10.startswith(isbn_query):
+                add(book.isbn_10, SearchAutocompleteTerm.TermType.ISBN, book, book.rating_count)
+
+    if can_add(SearchAutocompleteTerm.TermType.AUTHOR):
+        authors = (
+            Author.objects.filter(is_active=True)
+            .filter(Q(name__icontains=normalized_query) | Q(normalized_name__icontains=normalized_query))
+            .only("id", "name", "books_count")
+            .order_by("-books_count", "name", "id")[:limit]
+        )
+        for author in authors:
+            add(author.name, SearchAutocompleteTerm.TermType.AUTHOR, author, author.books_count)
+
+    if can_add(SearchAutocompleteTerm.TermType.GENRE):
+        genres = (
+            Genre.objects.filter(Q(name__icontains=normalized_query) | Q(normalized_name__icontains=normalized_query))
+            .only("id", "name", "books_count")
+            .order_by("-books_count", "name", "id")[:limit]
+        )
+        for genre in genres:
+            add(genre.name, SearchAutocompleteTerm.TermType.GENRE, genre, genre.books_count)
+
     return suggestions
 
 

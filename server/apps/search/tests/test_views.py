@@ -56,6 +56,37 @@ class SearchViewsTests(APITestCase):
         self.assertEqual(response.data["suggestions"][0]["term"], "Pride and Prejudice")
         self.assertEqual(SearchAutocompleteTerm.objects.get(term="Pride and Prejudice").use_count, 1)
 
+    def test_search_suggestions_fall_back_to_catalog_when_terms_are_missing(self):
+        author = Author.objects.create(name="J. K. Rowling", normalized_name="j k rowling", slug="j-k-rowling")
+        genre = Genre.objects.create(name="Fantasy", normalized_name="fantasy", slug="fantasy")
+        self.create_book("Harry Potter and the Philosopher's Stone", author=author, genre=genre, rating=5)
+
+        response = self.client.get("/api/v1/search/suggestions/", {"q": "harry po", "limit": 5})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["suggestions"][0]["term"], "Harry Potter and the Philosopher's Stone")
+        self.assertEqual(response.data["suggestions"][0]["term_type"], "book")
+        self.assertEqual(
+            SearchAutocompleteTerm.objects.get(term="Harry Potter and the Philosopher's Stone").use_count,
+            1,
+        )
+
+    def test_search_autocomplete_endpoint_uses_catalog_fallback(self):
+        author = Author.objects.create(
+            name="Terry Pratchett",
+            normalized_name="terry pratchett",
+            slug="terry-pratchett",
+        )
+        genre = Genre.objects.create(name="Fantasy", normalized_name="fantasy", slug="fantasy-books")
+        self.create_book("Guards! Guards!", author=author, genre=genre, rating=5)
+
+        response = self.client.get("/api/v1/search/autocomplete/", {"q": "guards", "limit": 5})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["term"], "Guards! Guards!")
+        self.assertEqual(response.data["results"][0]["term_type"], "book")
+
     def test_related_book_suggestions_use_author_and_genre_overlap(self):
         author = Author.objects.create(name="Ursula Le Guin", normalized_name="ursula le guin", slug="ursula-le-guin")
         genre = Genre.objects.create(name="Science Fiction", normalized_name="science fiction", slug="science-fiction")
