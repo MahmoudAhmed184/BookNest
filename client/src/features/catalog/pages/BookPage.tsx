@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
   type ReactElement,
@@ -137,13 +138,15 @@ export default function BookPage(): ReactElement {
         canMarkAsRead
         rating={rating}
         listPopover={
-          <AddToListDialog
-            open={isListDialogOpen}
-            bookId={book.id}
-            initialCollections={collections ?? []}
-            token={token}
-            onClose={() => setIsListDialogOpen(false)}
-          />
+          isListDialogOpen ? (
+            <AddToListDialog
+              open={isListDialogOpen}
+              bookId={book.id}
+              initialCollections={collections ?? []}
+              token={token}
+              onClose={() => setIsListDialogOpen(false)}
+            />
+          ) : null
         }
         onAddBook={() => {
           if (!token) {
@@ -257,7 +260,11 @@ function AddToListDialog({
     enabled: open && Boolean(token),
   });
   const collections = collectionsQuery.data ?? initialCollections;
-  const collectionBooks = collectionBooksQuery.data ?? collectionItemsFromCollections(collections);
+  const fallbackCollectionBooks = useMemo(
+    () => collectionItemsFromCollections(collections),
+    [collections]
+  );
+  const collectionBooks = collectionBooksQuery.data ?? fallbackCollectionBooks;
 
   const updateCachedCollection = (
     collectionId: number,
