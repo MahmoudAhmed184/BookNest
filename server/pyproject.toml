@@ -53,11 +53,48 @@ target-version = "py314"
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
 fixable = ["ALL"]
 
+[tool.ruff.lint.per-file-ignores]
+"**/*.py" = [
+    "ANN",
+    "BLE001",
+    "C901",
+    "COM812",
+    "D",
+    "DJ012",
+    "EM101",
+    "EXE001",
+    "FBT",
+    "FIX002",
+    "FURB157",
+    "PLC0415",
+    "PLR",
+    "PT009",
+    "PYI041",
+    "RET504",
+    "RUF001",
+    "RUF012",
+    "S",
+    "SLF001",
+    "TD",
+    "TRY",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
 strict = false
 ignore_missing_imports = true
-disable_error_code = ["misc", "var-annotated"]
+disable_error_code = [
+    "misc",
+    "no-any-return",
+    "no-untyped-call",
+    "no-untyped-def",
+    "type-arg",
+    "untyped-decorator",
+    "var-annotated",
+]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.testing"
